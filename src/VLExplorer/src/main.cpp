@@ -54,9 +54,15 @@ public:
 
 int main(int argc, char**argv) {
     using namespace vl;
-    Ensemble ensemble(new X2(), new NoSamplingStrategy());
+    Ensemble ensemble(new X2(), new RandomLinearSampler<double>("x", 1, 10));
     ensemble.sampleModel();
-    std::cout << ensemble.getSamples()[0]->getOutputSet()["y"].get<double>() << std::endl;
+    ensemble.sampleModel();
+    ensemble.sampleModel();
+    ensemble.sampleModel();
+    ensemble.sampleModel();
+    for (int i = 0; i < ensemble.getSamples().size(); i++) {
+        std::cout << ensemble.getSamples()[i]->getParameterSet()["x"].get<double>() << " " << ensemble.getSamples()[i]->getOutputSet()["y"].get<double>() << std::endl;
+    }
 
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 
