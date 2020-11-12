@@ -35,10 +35,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <cppconn/resultset.h>
 #include <cppconn/statement.h>
 
+#include "VirtualLab/Test.h"
+
 using namespace std;
 
 int main(void)
 {
+vl::Test t;
+t.test();
 cout << endl;
 cout << "Running 'SELECT 'Hello World!' AS _message'..." << endl;
 
@@ -50,7 +54,7 @@ try {
 
   /* Create a connection */
   driver = get_driver_instance();
-  con = driver->connect("tcp://vl-mysql:3306", "vluser", "mypass");
+  con = driver->connect("tcp://vl-mysql:3306", "vluser", "mypass"); 
   /* Connect to the MySQL test database */
   con->setSchema("company");
 

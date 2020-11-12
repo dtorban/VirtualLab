@@ -1,0 +1,63 @@
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Build
+*_build
+build
+
+# VIM
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+#*.obj
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Other
+log.txt
+output.txt
+Icon?
+
+# Local files
+*-local.*
+*-local
+*_local
+Data
+dependencies
+cmake
+
+#*.mtl
+install
+.DS_Store
+
+#VSCode
+.vscode
