@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ROOTDIR=`git rev-parse --show-toplevel`
-CONTAINER=my-mysql
+CONTAINER=vl-mysql
 
 mkdir -p "${ROOTDIR}"/db/storage/$CONTAINER
 
@@ -15,4 +15,5 @@ docker run -d -p 3306:3306 --name $CONTAINER \
     -v "${ROOTDIR}"/db/sql-scripts:/docker-entrypoint-initdb.d/ \
     -e MYSQL_ROOT_PASSWORD=supersecret \
     -e MYSQL_DATABASE=company \
+    --network=VLNetwork \
     virtual-lab-db

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ROOTDIR=`git rev-parse --show-toplevel`
-CONTAINER=my-mysql
+CONTAINER=vl-mysql
 
 mkdir -p ${ROOTDIR}/db/storage/$CONTAINER
 
