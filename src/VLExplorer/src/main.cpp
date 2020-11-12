@@ -8,6 +8,8 @@ Copyright (c) 2019 Dan Orban
 //#include <cmath>
 //#include <libwebsockets.h>
 #include "WebServer.h" 
+#include "VirtualLab/Ensemble.h"
+#include "VirtualLab/impl/X2.h"
 
 class MyWebServerSession;
 class MyWebServerCommand;
@@ -51,6 +53,11 @@ public:
 };
 
 int main(int argc, char**argv) {
+    using namespace vl;
+    Ensemble ensemble(new X2(), new NoSamplingStrategy());
+    ensemble.sampleModel();
+    std::cout << ensemble.getSamples()[0]->getOutputSet()["y"].get<double>() << std::endl;
+
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 
 	if (argc > 2) {
