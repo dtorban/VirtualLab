@@ -54,12 +54,13 @@ public:
 
 int main(int argc, char**argv) {
     using namespace vl;
-    Ensemble ensemble(new X2(), new RandomLinearSampler<double>("x", 1, 10));
-    ensemble.sampleModel();
-    ensemble.sampleModel();
-    ensemble.sampleModel();
-    ensemble.sampleModel();
-    ensemble.sampleModel();
+    //Ensemble ensemble(new X2(), new RandomLogrithmicSampler<double>("x", 0.01, 100));
+    Ensemble ensemble(new X2(), new RandomSampler<double>("x", 0.01, 100, LogScale<double>::instance()));
+    //Ensemble ensemble(new X2(), new RandomLinearSampler<double>("x", 0.01, 100));
+    for (int f = 0; f < 20; f++) {
+        ensemble.sampleModel();
+    }
+
     for (int i = 0; i < ensemble.getSamples().size(); i++) {
         std::cout << ensemble.getSamples()[i]->getParameterSet()["x"].get<double>() << " " << ensemble.getSamples()[i]->getOutputSet()["y"].get<double>() << std::endl;
     }

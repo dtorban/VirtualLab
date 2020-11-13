@@ -5,6 +5,7 @@
 #include "VirtualLab/IModelSample.h"
 #include <vector>
 #include <cstdlib>
+#include <cmath>
 
 namespace vl {
 
@@ -51,6 +52,38 @@ private:
 };
 
 template <typename T>
+class Scale {
+public:
+    virtual ~Scale() {}
+    virtual T scale(T val) const = 0;
+    virtual T invert(T val) const = 0;
+};
+
+template <typename T>
+class LinearScale : public Scale<T> {
+public:
+    virtual ~LinearScale() {}
+    virtual T scale(T val) const { return val; }
+    virtual T invert(T val) const { return val; }
+    static const Scale<T>& instance() {
+        static LinearScale<T> inst;
+        return inst;
+    } 
+};
+
+template <typename T>
+class LogScale : public Scale<T> {
+public:
+    virtual ~LogScale() {}
+    virtual T scale(T val) const { return std::log(val); }
+    virtual T invert(T val) const { return std::exp(val); }
+    static const Scale<T>& instance() {
+        static LogScale<T> inst;
+        return inst;
+    } 
+};
+
+template <typename T>
 class RangeSampler : public ISamplingStrategy {
 public:
     RangeSampler(const std::string& name, T min, T max) : name(name), min(min), max(max) {}
@@ -67,15 +100,18 @@ private:
 };
 
 template <typename T>
-class RandomLinearSampler : public RangeSampler<T> {
+class RandomSampler : public RangeSampler<T> {
 public:
-    RandomLinearSampler(const std::string& name, T min, T max) : RangeSampler<T>(name, min, max) {}
+    RandomSampler(const std::string& name, T min, T max, const Scale<T>& scale) : RangeSampler<T>(name, scale.scale(min), scale.scale(max)), scale(scale) {}
 protected:
     T getValue(T min, T max) const {
         double r = (double)std::rand() / (double)RAND_MAX;
-        return r * (max - min) + min;
+        return scale.invert(r * (max - min) + min);
     }
+
+    const Scale<T>& scale;
 };
+
 
 }
 

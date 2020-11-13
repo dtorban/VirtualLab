@@ -17,7 +17,7 @@ public:
 
     virtual void sampleModel();
 
-    std::vector<IModelSample*> getSamples() { return samples; }
+    virtual const std::vector<IModelSample*>& getSamples() const { return samples; }
 
 protected:
     IComputationalModel* model;
