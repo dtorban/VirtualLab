@@ -26,13 +26,19 @@ public:
         return keys;
     }
 
+    virtual bool containsKey(std::string key) const { return false; }
     virtual const IDataSet& operator[](std::string key) const { return *this; }
     virtual IDataSet& operator[](std::string key) { return *this; }
+    virtual void addData(std::string key, IDataSet* dataSet) {}
 
 protected:
     virtual const void* getValue(const std::type_info& type) const { return NULL; }
     virtual void setValue(const std::type_info& type, void* val) {}
     virtual bool isValidType(const std::type_info& type) const { return false; }
+
+    const void* getValue(const std::type_info& type, const IDataSet& dataSet) const { return dataSet.getValue(type); }
+    void setValue(const std::type_info& type, void* val, IDataSet& dataSet) { dataSet.setValue(type, val); }
+    bool isValidType(const std::type_info& type, const IDataSet& dataSet) const { return dataSet.isValidType(type); }
 };
 
 template <typename T>
@@ -64,6 +70,7 @@ public:
     }
 
     const std::vector<std::string>& getKeys() const { return keys; }
+    bool containsKey(std::string key) const { return dataSets.find(key) != dataSets.end(); }
     const IDataSet& operator[](std::string key) const { return *dataSets.find(key)->second; }
     IDataSet& operator[](std::string key) { return *dataSets.find(key)->second; }
 
@@ -75,6 +82,26 @@ public:
 private:
     std::vector<std::string> keys;
     std::map<std::string, IDataSet*> dataSets;
+};
+
+class DataSetRef : public IDataSet {
+public:
+    DataSetRef(IDataSet& dataSet) : dataSet(dataSet) {}
+    ~DataSetRef() {}
+
+    bool containsKey(std::string key) const { return dataSet.containsKey(key); }
+    const std::vector<std::string>& getKeys() const { return dataSet.getKeys(); }
+    const IDataSet& operator[](std::string key) const { return dataSet[key]; }
+    IDataSet& operator[](std::string key) { return dataSet[key]; }
+    void addData(std::string key, IDataSet* ds) { dataSet.addData(key, ds); }
+
+protected:
+    const void* getValue(const std::type_info& type) const { return IDataSet::getValue(type, dataSet); }
+    void setValue(const std::type_info& type, void* val) { IDataSet::setValue(type, val, dataSet); }
+    bool isValidType(const std::type_info& type) const { return IDataSet::isValidType(type, dataSet); }
+
+private:
+    IDataSet& dataSet;
 };
 
 // ----------------------------------------------------

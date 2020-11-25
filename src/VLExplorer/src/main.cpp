@@ -55,9 +55,13 @@ public:
 
 int main(int argc, char**argv) {
     using namespace vl;
-	DefaultQuery query;
+	//DefaultQuery query;
+	CompositeSamplingStrategy* strategy = new CompositeSamplingStrategy();
+	strategy->addStrategy(new SetMinMaxMetaData<double>("w", 0, 1));
+	strategy->addStrategy(new RandomSampler<double>("w"));
+	IQuery* query = new SamplingQuery(strategy);
 	IModel* model = new TestModel();
-	IModelSample* sample = model->create(query);
+	IModelSample* sample = model->create(*query);
 	for (std::string key : sample->getNavigation().getKeys()) {
 		sample->getNavigation()[key].set<double>(3.14159);
 		std::cout << key << " " << sample->getNavigation()[key].get<double>() << std::endl;
@@ -68,7 +72,7 @@ int main(int argc, char**argv) {
 	for (double time = 0.0; time < 6.0; time += 0.1) {
 		timeParm.set<double>(time);
 		sample->update();
-		std::cout << timeParm.get<double>() << " " << sample->getData()["y"].get<double>() << std::endl;
+		std::cout << sample->getData()["w"].get<double>() << " " << timeParm.get<double>() << " " << sample->getData()["y"].get<double>() << std::endl;
 	}
 	
 
