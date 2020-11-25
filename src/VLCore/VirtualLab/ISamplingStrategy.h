@@ -86,14 +86,14 @@ public:
 template <typename T>
 class RangeSampler : public ISamplingStrategy {
 public:
-    RangeSampler(const std::string& name, T min, T max) : name(name), min(min), max(max) {}
+    RangeSampler(const std::string& name, T min, T max, const Scale<T>& scale) : name(name), min(scale.scale(min)), max(scale.scale(max)), scale(scale) {}
     void setParams(DataSet& params) const {
-        params[name].set<T>(getValue(min, max));
+        params[name].set<T>(scale.invert(getValue(min, max)));
     }
 
 protected:
     virtual T getValue(T min, T max) const = 0;
-
+    const Scale<T>& scale;
 private:
     std::string name;
     T min, max;
@@ -102,16 +102,54 @@ private:
 template <typename T>
 class RandomSampler : public RangeSampler<T> {
 public:
-    RandomSampler(const std::string& name, T min, T max, const Scale<T>& scale) : RangeSampler<T>(name, scale.scale(min), scale.scale(max)), scale(scale) {}
+    RandomSampler(const std::string& name, T min, T max, const Scale<T>& scale) : RangeSampler<T>(name, min, max, scale) {}
 protected:
     T getValue(T min, T max) const {
         double r = (double)std::rand() / (double)RAND_MAX;
-        return scale.invert(r * (max - min) + min);
+        return r * (max - min) + min;
     }
-
-    const Scale<T>& scale;
 };
 
+template <typename T>
+class BinnedRandomSampler : public ISamplingStrategy {
+public:
+    BinnedRandomSampler(const std::string& name, T min, T max, const Scale<T>& scale, int numBins, int bin) 
+        : sampler(name, calcBinPos(min, max, scale, numBins, bin), calcBinPos(min, max, scale, numBins, bin+1), scale) {}
+    void setParams(DataSet& params) const {
+        sampler.setParams(params);
+    }
+
+private:
+    T calcBinPos(T min, T max, const Scale<T>& scale, int numBins, int bin) {
+        T binSize = (scale.scale(max) - scale.scale(min))/(1.0*numBins);
+        return scale.invert(binSize*bin + scale.scale(min));
+    }
+
+    RandomSampler<T> sampler;
+};
+
+template <typename T>
+class FairSampler : public ISamplingStrategy {
+public:
+    FairSampler(const std::string& name, T min, T max, const Scale<T>& scale, int numBins) {
+        for (int i = 0; i < numBins; i++) {
+            samplers.push_back(new BinnedRandomSampler<T>(name, min, max, scale, numBins, i));
+        }
+    }
+    virtual ~FairSampler() {
+        for (int i = 0; i < samplers.size(); i++) {
+            delete samplers[i];
+        }
+    }
+    void setParams(DataSet& params) const {
+        static int curSampler = 0;
+        samplers[curSampler%samplers.size()]->setParams(params);
+        curSampler++;
+    }
+
+private:
+    std::vector<BinnedRandomSampler<T>*> samplers;
+};
 
 }
 
