@@ -8,33 +8,34 @@ Copyright (c) 2019 Dan Orban
 //#include <cmath>
 //#include <libwebsockets.h>
 #include "WebServer.h" 
-#include "VirtualLab/Ensemble.h"
-#include "VirtualLab/impl/X2.h"
+//#include "VirtualLab/Ensemble.h"
+//#include "VirtualLab/impl/X2.h"
+#include "VirtualLab/impl/TestModel.h"
 
-class MyWebServerSession;
-class MyWebServerCommand;
+class VLWebServerSession;
+class VLWebServerCommand;
 
-struct MyWebServerSessionState {
-	std::map<std::string, MyWebServerCommand*> commands;
+struct VLWebServerSessionState {
+	std::map<std::string, VLWebServerCommand*> commands;
     bool* running;
 };
 
-class MyWebServerCommand {
+class VLWebServerCommand {
 public:
-	virtual ~MyWebServerCommand() {}
-	virtual void execute(MyWebServerSession* session, picojson::value& command, MyWebServerSessionState* state) = 0;
+	virtual ~VLWebServerCommand() {}
+	virtual void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) = 0;
 };
 
-class MyWebServerSession : public JSONSession {
+class VLWebServerSession : public JSONSession {
 public:
-	MyWebServerSession(MyWebServerSessionState state) : state(state) {
+	VLWebServerSession(VLWebServerSessionState state) : state(state) {
 	}
-	~MyWebServerSession() {
+	~VLWebServerSession() {
 	}
 	void receiveJSON(picojson::value& val) {
 		std::string cmd = val.get<picojson::object>()["command"].get<std::string>();
 		std::cout << val.get<picojson::object>()["command"].get<std::string>() << std::endl;
-		std::map<std::string, MyWebServerCommand*>::iterator it = state.commands.find(cmd);
+		std::map<std::string, VLWebServerCommand*>::iterator it = state.commands.find(cmd);
 		if (it != state.commands.end()) {
 			it->second->execute(this, val, &state);
 		}
@@ -42,29 +43,34 @@ public:
 	void update() {}
 
 private:
-	MyWebServerSessionState state;
+	VLWebServerSessionState state;
 };
 
-class KillCommand : public MyWebServerCommand {
+class KillCommand : public VLWebServerCommand {
 public:
-	void execute(MyWebServerSession* session, picojson::value& command, MyWebServerSessionState* state) {
+	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
 		*(state->running) = false;
 	}
 };
 
 int main(int argc, char**argv) {
     using namespace vl;
-    //Ensemble ensemble(new X2(), new RandomLogrithmicSampler<double>("x", 0.01, 100));
-    //RandomSampler<double> sampler("x", 0.01, 100, LogScale<double>::instance());
-    Ensemble ensemble(new X2(), new FairSampler<double>("x", 0.01, 100, LogScale<double>::instance(), 10));
-    //Ensemble ensemble(new X2(), new RandomLinearSampler<double>("x", 0.01, 100));
-    for (int f = 0; f < 100; f++) {
-        ensemble.sampleModel();
-    }
+	DefaultQuery query;
+	IModel* model = new TestModel();
+	IModelSample* sample = model->create(query);
+	for (std::string key : sample->getNavigation().getKeys()) {
+		sample->getNavigation()[key].set<double>(3.14159);
+		std::cout << key << " " << sample->getNavigation()[key].get<double>() << std::endl;
+	}
 
-    for (int i = 0; i < ensemble.getSamples().size(); i++) {
-        std::cout << ensemble.getSamples()[i]->getParameterSet()["x"].get<double>() << " " << ensemble.getSamples()[i]->getOutputSet()["y"].get<double>() << std::endl;
-    }
+	IDataSet& timeParm = sample->getNavigation()["time"];
+
+	for (double time = 0.0; time < 6.0; time += 0.1) {
+		timeParm.set<double>(time);
+		sample->update();
+		std::cout << timeParm.get<double>() << " " << sample->getData()["y"].get<double>() << std::endl;
+	}
+	
 
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 
@@ -74,10 +80,10 @@ int main(int argc, char**argv) {
 
         bool running = true;
 
-		MyWebServerSessionState state;
+		VLWebServerSessionState state;
 		state.commands["kill"] = new KillCommand();
         state.running = &running;
-		WebServerWithState<MyWebServerSession, MyWebServerSessionState> server(state,port, webDir);
+		WebServerWithState<VLWebServerSession, VLWebServerSessionState> server(state,port, webDir);
 		while (running) {
 			server.service();
 		}

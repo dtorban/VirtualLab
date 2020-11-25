@@ -5,11 +5,11 @@ include(${CMAKE_FRAMEWORK_DIR}/project/project.cmake)
 # --------------------- Source -----------------------
 
 set (SOURCEFILES
-  VirtualLab/Ensemble.cpp
+  VirtualLab/impl/TestModel.cpp
 )
 
 set (HEADERFILES
-  VirtualLab/Ensemble.h
+  VirtualLab/impl/TestModel.h
 )
 
 set(DEP_LINK_DIRS ${DEP_LINK_DIRS} 
