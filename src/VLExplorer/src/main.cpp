@@ -57,8 +57,13 @@ int main(int argc, char**argv) {
     using namespace vl;
 	//DefaultQuery query;
 	CompositeSamplingStrategy* strategy = new CompositeSamplingStrategy();
-	strategy->addStrategy(new SetMinMaxMetaData<double>("w", 0, 1));
+	strategy->addStrategy(new SetSamplingRange<double>("w", 0.1, 100));
+	strategy->addStrategy(new SetSamplingRange<double>("a", 1, 2));
+	strategy->addStrategy(new SetSamplingRange<double>("c", 0, 10));
+	//strategy->addStrategy(new SetSamplingScale("w", new LogrithmicScale()));
 	strategy->addStrategy(new RandomSampler<double>("w"));
+	strategy->addStrategy(new RandomSampler<double>("a"));
+	strategy->addStrategy(new RandomSampler<double>("c"));
 	IQuery* query = new SamplingQuery(strategy);
 	IModel* model = new TestModel();
 	IModelSample* sample = model->create(*query);
@@ -72,9 +77,20 @@ int main(int argc, char**argv) {
 	for (double time = 0.0; time < 6.0; time += 0.1) {
 		timeParm.set<double>(time);
 		sample->update();
-		std::cout << sample->getData()["w"].get<double>() << " " << timeParm.get<double>() << " " << sample->getData()["y"].get<double>() << std::endl;
+		std::cout <<timeParm.get<double>() << " " << sample->getData()["y"].get<double>() << std::endl;
 	}
-	
+
+
+	for (int i = 0; i < 10; i++) {
+		IModelSample* s = model->create(*query);
+		s->update();
+		std::cout << "Sample: " << i << std::endl;
+		for (std::string key : s->getData().getKeys()) {
+			std::cout << "\t" << key << " " << s->getData()[key].get<double>() << std::endl;
+		}
+
+		delete s;
+	}
 
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 

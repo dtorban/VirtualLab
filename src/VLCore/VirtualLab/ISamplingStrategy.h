@@ -3,6 +3,8 @@
 
 #include "VirtualLab/IDataSet.h"
 #include <cstdlib>
+#include <cmath>
+#include <iostream>
 
 namespace vl {
 
@@ -34,9 +36,9 @@ private:
 };
 
 template <typename T>
-class SetMinMaxMetaData : public ISamplingStrategy {
+class SetSamplingRange : public ISamplingStrategy {
 public:
-    SetMinMaxMetaData(const std::string& key, T min, T max) : key(key), min(min), max(max) {}
+    SetSamplingRange(const std::string& key, T min, T max) : key(key), min(min), max(max) {}
 
     void setParameters(IDataSet& params, IDataSet& metaData) {
         std::string minKey = getMinKey(key);
@@ -65,18 +67,73 @@ private:
     std::string key;
 };
 
+class Scale {
+public:
+    virtual double apply(double val) { return val; }
+    virtual double invert(double val) { return val; }
+};
+
+class LogrithmicScale : public Scale {
+public:
+    double apply(double val) { return std::log(val); }
+    double invert(double val) { return std::exp(val); }
+};
+
+class SetSamplingScale : public ISamplingStrategy {
+public:
+    SetSamplingScale(const std::string& key, Scale* scale) : key(key), scale(scale) {}
+    ~SetSamplingScale() { delete scale; }
+
+    void setParameters(IDataSet& params, IDataSet& metaData) {
+        std::string scaleKey = getScaleKey(key);
+
+        if (!metaData.containsKey(scaleKey)) {
+            metaData.addData(scaleKey, new TypedData<Scale*>());
+        }
+
+        metaData[scaleKey].set<Scale*>(scale);
+    }
+
+    static std::string getScaleKey(const std::string& key) {
+        return key + "_scale";
+    }
+
+private:
+    Scale* scale;
+    std::string key;
+};
+
 template <typename T>
 class RandomSampler : public ISamplingStrategy {
 public:
     RandomSampler(const std::string& key) : key(key) {}
 
     void setParameters(IDataSet& params, IDataSet& metaData) {
-        std::string minKey = SetMinMaxMetaData<T>::getMinKey(key);
-        std::string maxKey = SetMinMaxMetaData<T>::getMaxKey(key);
+        std::string minKey = SetSamplingRange<T>::getMinKey(key);
+        std::string maxKey = SetSamplingRange<T>::getMaxKey(key);
+        std::string scaleKey = SetSamplingScale::getScaleKey(key);
+
+        if (!(metaData.containsKey(minKey) && metaData.containsKey(maxKey))) {
+            return;
+        }
+
+        static Scale linearScale;
+        Scale* scale = &linearScale;
+        if (metaData.containsKey(scaleKey)) {
+            scale = metaData[scaleKey].get<Scale*>();
+            std::cout << "found scale" << std::endl;
+        }
+
         T min = metaData[minKey].get<T>();
         T max = metaData[maxKey].get<T>();
+        min = scale->apply(min);
+        max = scale->apply(max);
+
         double r = (double)std::rand() / (double)RAND_MAX;
-        params[key].set<T>(r*(max - min) + min);
+        T value = r*(max - min) + min;
+        value = scale->invert(value);
+
+        params[key].set<T>(value);
     }
 
 private:

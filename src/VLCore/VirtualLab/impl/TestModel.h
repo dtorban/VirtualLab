@@ -18,6 +18,9 @@ class TestModelSample : public IModelSample {
 public:
     TestModelSample(CompositeDataSet* data) : data(data) {
         w = (*data)["w"].get<double>();
+        a = (*data)["a"].get<double>();
+        b = (*data)["b"].get<double>();
+        c = (*data)["c"].get<double>();
         yData = new TypedData<double>(0.0);
         data->addData("y", yData);
         timeParam = new TypedData<double>();
@@ -31,8 +34,8 @@ public:
     virtual const IDataSet& getData() const { return *data; }
 
     virtual void update() {
-        // calculate cos(wt)
-        (*yData).set<double>(std::cos(w*(*timeParam).get<double>()));
+        // calculate a*cos(wt + b) + c
+        (*yData).set<double>(a * std::cos(w*(*timeParam).get<double>() + b) + c);
     }
 
 private:
@@ -41,6 +44,9 @@ private:
     IDataSet* timeParam;
     IDataSet* yData;
     double w;
+    double a;
+    double b;
+    double c;
 };
 
 }
