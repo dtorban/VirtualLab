@@ -10,25 +10,30 @@ class IQuery {
 public:
     virtual ~IQuery() {}
 
-    virtual void setParameters(IDataSet& params) const = 0;
+    void setParameters(IDataSet& params) const {
+        DataSetStack context;
+        setParameters(params, context);
+    }
+    
+    virtual void setParameters(IDataSet& params, DataSetStack& context) const = 0;
 };
 
 class DefaultQuery : public IQuery {
 public:
-    void setParameters(IDataSet& params) const {}
+    void setParameters(IDataSet& params, DataSetStack& context) const {}
 };
 
 class SamplingQuery : public IQuery {
 public:
     SamplingQuery(ISamplingStrategy* strategy) : strategy(strategy) {}
     ~SamplingQuery() { delete strategy; }
-    void setParameters(IDataSet& params) const {
-        CompositeDataSet metaData;
-        strategy->setParameters(params, metaData);
+    void setParameters(IDataSet& params, DataSetStack& context) const {
+        strategy->setParameters(params, context);
     }
 
 private:
     ISamplingStrategy* strategy;
+    
 };
 
 }

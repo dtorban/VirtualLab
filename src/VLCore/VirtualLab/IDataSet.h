@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <typeinfo>
+#include <vector>
 
 namespace vl {
 
@@ -102,6 +103,76 @@ protected:
 
 private:
     IDataSet& dataSet;
+};
+
+class DataSetStack : public IDataSet {
+public:
+    DataSetStack() {
+        dataSets.push_back(new CompositeDataSet());
+    }
+    ~DataSetStack() {
+        for (IDataSet* dataSet : dataSets) {
+            delete dataSet;
+        }
+    }
+
+    void pop() {
+        if (dataSets.size() > 1) {
+            delete dataSets.back();
+            dataSets.pop_back();
+        }
+    }
+
+    void push() {
+        dataSets.push_back(new CompositeDataSet());
+    }
+
+    IDataSet& top() {
+        return *dataSets.back();
+    }
+
+    bool containsKey(std::string key) const {
+        for (int i = dataSets.size()-1; i >= 0; i--) {
+            if (dataSets[i]->containsKey(key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    const std::vector<std::string>& getKeys() const { return dataSets.back()->getKeys(); }
+
+    const IDataSet& operator[](std::string key) const {
+        for (int i = dataSets.size()-1; i >= 0; i--) {
+            if (dataSets[i]->containsKey(key)) {
+                return (*dataSets[i])[key];
+            }
+        }
+
+        // need default
+    }
+
+    IDataSet& operator[](std::string key) {
+        for (int i = dataSets.size()-1; i >= 0; i--) {
+            if (dataSets[i]->containsKey(key)) {
+                return (*dataSets[i])[key];
+            }
+        }
+
+        // need default
+    }
+
+    void addData(std::string key, IDataSet* ds) { dataSets.back()->addData(key, ds); }
+
+protected:
+    const void* getValue(const std::type_info& type) const { return IDataSet::getValue(type, *dataSets.back()); }
+    void setValue(const std::type_info& type, void* val) { IDataSet::setValue(type, val, *dataSets.back()); }
+    bool isValidType(const std::type_info& type) const { return IDataSet::isValidType(type, *dataSets.back()); }
+
+private:
+    std::vector<IDataSet*> dataSets;
 };
 
 // ----------------------------------------------------

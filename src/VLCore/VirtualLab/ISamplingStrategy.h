@@ -12,12 +12,12 @@ class ISamplingStrategy {
 public:
     virtual ~ISamplingStrategy() {}
 
-    virtual void setParameters(IDataSet& params, IDataSet& metaData) = 0;
+    virtual void setParameters(IDataSet& params, DataSetStack& metaData) = 0;
 };
 
 class CompositeSamplingStrategy : public ISamplingStrategy {
 public:
-    CompositeSamplingStrategy() {}
+    CompositeSamplingStrategy(bool changeScope = true) : changeScope(changeScope) {}
     ~CompositeSamplingStrategy() {
         for (ISamplingStrategy* strategy : strategies) {
             delete strategy;
@@ -25,14 +25,21 @@ public:
     }
     void addStrategy(ISamplingStrategy* strategy) { strategies.push_back(strategy); }
 
-    void setParameters(IDataSet& params, IDataSet& metaData) {
+    void setParameters(IDataSet& params, DataSetStack& metaData) {
+        if (changeScope) {
+            metaData.push();
+        }
         for (ISamplingStrategy* strategy : strategies) {
             strategy->setParameters(params, metaData);
+        }
+        if (changeScope) {
+            metaData.pop();
         }
     }
 
 private:
     std::vector<ISamplingStrategy*> strategies;
+    bool changeScope;
 };
 
 template <typename T>
@@ -40,13 +47,13 @@ class SetSamplingRange : public ISamplingStrategy {
 public:
     SetSamplingRange(const std::string& key, T min, T max) : key(key), min(min), max(max) {}
 
-    void setParameters(IDataSet& params, IDataSet& metaData) {
+    void setParameters(IDataSet& params, DataSetStack& metaData) {
         std::string minKey = getMinKey(key);
         std::string maxKey = getMaxKey(key);
-        if (!metaData.containsKey(minKey)) {
+        if (!metaData.top().containsKey(minKey)) {
             metaData.addData(minKey, new TypedData<T>());
         }
-        if (!metaData.containsKey(maxKey)) {
+        if (!metaData.top().containsKey(maxKey)) {
             metaData.addData(maxKey, new TypedData<T>());
         }
         metaData[minKey].set<T>(min);
@@ -84,7 +91,7 @@ public:
     SetSamplingScale(const std::string& key, Scale* scale) : key(key), scale(scale) {}
     ~SetSamplingScale() { delete scale; }
 
-    void setParameters(IDataSet& params, IDataSet& metaData) {
+    void setParameters(IDataSet& params, DataSetStack& metaData) {
         std::string scaleKey = getScaleKey(key);
 
         if (!metaData.containsKey(scaleKey)) {
@@ -108,7 +115,7 @@ class RandomSampler : public ISamplingStrategy {
 public:
     RandomSampler(const std::string& key) : key(key) {}
 
-    void setParameters(IDataSet& params, IDataSet& metaData) {
+    void setParameters(IDataSet& params, DataSetStack& metaData) {
         std::string minKey = SetSamplingRange<T>::getMinKey(key);
         std::string maxKey = SetSamplingRange<T>::getMaxKey(key);
         std::string scaleKey = SetSamplingScale::getScaleKey(key);
