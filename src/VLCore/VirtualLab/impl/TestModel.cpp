@@ -2,7 +2,7 @@
 
 namespace vl {
 
-IModelSample* TestModel::create(const IQuery& query) {
+IModelSample* TestModel::create(const IQuery& query) const {
     CompositeDataSet* params = new CompositeDataSet();
     params->addData("w", new TypedData<double>(1.0));
     params->addData("a", new TypedData<double>(1.0));

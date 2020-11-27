@@ -11,7 +11,7 @@ class TestModel : public IModel {
 public:
     virtual ~TestModel() {}
 
-    virtual IModelSample* create(const IQuery& query);
+    virtual IModelSample* create(const IQuery& query) const;
 };
 
 class TestModelSample : public IModelSample {

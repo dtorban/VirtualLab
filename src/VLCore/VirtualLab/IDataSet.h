@@ -20,7 +20,7 @@ public:
     bool set(T val);
 
     template <typename T>
-    bool isType();
+    bool isType() const;
 
     virtual const std::vector<std::string>& getKeys() const {
         static std::vector<std::string> keys;
@@ -200,7 +200,7 @@ inline bool IDataSet::set(T val) {
 }
 
 template <typename T>
-inline bool IDataSet::isType() {
+inline bool IDataSet::isType() const {
     static const std::type_info& type = typeid(T);
     return isValidType(type);
 }

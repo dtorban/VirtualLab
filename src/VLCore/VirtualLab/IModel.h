@@ -10,7 +10,7 @@ class IModel {
 public:
     virtual ~IModel() {}
 
-    virtual IModelSample* create(const IQuery& query) = 0;
+    virtual IModelSample* create(const IQuery& query) const = 0;
 };
 
 }

@@ -6,6 +6,14 @@ var connected = false;
 var container = document.querySelector( '#scene-container' );
 const mixers = [];
 const clock = new THREE.Clock();
+var query = {};
+var sampleNavigation = {};
+var scene;
+var line = null;
+var points = [];
+var controls;
+var camera;
+
 // Function definitions start here...
 
 // This is the function that is called once the document is started.
@@ -20,7 +28,36 @@ $( document ).ready(function() {
   try {
     socket.onmessage =function got_packet(msg) {
       var data = JSON.parse(msg.data);
-      console.log(data);
+      if (data.command == "updateSample") {
+        connected = true;
+
+        if (data.query) {
+          query = data.query;
+        }
+        sampleNavigation = data.sample.navigation;
+        $("#notification-bar").empty();
+        $("#notification-bar").append("<p>Query</p>")
+        for (var key in query) {
+          //$("#notification-bar").append(key + ": <input type='text' value='" + query[key] + "'><br>");
+          $("#notification-bar").append(key + ': <input type="range" min="1" max="100" value="' + (query[key]/(3.14158*2.0))*100 + '" class="slider"></input>' + query[key] +'<br>');
+        }
+        $('.slider').on('input', function(e) {
+          console.log($(e.target).val());
+        });
+        $("#notification-bar").append("<p>Navigation</p>")
+        for (var key in sampleNavigation) {
+          $("#notification-bar").append(key + ": <input type='text' value='" + sampleNavigation[key] + "'><br>");
+        }
+        $("#notification-bar").append("<p>Data</p>")
+        for (var key in data.sample.data) {
+          $("#notification-bar").append(key + ": " + data.sample.data[key] + "<br>");
+        }
+
+        points.push( new THREE.Vector3( sampleNavigation["time"], data.sample.data["y"], 0.0 ) );
+        updateLines();
+        
+      }
+      //console.log(data);
     }
   }
   catch(exception) {
@@ -30,8 +67,11 @@ $( document ).ready(function() {
 
 // This function is triggered once the web socket is opened.
 socket.onopen = function() {
-  socket.send(JSON.stringify({command: "test"}));
-  connected = true;
+  socket.send(JSON.stringify({command: "createSample"}));
+}
+
+function updateQueryValue(key, val) {
+
 }
 
 // This function defines the properties of the scene as well as starts the
@@ -43,7 +83,7 @@ function init() {
   const far = 1000;
 
   camera = new THREE.PerspectiveCamera( fov, aspect, near, far );
-  camera.position.set( -10, 10, 10 );
+  camera.position.set( 0, 0, 10 );
   controls = new THREE.OrbitControls( camera, container );
 
   scene = new THREE.Scene();
@@ -55,9 +95,9 @@ function init() {
   geometry = new THREE.BoxBufferGeometry( 2, 2, 2 );
   mesh = new THREE.Mesh( geometry, material );
 
-  geometry = new THREE.PlaneBufferGeometry( 100, 100, 100 );
+  geometry = new THREE.PlaneBufferGeometry( 5, 5, 5 );
   mesh = new THREE.Mesh( geometry, material );
-  mesh.rotation.x = -3.14159/2.0;
+  //mesh.rotation.x = -3.14159/2.0;
 
   const ambientLight = new THREE.AmbientLight( 0xffffff, 1 );
   scene.add( ambientLight );
@@ -88,6 +128,54 @@ function kill() {
   }
 }
 
+// This function kills the webpage's socket connection.
+function updateQuery() {
+  if (connected) {
+    query.a += 0.1;
+    socket.send(JSON.stringify({command: "updateQuery", query: query, navigation: sampleNavigation}));
+  }
+}
+
+// This function kills the webpage's socket connection.
+function updateNavigation() {
+  if (connected) {
+    sampleNavigation.time += 0.1;
+    socket.send(JSON.stringify({command: "updateNavigation", navigation: sampleNavigation}));
+  }
+}
+
+function updateLines() {
+  if (line) {
+    scene.remove(line);
+  }
+
+    //create a blue LineBasicMaterial
+    var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+    /*for (var point of  data["path"]) {
+      points.push( new THREE.Vector3( point[0], point[1], point[2] ) );
+    }*/
+    /*points.push( new THREE.Vector3( - 10, 0, 0 ) );
+    points.push( new THREE.Vector3( 0, 10, 0 ) );
+    points.push( new THREE.Vector3( 10, 0, 0 ) );*/
+    const geometry = new THREE.BufferGeometry().setFromPoints( points );
+
+    line = new THREE.Line( geometry, material );
+
+    //line.translation.x = -points[points.length-1].x;
+
+    scene.add( line );
+
+    if (points.length > 0) {//new THREE.Vector3(data.e[i].dir_x, data.e[i].dir_y, data.e[i].dir_z)
+      //controls.target.copy(new THREE.Vector3(points[points.length-1].x,0,0));
+      //camera.position.copy(new THREE.Vector3(points[points.length-1].x,camera.position.y,camera.position.z));
+      line.position.copy(new THREE.Vector3(-points[points.length-1].x,0,0));
+      //controls.update();
+      //console.log(controls);
+      //console.log(points[points.length-1]);
+      //camera.position.copy(new THREE.Vector3(points[points.length-1][0], 0, 10));
+    }
+}
+
 // This function updates the scene's animation cycle.
 function update() {
 
@@ -95,6 +183,7 @@ function update() {
   if (connected) {
     //socket.send(JSON.stringify({command: "update", delta: delta}));
     //socket.send(JSON.stringify({command: "update"}));
+    //updateNavigation();
   }
 }
 
