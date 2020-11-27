@@ -64,11 +64,11 @@ int main(int argc, char**argv) {
 	strategy->addStrategy(new SetSamplingRange<double>("a", 1, 1000));
 	strategy->addStrategy(new SetSamplingRange<double>("c", 0, 10));
 	strategy->addStrategy(new SetSamplingScale("a", new LogrithmicScale()));
-	CompositeSamplingStrategy* sampling = new CompositeSamplingStrategy();
-	sampling->addStrategy(new RandomSampler<double>("w"));
-	sampling->addStrategy(new RandomSampler<double>("a"));
-	sampling->addStrategy(new RandomSampler<double>("c"));
-	strategy->addStrategy(sampling);
+	LatinHypercubeSampler* latinHyperCube = new LatinHypercubeSampler(4);
+	latinHyperCube->addParameter<double>("w");
+	latinHyperCube->addParameter<double>("a");
+	latinHyperCube->addParameter<double>("c");
+	strategy->addStrategy(latinHyperCube);
 	IQuery* query = new SamplingQuery(strategy);
 	IModel* model = new TestModel();
 	IModelSample* sample = model->create(*query);
@@ -95,38 +95,6 @@ int main(int argc, char**argv) {
 		}
 
 		delete s;
-	}
-
-	//std::iterator_traits<RandomIt>::difference_type rg = std::default_random_engine(0); 
-    //std::random_device rd;
-    //std::mt19937 g(rd());
- 
-	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-
-	std::default_random_engine g(seed);
-
-	{
-		std::array<int,5> foo {1,2,3,4,5};
-		std::shuffle(foo.begin(), foo.end(), g);
-		std::cout << "shuffled elements:";
-		for (int& x: foo) std::cout << ' ' << x;
-		std::cout << std::endl;
-	}
-	{
-		std::array<int,5> foo {1,2,3,4,5};
-		std::shuffle(foo.begin(), foo.end(), g);
-		std::cout << "shuffled elements:";
-		for (int& x: foo) std::cout << ' ' << x;
-		std::cout << std::endl;
-	}
-
-	std::vector<int> st;
-	st.push_back(1);
-	st.push_back(2);
-	st.push_back(3);
-	st.push_back(4);
-	for (int i = st.size()-1; i >= 0; i--) {
-		std::cout << st[i] << std::endl;
 	}
 
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;

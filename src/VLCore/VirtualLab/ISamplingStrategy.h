@@ -6,6 +6,9 @@
 #include <cmath>
 #include <iostream>
 #include <queue>
+#include <algorithm>
+#include <random>
+#include <chrono>
 
 namespace vl {
 
@@ -177,7 +180,7 @@ public:
         min = binSize*bin + min;
         max = min + binSize;
 
-        std::cout << key << " " << min << " " << max << " " << binSize << std::endl;
+        //std::cout << key << " " << min << " " << max << " " << binSize << std::endl;
 
         double r = (double)std::rand() / (double)RAND_MAX;
         T value = r*(max - min) + min;
@@ -194,28 +197,72 @@ private:
 
 class LatinHypercubeSampler : public CompositeSamplingStrategy {
 public:
-    LatinHypercubeSampler(int bins) : CompositeSamplingStrategy(false), bins(bins) {}
+    LatinHypercubeSampler(int bins) : CompositeSamplingStrategy(false), bins(bins), currentIndex(0),
+        g(std::chrono::system_clock::now().time_since_epoch().count()) {
+    }
 
-    void addKey(const std::string& key) {
-        keys.push_back(key);
+    template <typename T>
+    void addParameter(const std::string& key) {
+        randomizedBins[key] = std::vector<int>();
+        addStrategy(new RandomSampler<T>(key));
     }
 
     void setParameters(IDataSet& params, DataSetStack& metaData) {
+        RandomSamplingContext context(params, metaData);
+
         metaData.push();
 
-        if (sampleQueue.empty()) {
+        // recreate samples
+        if (currentIndex % bins == 0) {
+            for (std::map<std::string, std::vector<int> >::iterator it = randomizedBins.begin(); it != randomizedBins.end(); it++) {
+                it->second.clear();
+                for (int i = 0; i < bins; i++) {
+                    it->second.push_back(i);
+                }
 
+                std::shuffle(it->second.begin(), it->second.end(), g);
+                /*std::cout << it->first << ": ";
+                for (int i = 0; i < bins; i++) {
+                    std::cout << it->second[i] << " ";
+                }
+                std::cout << std::endl;*/
+            }
+        }
+        
+
+        for (std::map<std::string, std::vector<int> >::iterator it = randomizedBins.begin(); it != randomizedBins.end(); it++) {
+            int bin = currentIndex % bins;
+            context.setNumBins(it->first, bins);
+            context.setBin(it->first, it->second[bin]);
         }
 
         CompositeSamplingStrategy::setParameters(params, metaData);
 
         metaData.pop();
+
+        currentIndex++;
+
+
+        /*
+        	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+
+	std::default_random_engine g(seed);
+
+	{
+		std::array<int,5> foo {1,2,3,4,5};
+		std::shuffle(foo.begin(), foo.end(), g);
+		std::cout << "shuffled elements:";
+		for (int& x: foo) std::cout << ' ' << x;
+		std::cout << std::endl;
+	}
+    */
     }
 
 private:
-    std::queue< std::vector<int> > sampleQueue;
-    std::vector<std::string> keys;
+    std::map<std::string, std::vector<int> > randomizedBins;
+    int currentIndex;
     int bins;
+    std::default_random_engine g;
 };
 
 }
