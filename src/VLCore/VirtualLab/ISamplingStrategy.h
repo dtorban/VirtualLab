@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
+#include <queue>
 
 namespace vl {
 
@@ -42,38 +43,6 @@ private:
     bool changeScope;
 };
 
-template <typename T>
-class SetSamplingRange : public ISamplingStrategy {
-public:
-    SetSamplingRange(const std::string& key, T min, T max) : key(key), min(min), max(max) {}
-
-    void setParameters(IDataSet& params, DataSetStack& metaData) {
-        std::string minKey = getMinKey(key);
-        std::string maxKey = getMaxKey(key);
-        if (!metaData.top().containsKey(minKey)) {
-            metaData.addData(minKey, new TypedData<T>());
-        }
-        if (!metaData.top().containsKey(maxKey)) {
-            metaData.addData(maxKey, new TypedData<T>());
-        }
-        metaData[minKey].set<T>(min);
-        metaData[maxKey].set<T>(max);
-    }
-
-    static std::string getMinKey(const std::string& key) {
-        return key + "_min";
-    }
-
-    static std::string getMaxKey(const std::string& key) {
-        return key + "_max";
-    }
-
-private:
-    T min;
-    T max;
-    std::string key;
-};
-
 class Scale {
 public:
     virtual double apply(double val) { return val; }
@@ -86,23 +55,72 @@ public:
     double invert(double val) { return std::exp(val); }
 };
 
+class RandomSamplingContext {
+public:
+    RandomSamplingContext(IDataSet& params, DataSetStack& metaData) : params(params), metaData(metaData) {}
+
+    template <typename T>
+    T getValue(const std::string& key, const std::string& type) const {
+        return metaData[key + type].get<T>(); 
+    }
+    template <typename T>
+    void setValue(const std::string& key, const std::string& type, T value) {
+        std::string metaDataKey = key + type;
+        if (!metaData.top().containsKey(metaDataKey)) {
+            metaData.addData(metaDataKey, new TypedData<T>());
+        }
+        metaData[metaDataKey].set<T>(value);
+    }
+    bool containsType(const std::string& key, const std::string& type) { return metaData.containsKey(key + type); }
+
+    template <typename T>
+    T getMin(const std::string& key) const { return getValue<T>(key, getMinType()); }
+    template <typename T>
+    void setMin(const std::string& key, T value) { setValue<T>(key, getMinType(), value); }
+    static std::string getMinType() { return "_min"; }
+
+    template <typename T>
+    T getMax(const std::string& key) const { return getValue<T>(key, getMaxType()); }
+    template <typename T>
+    void setMax(const std::string& key, T value) { setValue<T>(key, getMaxType(), value); }
+    static std::string getMaxType() { return "_max"; }
+
+    Scale* getScale(const std::string& key) const { return getValue<Scale*>(key, getScaleType()); }
+    void setScale(const std::string& key, Scale* value) { setValue<Scale*>(key, getScaleType(), value); }
+    static std::string getScaleType() { return "_scale"; }
+
+
+private:
+    IDataSet& params;
+    DataSetStack& metaData;
+};
+
+template <typename T>
+class SetSamplingRange : public ISamplingStrategy {
+public:
+    SetSamplingRange(const std::string& key, T min, T max) : key(key), min(min), max(max) {}
+
+    void setParameters(IDataSet& params, DataSetStack& metaData) {
+        RandomSamplingContext context(params, metaData);
+        context.setMin<T>(key, min);
+        context.setMax<T>(key, max);
+    }
+
+private:
+    T min;
+    T max;
+    std::string key;
+};
+
+
 class SetSamplingScale : public ISamplingStrategy {
 public:
     SetSamplingScale(const std::string& key, Scale* scale) : key(key), scale(scale) {}
     ~SetSamplingScale() { delete scale; }
 
     void setParameters(IDataSet& params, DataSetStack& metaData) {
-        std::string scaleKey = getScaleKey(key);
-
-        if (!metaData.containsKey(scaleKey)) {
-            metaData.addData(scaleKey, new TypedData<Scale*>());
-        }
-
-        metaData[scaleKey].set<Scale*>(scale);
-    }
-
-    static std::string getScaleKey(const std::string& key) {
-        return key + "_scale";
+        RandomSamplingContext context(params, metaData);
+        context.setScale(key, scale);
     }
 
 private:
@@ -116,23 +134,20 @@ public:
     RandomSampler(const std::string& key) : key(key) {}
 
     void setParameters(IDataSet& params, DataSetStack& metaData) {
-        std::string minKey = SetSamplingRange<T>::getMinKey(key);
-        std::string maxKey = SetSamplingRange<T>::getMaxKey(key);
-        std::string scaleKey = SetSamplingScale::getScaleKey(key);
+        RandomSamplingContext context(params, metaData);
 
-        if (!(metaData.containsKey(minKey) && metaData.containsKey(maxKey))) {
+        if (!(context.containsType(key, context.getMinType()) && context.containsType(key, context.getMaxType()))) {
             return;
         }
 
         static Scale linearScale;
         Scale* scale = &linearScale;
-        if (metaData.containsKey(scaleKey)) {
-            scale = metaData[scaleKey].get<Scale*>();
-            std::cout << "found scale" << std::endl;
+        if (context.containsType(key, context.getScaleType())) {
+            scale = context.getScale(key);
         }
 
-        T min = metaData[minKey].get<T>();
-        T max = metaData[maxKey].get<T>();
+        T min = context.getMin<T>(key);
+        T max = context.getMax<T>(key);
         min = scale->apply(min);
         max = scale->apply(max);
 
@@ -147,6 +162,31 @@ private:
     T min;
     T max;
     std::string key;
+};
+
+class LatinHypercubeSampler : public CompositeSamplingStrategy {
+public:
+    LatinHypercubeSampler(int bins) : CompositeSamplingStrategy(false), bins(bins) {}
+
+    void addKey(const std::string& key) {
+        keys.push_back(key);
+    }
+
+    void setParameters(IDataSet& params, DataSetStack& metaData) {
+        metaData.push();
+        if (sampleQueue.empty()) {
+
+        }
+
+        CompositeSamplingStrategy::setParameters(params, metaData);
+
+        metaData.pop();
+    }
+
+private:
+    std::queue< std::vector<int> > sampleQueue;
+    std::vector<std::string> keys;
+    int bins;
 };
 
 }
