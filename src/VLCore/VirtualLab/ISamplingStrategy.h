@@ -71,7 +71,7 @@ public:
         }
         metaData[metaDataKey].set<T>(value);
     }
-    bool containsType(const std::string& key, const std::string& type) { return metaData.containsKey(key + type); }
+    bool containsType(const std::string& key, const std::string& type) const { return metaData.containsKey(key + type); }
 
     template <typename T>
     T getMin(const std::string& key) const { return getValue<T>(key, getMinType()); }
@@ -89,6 +89,25 @@ public:
     void setScale(const std::string& key, Scale* value) { setValue<Scale*>(key, getScaleType(), value); }
     static std::string getScaleType() { return "_scale"; }
 
+    int getBin(const std::string& key) const {
+        bool contains = containsType(key, getBinType());
+        if (contains) {
+            return getValue<int>(key, getBinType());
+        }
+        return 0;
+    }
+    void setBin(const std::string& key, int value) { setValue<int>(key, getBinType(), value); }
+    static std::string getBinType() { return "_bin"; }
+
+    int getNumBins(const std::string& key) const { 
+        bool contains = containsType(key, getNumBinsType());
+        if (contains) {
+            return getValue<int>(key, getNumBinsType());
+        }
+        return 1;
+    }
+    void setNumBins(const std::string& key, int value) { setValue<int>(key, getNumBinsType(), value); }
+    static std::string getNumBinsType() { return "_numBins"; }
 
 private:
     IDataSet& params;
@@ -140,6 +159,9 @@ public:
             return;
         }
 
+        int bins = context.getNumBins(key);
+        int bin = context.getBin(key);
+
         static Scale linearScale;
         Scale* scale = &linearScale;
         if (context.containsType(key, context.getScaleType())) {
@@ -150,6 +172,12 @@ public:
         T max = context.getMax<T>(key);
         min = scale->apply(min);
         max = scale->apply(max);
+
+        T binSize = (max-min)/(double)bins;
+        min = binSize*bin + min;
+        max = min + binSize;
+
+        std::cout << key << " " << min << " " << max << " " << binSize << std::endl;
 
         double r = (double)std::rand() / (double)RAND_MAX;
         T value = r*(max - min) + min;
@@ -174,6 +202,7 @@ public:
 
     void setParameters(IDataSet& params, DataSetStack& metaData) {
         metaData.push();
+
         if (sampleQueue.empty()) {
 
         }
