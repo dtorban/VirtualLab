@@ -6,7 +6,7 @@ var connected = false;
 var container = document.querySelector( '#scene-container' );
 const mixers = [];
 const clock = new THREE.Clock();
-var query = {};
+var query = null;
 var sampleNavigation = {};
 var scene;
 var line = null;
@@ -31,26 +31,36 @@ $( document ).ready(function() {
       if (data.command == "updateSample") {
         connected = true;
 
-        if (data.query) {
-          query = data.query;
-        }
+
         sampleNavigation = data.sample.navigation;
-        $("#notification-bar").empty();
-        $("#notification-bar").append("<p>Query</p>")
-        for (var key in query) {
-          //$("#notification-bar").append(key + ": <input type='text' value='" + query[key] + "'><br>");
-          $("#notification-bar").append(key + ': <input type="range" min="1" max="100" value="' + (query[key]/(3.14158*2.0))*100 + '" class="slider"></input>' + query[key] +'<br>');
+
+        //$("#notification-bar").empty();
+        if (!query) {
+          if (data.query) {
+            query = data.query;
+          }
+
+          $("#notification-bar").append("<p>Query</p>")
+          for (var key in query) {
+            //$("#notification-bar").append(key + ": <input type='text' value='" + query[key] + "'><br>");
+            $("#notification-bar").append(key + ': <input type="range" min="1" max="100" value="' + (query[key]/(3.14159*2.0))*100 + '" class="slider" name="' + key + '"></input>' + query[key] +'<br>');
+          }
+          $('.slider').on('input', function(e) {
+            //console.log($(e.target).val(), $(e.target).attr('name'));
+            query[$(e.target).attr('name')] = (2.0 * 3.14159 * $(e.target).val() / 100.0)
+            updateQuery();
+          });
+          $("#notification-bar").append("<p>Navigation</p>")
+          for (var key in sampleNavigation) {
+            $("#notification-bar").append(key + ": <input type='text' value='" + sampleNavigation[key] + "'><br>");
+          }
+          $("#notification-bar").append("<p>Data</p>");
+          $("#notification-bar").append("<div id='data-container'></div>");
         }
-        $('.slider').on('input', function(e) {
-          console.log($(e.target).val());
-        });
-        $("#notification-bar").append("<p>Navigation</p>")
-        for (var key in sampleNavigation) {
-          $("#notification-bar").append(key + ": <input type='text' value='" + sampleNavigation[key] + "'><br>");
-        }
-        $("#notification-bar").append("<p>Data</p>")
+
+        $("#data-container").empty();
         for (var key in data.sample.data) {
-          $("#notification-bar").append(key + ": " + data.sample.data[key] + "<br>");
+          $("#data-container").append(key + ": " + data.sample.data[key] + "<br>");
         }
 
         points.push( new THREE.Vector3( sampleNavigation["time"], data.sample.data["y"], 0.0 ) );
@@ -131,7 +141,6 @@ function kill() {
 // This function kills the webpage's socket connection.
 function updateQuery() {
   if (connected) {
-    query.a += 0.1;
     socket.send(JSON.stringify({command: "updateQuery", query: query, navigation: sampleNavigation}));
   }
 }
@@ -183,7 +192,7 @@ function update() {
   if (connected) {
     //socket.send(JSON.stringify({command: "update", delta: delta}));
     //socket.send(JSON.stringify({command: "update"}));
-    //updateNavigation();
+    updateNavigation();
   }
 }
 
