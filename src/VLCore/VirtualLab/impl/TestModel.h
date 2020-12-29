@@ -11,6 +11,7 @@ class TestModel : public IModel {
 public:
     virtual ~TestModel() {}
 
+    const std::string& getName() const { static std::string name = "TestModel"; return name; }
     virtual IModelSample* create(const IQuery& query) const;
 };
 

@@ -10,6 +10,7 @@ class IModel {
 public:
     virtual ~IModel() {}
 
+    virtual const std::string& getName() const = 0;
     virtual IModelSample* create(const IQuery& query) const = 0;
 };
 

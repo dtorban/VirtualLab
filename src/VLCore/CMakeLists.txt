@@ -6,6 +6,9 @@ include(${CMAKE_FRAMEWORK_DIR}/project/project.cmake)
 
 set (SOURCEFILES
   VirtualLab/impl/TestModel.cpp
+  VirtualLab/net/NetInterface.cpp
+  VirtualLab/net/Server.cpp
+  VirtualLab/net/Client.cpp
 )
 
 set (HEADERFILES

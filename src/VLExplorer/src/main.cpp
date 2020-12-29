@@ -13,6 +13,9 @@ Copyright (c) 2019 Dan Orban
 #include "WebServer.h" 
 //#include "VirtualLab/Ensemble.h"
 //#include "VirtualLab/impl/X2.h"
+//#include "VirtualLab/impl/TestModel.h"
+#include "VirtualLab/net/Server.h"
+#include "VirtualLab/net/Client.h"
 #include "VirtualLab/impl/TestModel.h"
 
 class VLWebServerSession;
@@ -216,10 +219,44 @@ int main(int argc, char**argv) {
 	strategy->addStrategy(latinHyperCube);
 	*/
 
+	int pid = 0;
+#ifdef WIN32
+	pid = 1;
+	if (false) {
+#else
+	if ((pid = fork()) < 0) {
+#endif
+		std::cout << "fork failed" << std::endl;
+		return 1;
+	}
+
+	if (pid != 0) {
+		pid = fork();
+		if (pid != 0) {
+			Server server;
+			while(true) {
+				server.service();
+			}
+			return 0;
+		}
+
+		Client client;
+		client.registerModel(new TestModel());
+		while(true) {
+			std::cout << "Waiting..." << std::endl;
+			client.waitForMessage();
+		}
+
+		return 0;
+		
+	}
+
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 
-	TestModel model;
-	ModelNavigator navigator(model);
+	Client api;
+	//api.registerModel(new TestModel());
+	//ModelNavigator navigator(*api.getModels()[0]);
+	ModelNavigator navigator(*new TestModel());
 
 	if (argc > 2) {
 		int port = std::atoi(argv[1]);
