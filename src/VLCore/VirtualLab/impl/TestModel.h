@@ -9,10 +9,14 @@ namespace vl {
 
 class TestModel : public IModel {
 public:
+    TestModel(const std::string& name = "TestModel") : name(name) {}
     virtual ~TestModel() {}
 
-    const std::string& getName() const { static std::string name = "TestModel"; return name; }
+    const std::string& getName() const { return name; }
     virtual IModelSample* create(const IQuery& query) const;
+
+private:
+    std::string name;
 };
 
 class TestModelSample : public IModelSample {

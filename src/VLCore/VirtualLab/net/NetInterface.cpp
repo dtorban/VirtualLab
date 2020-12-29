@@ -9,7 +9,7 @@ namespace vl {
 #define LOGE(...) do { printf(__VA_ARGS__); printf("\n"); } while(0)
 #define LOGW(...) do { printf(__VA_ARGS__); printf("\n"); } while(0)
 
-int NetInterface::sendData(SOCKET s, const unsigned char *buf, int len) {
+int NetInterface::sendData(SOCKET s, const unsigned char *buf, int len) const {
   int total = 0;        // how many bytes we've sent
   int bytesleft = len;  // how many we have left to send
   int n = 0;
@@ -26,7 +26,7 @@ int NetInterface::sendData(SOCKET s, const unsigned char *buf, int len) {
   return n==-1?-1:total; // return -1 on failure, total on success
 }
 
-int NetInterface::receiveData(SOCKET s, unsigned char *buf, int len) {
+int NetInterface::receiveData(SOCKET s, unsigned char *buf, int len) const {
   int total = 0;        // how many bytes we've received
   int bytesleft = len; // how many we have left to receive
   int n = 0;
@@ -43,7 +43,7 @@ int NetInterface::receiveData(SOCKET s, unsigned char *buf, int len) {
   return n==-1?-1:total; // return -1 on failure, total on success
 }
 
-void NetInterface::sendMessage(SOCKET s, NetMessageType type, const unsigned char *data, int len) {
+void NetInterface::sendMessage(SOCKET s, NetMessageType type, const unsigned char *data, int len) const {
 	int dataSize =  len + 1 + sizeof(int);
 	unsigned char *buf = new unsigned char[dataSize+1];
 	//1. add 1-byte message header
@@ -59,7 +59,7 @@ void NetInterface::sendMessage(SOCKET s, NetMessageType type, const unsigned cha
 	delete[] buf;
 }
 
-NetMessageType NetInterface::receiveMessage(SOCKET s, int& len) {
+NetMessageType NetInterface::receiveMessage(SOCKET s, int& len) const {
 	unsigned char type;
 #ifdef WIN32
 	len = recv(s, (char*)&type, 1, 0);

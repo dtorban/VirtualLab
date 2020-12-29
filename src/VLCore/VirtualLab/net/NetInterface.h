@@ -52,17 +52,18 @@ enum NetMessageType {
 	MSG_none = 0,
 	MSG_registerModel = 1,
 	MSG_deregisterModel = 2,
-	MSG_getModels = 3
+	MSG_getModels = 3,
+    MSG_createModelSample = 4
 };
 
 class NetInterface {
 public:
 	virtual ~NetInterface() {}
 	
-	void sendMessage(SOCKET s, NetMessageType type, const unsigned char *data, int len);
-	NetMessageType receiveMessage(SOCKET s, int& len);
-	int sendData(SOCKET s, const unsigned char *buf, int len);
-	int receiveData(SOCKET s, unsigned char *buf, int len);
+	void sendMessage(SOCKET s, NetMessageType type, const unsigned char *data, int len) const;
+	NetMessageType receiveMessage(SOCKET s, int& len) const;
+	int sendData(SOCKET s, const unsigned char *buf, int len) const;
+	int receiveData(SOCKET s, unsigned char *buf, int len) const;
 };
 
 }

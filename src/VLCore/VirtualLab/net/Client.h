@@ -24,6 +24,44 @@ private:
 	int id;
 };*/
 
+class ClientModelSample : public IModelSample {
+public:
+    ClientModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {
+    }
+
+    virtual IDataSet& getNavigation() {
+    }
+
+    virtual const IDataSet& getData() const {
+    }
+
+    virtual void update() {
+    }
+
+private:
+    CompositeDataSet navigation;
+    CompositeDataSet data;
+    NetInterface* api;
+    SOCKET sd;
+    int modelSampleId;
+};
+
+class ClientModel : public IModel {
+public:
+    ClientModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(api), name(name), sd(sd), modelId(modelId) {}
+
+    const std::string& getName() const { return name; }
+    virtual IModelSample* create(const IQuery& query) const {
+        api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
+    }
+
+private:
+    NetInterface* api;
+    std::string name;
+    SOCKET sd;
+    int modelId;
+};
+
 class Client : public NetInterface, public IVirtualLabAPI  {
 public:
 	Client(const std::string &serverIP = "127.0.0.1", int serverPort = 3457);
@@ -33,18 +71,56 @@ public:
         localModels.push_back(model);
         std::string name = model->getName();
         sendMessage(socketFD, MSG_registerModel, (const unsigned char*)name.c_str(), name.size());
+        int modelId = localModels.size() - 1;
+        sendData(socketFD, (unsigned char*)& modelId, sizeof(int));
     }
     virtual void deregisterModel(IModel* model) {
         std::string name = model->getName();
         sendMessage(socketFD, MSG_deregisterModel, (const unsigned char*)name.c_str(), name.size());
     }
-    virtual const std::vector<IModel*>& getModels() const { static std::vector<IModel*> models; return models; }
+    virtual const std::vector<IModel*>& getModels() { 
+        for (int i = 0; i < models.size(); i++) {
+            delete models[i];
+        }
+        models.clear();
+
+        sendMessage(socketFD, MSG_getModels, (const unsigned char*)0, 0);
+        int numModels;
+        receiveData(socketFD, (unsigned char*)& numModels, sizeof(int));
+        for (int i = 0; i < numModels; i++) {
+            int dataLength;
+            receiveData(socketFD, (unsigned char*)& dataLength, sizeof(int));
+            unsigned char* buf = new unsigned char[dataLength+1];
+            receiveData(socketFD, buf, dataLength);
+            buf[dataLength] = '\0';
+            std::string name(reinterpret_cast<char*>(buf));
+            delete[] buf;
+            int modelId;
+            receiveData(socketFD, (unsigned char*)& modelId, sizeof(int));
+            //std::cout << name << " " << modelId << std::endl;
+            models.push_back(new ClientModel(this, socketFD, name, modelId));
+        }
+        
+        return models;
+    }
 
     virtual void waitForMessage() {
         int len;
         NetMessageType type = receiveMessage(socketFD, len);
         std::cout << type << " " << len << std::endl;
+        if (type == MSG_createModelSample) {
+            std::cout << "it appears to work." << std::endl;
+            int modelId;
+            receiveData(socketFD, (unsigned char*)& modelId, sizeof(int));
+            std::cout << modelId << std::endl;
+
+            DefaultQuery q;
+            localModels[modelId]->create(q);
+        }
+
     }
+
+    std::vector<IModel*> models;
     std::vector<IModel*> localModels;
 
 /*	virtual void createSharedTexture(const std::string& name, const TextureInfo& info, int deviceIndex) {

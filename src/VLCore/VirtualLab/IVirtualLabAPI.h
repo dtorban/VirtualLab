@@ -10,7 +10,7 @@ public:
 	virtual ~IVirtualLabAPI() {}
     virtual void registerModel(IModel* model) = 0;
     virtual void deregisterModel(IModel* model) = 0;
-    virtual const std::vector<IModel*>& getModels() const = 0;
+    virtual const std::vector<IModel*>& getModels() = 0;
 };
 
 

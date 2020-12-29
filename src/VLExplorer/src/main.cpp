@@ -241,7 +241,8 @@ int main(int argc, char**argv) {
 		}
 
 		Client client;
-		client.registerModel(new TestModel());
+		client.registerModel(new TestModel("ModelA"));
+		client.registerModel(new TestModel("ModelB"));
 		while(true) {
 			std::cout << "Waiting..." << std::endl;
 			client.waitForMessage();
@@ -254,6 +255,19 @@ int main(int argc, char**argv) {
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 
 	Client api;
+	for (int i = 0; i < 10; i++) {
+		std::vector<IModel*> models = api.getModels();
+		if (models.size() > 0) {
+			for (int f = 0; f < models.size(); f++) {
+				std::cout << "Here: " <<  models[f]->getName() << std::endl;
+			}
+			break;
+		}
+	}
+
+	DefaultQuery query;
+	std::vector<IModel*> models = api.getModels();
+	IModelSample* sample = models[0]->create(query);
 	//api.registerModel(new TestModel());
 	//ModelNavigator navigator(*api.getModels()[0]);
 	ModelNavigator navigator(*new TestModel());

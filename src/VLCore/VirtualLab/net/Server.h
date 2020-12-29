@@ -51,8 +51,8 @@ public:
     virtual void deregisterModel(IModel* model) {
         impl.deregisterModel(model);
     }
-    
-    virtual const std::vector<IModel*>& getModels() const {
+
+    virtual const std::vector<IModel*>& getModels() {
         return impl.getModels();
     }
 

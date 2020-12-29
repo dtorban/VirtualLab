@@ -3,6 +3,7 @@
 
 #include "VirtualLab/IVirtualLabAPI.h"
 #include "VirtualLab/impl/TestModel.h"
+#include <algorithm>
 
 namespace vl {
 
@@ -15,9 +16,14 @@ public:
             delete models[i];
         }
     }
-    virtual void registerModel(IModel* model) {}
-    virtual void deregisterModel(IModel* model) {}
-    virtual const std::vector<IModel*>& getModels() const { return models; }
+    virtual void registerModel(IModel* model) {
+        models.push_back(model);
+    }
+    virtual void deregisterModel(IModel* model) {
+        models.erase(std::remove(models.begin(), models.end(), model), models.end()); 
+        delete model;
+    }
+    virtual const std::vector<IModel*>& getModels() { return models; }
 
 protected:
     std::vector<IModel*> models;

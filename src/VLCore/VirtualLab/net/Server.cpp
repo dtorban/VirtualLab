@@ -172,10 +172,21 @@ Server::~Server() {
 	#endif
 }
 
-/*class ServerModel : public IModel {
+class ServerModel : public IModel {
 public:
+    ServerModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(api), name(name), sd(sd), modelId(modelId) {}
 
-}*/
+    const std::string& getName() const { return name; }
+    virtual IModelSample* create(const IQuery& query) const {
+        api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
+    }
+
+private:
+    NetInterface* api;
+    std::string name;
+    SOCKET sd;
+    int modelId;
+};
 
 void Server::service() {
     //Adapted from https://www.geeksforgeeks.org/socket-programming-in-cc-handling-multiple-clients-on-server-without-multi-threading/
@@ -281,16 +292,34 @@ void Server::service() {
             else if (messageType == MSG_registerModel) {
                 unsigned char* buf = new unsigned char[dataLength+1];
                 receiveData(sd, buf, dataLength);
-                //int modelId;
-                //receiveData(sd, (unsigned char*)& modelId, sizeof(int));
+                int modelId;
+                receiveData(sd, (unsigned char*)& modelId, sizeof(int));
                 buf[dataLength] = '\0';
                 std::string val(reinterpret_cast<char*>(buf));
-                std::cout << val << std::endl;
-                //registerModel(val);
-                /*TextureInfo info;
-                receiveData(sd, (unsigned char*)& info, sizeof(TextureInfo));
-                createSharedTexture(val, info, deviceIndex);*/
+                registerModel(new ServerModel(this, sd, val, modelId));
                 delete[] buf;
+            }
+            else if (messageType == MSG_getModels) {
+                std::cout << "getModels() called" << std::endl;
+                std::vector<IModel*> models = getModels();
+                int numModels = models.size();
+                sendData(sd, (unsigned char*)& numModels, sizeof(int));
+                for (int i = 0; i < numModels; i++) {
+                    std::string name = models[i]->getName();
+                    int nameSize = name.size();
+                    sendData(sd, (unsigned char*)& nameSize, sizeof(int));
+                    sendData(sd, (const unsigned char*)name.c_str(), name.size());
+                    int modelId = i;
+                    sendData(sd, (unsigned char*)& modelId, sizeof(int));
+                    //std::cout << name << std::endl;
+                }
+            }
+            else if (messageType == MSG_createModelSample) {
+                std::cout << "Called in server" << std::endl;
+                int modelId;
+                receiveData(sd, (unsigned char*)& modelId, sizeof(int));
+                DefaultQuery q;
+                getModels()[modelId]->create(q);
             }
         }
 
