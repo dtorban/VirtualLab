@@ -6,23 +6,37 @@
 
 #include "VirtualLab/net/NetInterface.h"
 #include "VirtualLab/IVirtualLabAPI.h"
+#include "VirtualLab/util/JSONSerializer.h"
 
 namespace vl {
 
-/*class ClientMessageQueue : public MessageQueue {
+class ClientQuery : public IQuery {
 public:
-	ClientMessageQueue(NetInterface* net, SOCKET socketFD, int id);
-	virtual ~ClientMessageQueue() {}
-	int getId();
-	void waitForMessage();
-	void sendMessage();
-	int sendData(const unsigned char *buf, int len);
-	int receiveData(unsigned char *buf, int len);
+    ClientQuery(NetInterface* api, SOCKET sd) : api(api), sd(sd) {}
+
+    virtual void setParameters(IDataSet& params, DataSetStack& context) const {
+        /*std::cout << "start query" << std::endl;
+        int modelId;
+        std::string s = serializer.serialize(params);
+        std::cout << "send string" << std::endl;
+        api->sendString(sd, s);
+        s = api->receiveString(sd);
+        std::cout << "receive string" << std::endl;
+        serializer.deserialize("{\"a\": 12,\"abc\": {\"sdf\": 123}}", params);
+        s = serializer.serialize(params);
+        std::cout << s << std::endl;
+        std::cout << "end query" << std::endl;*/
+        std::string s = serializer.serialize(params);
+        api->sendString(sd, s);
+        s = api->receiveString(sd);
+        serializer.deserialize(s, params);
+    }
+
 private:
-	NetInterface* net;
-	SOCKET socketFD;
-	int id;
-};*/
+    NetInterface* api;
+    SOCKET sd;
+    JSONSerializer serializer;
+};
 
 class ClientModelSample : public IModelSample {
 public:
@@ -53,6 +67,12 @@ public:
     const std::string& getName() const { return name; }
     virtual IModelSample* create(const IQuery& query) const {
         api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
+        std::string json = api->receiveString(sd);
+        CompositeDataSet ds;
+        serializer.deserialize(json, ds);
+        query.setParameters(ds);
+        json = serializer.serialize(ds);
+        api->sendString(sd, json);
     }
 
 private:
@@ -60,6 +80,7 @@ private:
     std::string name;
     SOCKET sd;
     int modelId;
+    JSONSerializer serializer;
 };
 
 class Client : public NetInterface, public IVirtualLabAPI  {
@@ -104,7 +125,7 @@ public:
         return models;
     }
 
-    virtual void waitForMessage() {
+    virtual void service() {
         int len;
         NetMessageType type = receiveMessage(socketFD, len);
         std::cout << type << " " << len << std::endl;
@@ -114,14 +135,20 @@ public:
             receiveData(socketFD, (unsigned char*)& modelId, sizeof(int));
             std::cout << modelId << std::endl;
 
-            DefaultQuery q;
-            localModels[modelId]->create(q);
+            ClientQuery q(this, socketFD);
+            localModelSamples.push_back(localModels[modelId]->create(q));
+
+            std::cout << "go to stable" << std::endl;
+            int modelSampleId = localModelSamples.size() - 1;
+            sendData(socketFD, (const unsigned char*)&modelSampleId, sizeof(int));
+            std::cout << "sent to stable" << std::endl;
         }
 
     }
 
     std::vector<IModel*> models;
     std::vector<IModel*> localModels;
+    std::vector<IModelSample*> localModelSamples;
 
 /*	virtual void createSharedTexture(const std::string& name, const TextureInfo& info, int deviceIndex) {
 	    sendMessage(socketFD, MSG_createSharedTexture, (const unsigned char*)name.c_str(), name.size());

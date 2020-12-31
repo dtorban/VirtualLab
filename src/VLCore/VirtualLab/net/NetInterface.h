@@ -43,6 +43,7 @@
 #endif
 
 #include <vector>
+#include <string>
 
 namespace vl {
 
@@ -64,6 +65,8 @@ public:
 	NetMessageType receiveMessage(SOCKET s, int& len) const;
 	int sendData(SOCKET s, const unsigned char *buf, int len) const;
 	int receiveData(SOCKET s, unsigned char *buf, int len) const;
+	void sendString(SOCKET s, const std::string& str) const;
+	std::string receiveString(SOCKET s) const;
 };
 
 }

@@ -245,7 +245,7 @@ int main(int argc, char**argv) {
 		client.registerModel(new TestModel("ModelB"));
 		while(true) {
 			std::cout << "Waiting..." << std::endl;
-			client.waitForMessage();
+			client.service();
 		}
 
 		return 0;

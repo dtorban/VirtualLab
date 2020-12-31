@@ -1,4 +1,5 @@
 #include "VirtualLab/net/Server.h"
+#include "VirtualLab/util/JSONSerializer.h"
 
 #include <sstream>
 #include <iostream>
@@ -172,13 +173,67 @@ Server::~Server() {
 	#endif
 }
 
+class ServerModelSample : public IModelSample {
+public:
+    ServerModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {}
+
+    virtual ~ServerModelSample() {}
+
+    IDataSet& getNavigation() {
+    }
+
+    const IDataSet& getData() const {
+    }
+
+    void update() {
+    }
+
+private:
+    NetInterface* api;
+    SOCKET sd;
+    int modelSampleId;
+};
+
+class ServerQuery : public IQuery {
+public:
+    ServerQuery(NetInterface* api, SOCKET sd) : api(api), sd(sd) {}
+
+    virtual void setParameters(IDataSet& params, DataSetStack& context) const {
+        std::string s = serializer.serialize(params);
+        api->sendString(sd, s);
+        s = api->receiveString(sd);
+        serializer.deserialize(s, params);
+    }
+
+private:
+    NetInterface* api;
+    SOCKET sd;
+    JSONSerializer serializer;
+};
+
 class ServerModel : public IModel {
 public:
     ServerModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(api), name(name), sd(sd), modelId(modelId) {}
 
     const std::string& getName() const { return name; }
     virtual IModelSample* create(const IQuery& query) const {
+        std::cout << "At the stable." << std::endl;
         api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
+
+        // query
+        std::string json = api->receiveString(sd);
+        CompositeDataSet ds;
+        serializer.deserialize(json, ds);
+        std::cout << "begin server query: " << json << std::endl;
+        json = serializer.serialize(ds);
+        query.setParameters(ds);
+        api->sendString(sd, json);
+        std::cout << "end server query " << json << std::endl;
+
+        int modelSampleId;
+        api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
+        std::cout << "Back at the stable2." << std::endl;
+        return new ServerModelSample(api, sd, modelSampleId);
     }
 
 private:
@@ -186,6 +241,7 @@ private:
     std::string name;
     SOCKET sd;
     int modelId;
+    JSONSerializer serializer;
 };
 
 void Server::service() {
@@ -318,68 +374,11 @@ void Server::service() {
                 std::cout << "Called in server" << std::endl;
                 int modelId;
                 receiveData(sd, (unsigned char*)& modelId, sizeof(int));
-                DefaultQuery q;
+                ServerQuery q(this, sd);
                 getModels()[modelId]->create(q);
             }
         }
 
-    }
-}
-
-ServerMessageQueue* Server::getQueueFromMessage(SOCKET sd) {
-    int queueId;
-    receiveData(sd, (unsigned char*)& queueId, sizeof(queueId));
-    return messageQueues[queueId];
-}
-
-void ServerMessageQueue::pushClient(SOCKET clientFD) {
-    clientWaitQueue.push(clientFD);
-    sendData();
-}
-
-void ServerMessageQueue::pushMessage() {
-    currentMessageId++;
-    sendDataQueue.push(Message(currentMessageId));
-    sendData();
-}
-
-void ServerMessageQueue::pushMessageData(SOCKET sd) {
-    int len;
-    net->receiveData(sd, (unsigned char*)& len, sizeof(len));
-    unsigned char* buf = new unsigned char[len];
-    net->receiveData(sd, buf, len);
-    Message msg = Message(currentMessageId);
-    msg.data = buf;
-    msg.len = len;
-    sendDataQueue.push(msg);
-    sendData();
-}
-
-void ServerMessageQueue::sendData() {
-    while (!clientWaitQueue.empty() && !sendDataQueue.empty()) {
-        
-        Message msg = sendDataQueue.front();
-
-        if (msg.isStart() && sending) {
-            clientWaitQueue.pop();
-        }
-
-        sending = !clientWaitQueue.empty();
-
-        if (sending) {
-            SOCKET client = clientWaitQueue.front();
-
-            if (msg.isStart()) {
-                net->sendData(client, (unsigned char *)&msg.id, sizeof(int));
-                sending = true;
-            }
-            else {
-                net->sendData(client, msg.data, msg.len);
-                delete[] msg.data;
-            }
-
-            sendDataQueue.pop();
-        }
     }
 }
 
