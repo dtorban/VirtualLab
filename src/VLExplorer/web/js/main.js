@@ -145,9 +145,19 @@ function updateQuery() {
   }
 }
 
+var lastTime = 0.0;
+var time = 0.0;
+
 // This function kills the webpage's socket connection.
 function updateNavigation() {
   if (connected) {
+    time += 0.1;
+    if (time - lastTime > 0.5) {
+      lastTime = time;
+    }
+    else {
+      return;
+    }
     sampleNavigation.time += 0.1;
     socket.send(JSON.stringify({command: "updateNavigation", navigation: sampleNavigation}));
   }

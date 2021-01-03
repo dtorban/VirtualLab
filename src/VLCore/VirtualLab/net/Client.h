@@ -42,10 +42,10 @@ private:
 class ClientModelSample : public IModelSample {
 public:
     ClientModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {
-/*        std::string nav = api->receiveString(sd);
+        std::string nav = api->receiveString(sd);
         std::string ds = api->receiveString(sd);
         serializer.deserialize(nav, navigation);
-        serializer.deserialize(ds, data);*/
+        serializer.deserialize(ds, data);
     }
 
     virtual IDataSet& getNavigation() {
@@ -57,7 +57,12 @@ public:
     }
 
     virtual void update() {
-        std::cout << "update" << std::endl;
+        api->sendMessage(sd, MSG_updateModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
+        api->sendString(sd, JSONSerializer::instance().serialize(navigation));
+        //std::string nav = api->receiveString(sd);
+        std::string ds = api->receiveString(sd);
+        //serializer.deserialize(nav, navigation);
+        serializer.deserialize(ds, data);
     }
 
 private:
@@ -137,7 +142,7 @@ public:
         return models;
     }
 
-    virtual void service() {
+    /*virtual void service() {
         int len;
         NetMessageType type = receiveMessage(socketFD, len);
         std::cout << type << " " << len << std::endl;
@@ -155,11 +160,11 @@ public:
             int modelSampleId = localModelSamples.size() - 1;
             sendData(socketFD, (const unsigned char*)&modelSampleId, sizeof(int));
             std::cout << "sent to stable" << std::endl;
-            //sendString(socketFD, JSONSerializer::toString(modelSample->getNavigation()));
-            //sendString(socketFD, JSONSerializer::toString(modelSample->getData()));
+            //sendString(socketFD, JSONSerializer::instance().serialize(modelSample->getNavigation()));
+            //sendString(socketFD, JSONSerializer::instance().serialize(modelSample->getData()));
         }
 
-    }
+    }*/
 
     std::vector<IModel*> models;
     std::vector<IModel*> localModels;

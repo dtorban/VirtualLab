@@ -15,7 +15,7 @@ void *get_in_addr2(struct sockaddr *sa) {
 
 Client::Client(const std::string &serverIP, int serverPort)
 {
-  std::cout <<"VRNetClient connecting..." << std::endl;
+  std::cout <<"connecting..." << std::endl;
 
 
   std::stringstream port;
@@ -179,10 +179,10 @@ Client::Client(const std::string &serverIP, int serverPort)
    serv_addr.sin_port = htons(portno);
    
    /* Now connect to the server */
-   if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+   while (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
       std::cout << "ERROR connecting" << std::endl;
-      exit(1);
-   }
+      //exit(1);
+   } 
 
     socketFD = sockfd;
 

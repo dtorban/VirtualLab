@@ -172,8 +172,8 @@ Server::~Server() {
 class ServerModelSample : public IModelSample {
 public:
     ServerModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {
-        //sendString(socketFD, JSONSerializer::toString(modelSample->getNavigation()));
-        //sendString(socketFD, JSONSerializer::toString(modelSample->getData()));
+        //sendString(socketFD, JSONSerializer::instance().serialize(modelSample->getNavigation()));
+        //sendString(socketFD, JSONSerializer::instance().serialize(modelSample->getData()));
     }
 
     virtual ~ServerModelSample() {}
@@ -217,22 +217,17 @@ public:
 
     const std::string& getName() const { return name; }
     virtual IModelSample* create(const IQuery& query) const {
-        std::cout << "At the stable." << std::endl;
         api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
 
         // query
         std::string json = api->receiveString(sd);
         CompositeDataSet ds;
         serializer.deserialize(json, ds);
-        std::cout << "begin server query: " << json << std::endl;
         json = serializer.serialize(ds);
         query.setParameters(ds);
         api->sendString(sd, json);
-        std::cout << "end server query " << json << std::endl;
 
         int modelSampleId;
-        api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
-        std::cout << "Back at the stable2." << std::endl;
         return new ServerModelSample(api, sd, modelSampleId);
     }
 
@@ -356,7 +351,6 @@ void Server::service() {
                 delete[] buf;
             }
             else if (messageType == MSG_getModels) {
-                std::cout << "getModels() called" << std::endl;
                 std::vector<IModel*> models = getModels();
                 int numModels = models.size();
                 sendData(sd, (unsigned char*)& numModels, sizeof(int));
@@ -371,7 +365,6 @@ void Server::service() {
                 }
             }
             else if (messageType == MSG_createModelSample) {
-                std::cout << "Called in server" << std::endl;
                 int modelId;
                 receiveData(sd, (unsigned char*)& modelId, sizeof(int));
                 ServerQuery q(this, sd);
@@ -379,6 +372,18 @@ void Server::service() {
                 serverModelSamples.push_back(sample);
                 int modelSampleId = serverModelSamples.size() - 1;
                 sendData(sd, (unsigned char*)& modelSampleId, sizeof(int));
+                sendString(sd, JSONSerializer::instance().serialize(sample->getNavigation()));
+                sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
+            }
+            else if (messageType == MSG_updateModelSample) {
+                JSONSerializer serializer;
+                int modelSampleId;
+                receiveData(sd, (unsigned char*)& modelSampleId, sizeof(int));
+                IModelSample* sample = serverModelSamples[modelSampleId];
+                std::string nav = receiveString(sd);
+                serializer.deserialize(nav, sample->getNavigation());
+                sample->update();
+                sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
             }
         }
 

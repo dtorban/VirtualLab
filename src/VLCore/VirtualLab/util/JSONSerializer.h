@@ -8,20 +8,18 @@ namespace vl {
 
 class JSONSerializer {
 public:
-    static std::string toString(const IDataSet& dataSet) {
+    static const JSONSerializer& instance() {
         static JSONSerializer instance;
-        return instance.serialize(dataSet);
+        return instance;
     }
 
     std::string serialize(const IDataSet& dataSet) const {
         std::string serializedValue = serializeJSON(dataSet).serialize();
-        std::cout << serializedValue << std::endl;
 
         return serializedValue;
     }
 
     void deserialize(const std::string& json, IDataSet& dataSet) const {
-        std::cout << "deserialize dataset" << std::endl;
         picojson::value val;
         picojson::parse(val, json);
         std::string err = picojson::parse(val, json);
@@ -40,7 +38,6 @@ private:
         else {
             picojson::object obj;
 
-            std::cout << "serialize dataset" << std::endl;
             for (std::string key : dataSet.getKeys()) {
                 obj[key] = serializeJSON(dataSet[key]);                
             }
@@ -68,8 +65,6 @@ private:
                 deserializeJSON(it->second, dataSet[it->first]);
             }
         }
-
-        std::cout << json.serialize() << std::endl;
     }
 
     virtual IDataSet* createDataSet(const picojson::value& val) const {

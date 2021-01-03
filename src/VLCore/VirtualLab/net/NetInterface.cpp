@@ -89,13 +89,11 @@ void NetInterface::sendString(SOCKET s, const std::string& str) const {
 std::string NetInterface::receiveString(SOCKET s) const {
 	int len;
     receiveData(s, (unsigned char*)&len, sizeof(int));
-    std::cout << len << std::endl;
 	int dataSize =  len + 1;
 	unsigned char *buf = new unsigned char[dataSize+1];
     receiveData(s, buf, len);
     buf[dataSize] = '\0';
     std::string val(reinterpret_cast<char*>(buf));
-    std::cout << val << std::endl;
     delete[] buf;
     return val;
 }
