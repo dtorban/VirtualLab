@@ -113,27 +113,22 @@ Server::Server(int listenPort, int numExpectedClients) {
 #else  // BSD sockets implementation
 
     int yes=1;
-
-    int serv_fd, client_sockfd;
-    int server_len;
-    struct sockaddr_un serv_addr;
+    int serv_fd;
     
-    unlink("/home/user/server_socket");
-    if ((serv_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-  		std::cout << "cannot create a socket. socket(AF_INET, SOCK_STREAM, 0) failed" << std::endl;
+    if ((serv_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        std::cout << "cannot create a socket: socket(AF_INET, SOCK_STREAM, 0) failed" << std::endl;
         exit(1);
     }
-    serverSocketFD = serv_fd;
-
 
     if (setsockopt(serv_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-  		std::cout << "setsockopt() failed. Check for a problem with networking." << std::endl;
+        std::cout << "setsockopt() failed: Check for a problem with networking." << std::endl;
         exit(1);
     }
     
-    serv_addr.sun_family = AF_UNIX;
-    strcpy(serv_addr.sun_path, "/home/user/server_socket");
-    server_len = sizeof(serv_addr);
+    struct sockaddr_in serv_addr;
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr.sin_port = htons(listenPort);
     
     if (::bind(serv_fd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
   		std::cout << "bind() failed. Check for a problem with networking." << std::endl;
@@ -154,6 +149,7 @@ Server::Server(int listenPort, int numExpectedClients) {
 
 	std::cout << "Established all expected connections." << std::endl;
 
+    serverSocketFD = serv_fd;
 
 #endif
 }

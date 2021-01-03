@@ -95,7 +95,7 @@ Client::Client(const std::string &serverIP, int serverPort)
 
 
 #else  // BSD sockets implementation
-/*//"server_socket"
+/*  //"server_socket"
   int sockfd;
   struct addrinfo hints, *servinfo, *p;
   int rv;
@@ -150,35 +150,39 @@ Client::Client(const std::string &serverIP, int serverPort)
   char value = 1;
   setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
 
-  socketFD = sockfd;
-  */
-
-    int sockfd;
-    int len;
-    struct sockaddr_un address;
-    int result;
-
-/*  Create a socket for the client.  */
-
-    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-
-/*  Name the socket, as agreed with the server.  */
-
-    address.sun_family = AF_UNIX;
-    strcpy(address.sun_path, "/home/user/server_socket");
-    len = sizeof(address);
-
-/*  Now connect our socket to the server's socket.  */
-    result = -1;
-
-    while(result < 0) {
-      result = connect(sockfd, (struct sockaddr *)&address, len);
-
-      if(result == -1) {
-          perror("oops: client1");
-          //exit(1);
-      }
-    }
+  socketFD = sockfd;*/
+  
+   int sockfd, portno, n;
+   struct sockaddr_in serv_addr;
+   struct hostent *server;
+   
+   portno = serverPort;
+   
+   /* Create a socket point */
+   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+   
+   if (sockfd < 0) {
+      std::cout << "ERROR opening socket" << std::endl;
+      exit(1);
+   }
+	
+   server = gethostbyname(serverIP.c_str());
+   
+   if (server == NULL) {
+      std::cout << "ERROR no such host" << std::endl;
+      exit(0);
+   }
+   
+   bzero((char *) &serv_addr, sizeof(serv_addr));
+   serv_addr.sin_family = AF_INET;
+   bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+   serv_addr.sin_port = htons(portno);
+   
+   /* Now connect to the server */
+   if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+      std::cout << "ERROR connecting" << std::endl;
+      exit(1);
+   }
 
     socketFD = sockfd;
 

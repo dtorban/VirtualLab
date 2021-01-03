@@ -231,24 +231,24 @@ int main(int argc, char**argv) {
 	}
 
 	if (pid != 0) {
-		pid = fork();
-		if (pid != 0) {
+		//pid = fork();
+		//if (pid != 0) {
 			Server server;
-			//server.registerModel(new TestModel("ModelA"));
-			//server.registerModel(new TestModel("ModelB"));
+			server.registerModel(new TestModel("ModelA"));
+			server.registerModel(new TestModel("ModelB"));
 			while(true) {
 				server.service();
 			}
 			return 0;
-		}
+		//}
 
-		Client client;
+		/*Client client;
 		client.registerModel(new TestModel("ModelA"));
 		client.registerModel(new TestModel("ModelB"));
 		while(true) {
 			std::cout << "Waiting..." << std::endl;
 			client.service();
-		}
+		}*/
 
 		return 0;
 		
