@@ -175,7 +175,10 @@ Server::~Server() {
 
 class ServerModelSample : public IModelSample {
 public:
-    ServerModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {}
+    ServerModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {
+        //sendString(socketFD, JSONSerializer::toString(modelSample->getNavigation()));
+        //sendString(socketFD, JSONSerializer::toString(modelSample->getData()));
+    }
 
     virtual ~ServerModelSample() {}
 
@@ -189,6 +192,7 @@ public:
     }
 
 private:
+    TypedData<std::string> navigation;
     NetInterface* api;
     SOCKET sd;
     int modelSampleId;
@@ -375,7 +379,10 @@ void Server::service() {
                 int modelId;
                 receiveData(sd, (unsigned char*)& modelId, sizeof(int));
                 ServerQuery q(this, sd);
-                getModels()[modelId]->create(q);
+                IModelSample* sample = getModels()[modelId]->create(q);
+                serverModelSamples.push_back(sample);
+                int modelSampleId = serverModelSamples.size() - 1;
+                sendData(sd, (unsigned char*)& modelSampleId, sizeof(int));
             }
         }
 

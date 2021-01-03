@@ -67,6 +67,16 @@ public:
 	int receiveData(SOCKET s, unsigned char *buf, int len) const;
 	void sendString(SOCKET s, const std::string& str) const;
 	std::string receiveString(SOCKET s) const;
+
+    template<typename T>
+    void sendData(SOCKET s, const T& val) {
+        sendData(s, (const unsigned char*)&val, sizeof(T));
+    }
+
+    template<typename T>
+    void receiveData(SOCKET s, T& val) {
+        receiveData(s, (unsigned char*)&val, sizeof(T));
+    }
 };
 
 }

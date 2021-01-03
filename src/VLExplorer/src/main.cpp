@@ -234,6 +234,8 @@ int main(int argc, char**argv) {
 		pid = fork();
 		if (pid != 0) {
 			Server server;
+			//server.registerModel(new TestModel("ModelA"));
+			//server.registerModel(new TestModel("ModelB"));
 			while(true) {
 				server.service();
 			}
@@ -268,6 +270,7 @@ int main(int argc, char**argv) {
 	DefaultQuery query;
 	std::vector<IModel*> models = api.getModels();
 	IModelSample* sample = models[0]->create(query);
+	sample->update();
 	//api.registerModel(new TestModel());
 	//ModelNavigator navigator(*api.getModels()[0]);
 	ModelNavigator navigator(*new TestModel());

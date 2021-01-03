@@ -8,6 +8,7 @@
 #include "VirtualLab/IVirtualLabAPI.h"
 #include "VirtualLab/util/JSONSerializer.h"
 
+
 namespace vl {
 
 class ClientQuery : public IQuery {
@@ -41,15 +42,22 @@ private:
 class ClientModelSample : public IModelSample {
 public:
     ClientModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {
+/*        std::string nav = api->receiveString(sd);
+        std::string ds = api->receiveString(sd);
+        serializer.deserialize(nav, navigation);
+        serializer.deserialize(ds, data);*/
     }
 
     virtual IDataSet& getNavigation() {
+        return navigation;
     }
 
     virtual const IDataSet& getData() const {
+        return data;
     }
 
     virtual void update() {
+        std::cout << "update" << std::endl;
     }
 
 private:
@@ -58,6 +66,7 @@ private:
     NetInterface* api;
     SOCKET sd;
     int modelSampleId;
+    JSONSerializer serializer;
 };
 
 class ClientModel : public IModel {
@@ -73,6 +82,9 @@ public:
         query.setParameters(ds);
         json = serializer.serialize(ds);
         api->sendString(sd, json);
+        int modelSampleId;
+        api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
+        return new ClientModelSample(api, sd, modelSampleId);
     }
 
 private:
@@ -136,12 +148,15 @@ public:
             std::cout << modelId << std::endl;
 
             ClientQuery q(this, socketFD);
-            localModelSamples.push_back(localModels[modelId]->create(q));
+            IModelSample* modelSample = localModels[modelId]->create(q);
+            localModelSamples.push_back(modelSample);
 
             std::cout << "go to stable" << std::endl;
             int modelSampleId = localModelSamples.size() - 1;
             sendData(socketFD, (const unsigned char*)&modelSampleId, sizeof(int));
             std::cout << "sent to stable" << std::endl;
+            //sendString(socketFD, JSONSerializer::toString(modelSample->getNavigation()));
+            //sendString(socketFD, JSONSerializer::toString(modelSample->getData()));
         }
 
     }

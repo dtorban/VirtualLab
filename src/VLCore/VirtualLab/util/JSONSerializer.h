@@ -8,6 +8,11 @@ namespace vl {
 
 class JSONSerializer {
 public:
+    static std::string toString(const IDataSet& dataSet) {
+        static JSONSerializer instance;
+        return instance.serialize(dataSet);
+    }
+
     std::string serialize(const IDataSet& dataSet) const {
         std::string serializedValue = serializeJSON(dataSet).serialize();
         std::cout << serializedValue << std::endl;
