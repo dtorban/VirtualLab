@@ -48,6 +48,10 @@ public:
         serializer.deserialize(ds, data);
     }
 
+    ~ClientModelSample() {
+        api->sendMessage(sd, MSG_deleteModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
+    }
+
     virtual IDataSet& getNavigation() {
         return navigation;
     }

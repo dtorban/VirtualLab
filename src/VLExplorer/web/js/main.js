@@ -13,6 +13,7 @@ var line = null;
 var points = [];
 var controls;
 var camera;
+var canUpdate = true;
 
 // Function definitions start here...
 
@@ -30,7 +31,6 @@ $( document ).ready(function() {
       var data = JSON.parse(msg.data);
       if (data.command == "updateSample") {
         connected = true;
-
 
         sampleNavigation = data.sample.navigation;
 
@@ -65,6 +65,8 @@ $( document ).ready(function() {
 
         points.push( new THREE.Vector3( sampleNavigation["time"], data.sample.data["y"], 0.0 ) );
         updateLines();
+
+        canUpdate = true;
         
       }
       //console.log(data);
@@ -141,25 +143,21 @@ function kill() {
 // This function kills the webpage's socket connection.
 function updateQuery() {
   if (connected) {
-    socket.send(JSON.stringify({command: "updateQuery", query: query, navigation: sampleNavigation}));
+    if (canUpdate) {
+      canUpdate = false;
+      socket.send(JSON.stringify({command: "updateQuery", query: query, navigation: sampleNavigation}));
+    }
   }
 }
-
-var lastTime = 0.0;
-var time = 0.0;
 
 // This function kills the webpage's socket connection.
 function updateNavigation() {
   if (connected) {
-    time += 0.1;
-    if (time - lastTime > 0.5) {
-      lastTime = time;
-    }
-    else {
-      return;
-    }
     sampleNavigation.time += 0.1;
-    socket.send(JSON.stringify({command: "updateNavigation", navigation: sampleNavigation}));
+    if (canUpdate) {
+      canUpdate = false;
+      socket.send(JSON.stringify({command: "updateNavigation", navigation: sampleNavigation}));
+    }
   }
 }
 

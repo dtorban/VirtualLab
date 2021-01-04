@@ -369,8 +369,10 @@ void Server::service() {
                 receiveData(sd, (unsigned char*)& modelId, sizeof(int));
                 ServerQuery q(this, sd);
                 IModelSample* sample = getModels()[modelId]->create(q);
-                serverModelSamples.push_back(sample);
-                int modelSampleId = serverModelSamples.size() - 1;
+                static int modelSamplesCount = 0;
+                int modelSampleId = modelSamplesCount;
+                modelSamplesCount++;
+                serverModelSamples[modelSampleId] = sample;
                 sendData(sd, (unsigned char*)& modelSampleId, sizeof(int));
                 sendString(sd, JSONSerializer::instance().serialize(sample->getNavigation()));
                 sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
@@ -384,6 +386,13 @@ void Server::service() {
                 serializer.deserialize(nav, sample->getNavigation());
                 sample->update();
                 sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
+            }
+            else if (messageType == MSG_deleteModelSample) {
+                int modelSampleId;
+                receiveData(sd, (unsigned char*)& modelSampleId, sizeof(int));
+                std::map<int, IModelSample*>::iterator it = serverModelSamples.find(modelSampleId);
+                delete it->second;
+                serverModelSamples.erase(it);
             }
         }
 

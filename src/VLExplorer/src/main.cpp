@@ -274,8 +274,8 @@ int main(int argc, char**argv) {
 	//sample->update();
 	//api.registerModel(new TestModel());
 	//ModelNavigator navigator(*api.getModels()[0]);
-	ModelNavigator navigator(*new TestModel());
-	//ModelNavigator navigator(*models[0]);
+	//ModelNavigator navigator(*new TestModel());
+	ModelNavigator navigator(*models[0]);
 
 	if (argc > 2) {
 		int port = std::atoi(argv[1]);
