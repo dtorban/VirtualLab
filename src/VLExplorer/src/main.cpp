@@ -188,7 +188,11 @@ public:
 		for (picojson::object::iterator it = navigation.begin(); it != navigation.end(); it++) {
 			sample->getNavigation()[it->first].set<double>(it->second.get<double>());
 		}
+
+		CompositeDataSet ds;
+		//JSONSerializer::instance().deserialize(picojson::value(navigation).serialize(), ds);
 		sample->update();
+		//JSONSerializer::instance().serialize(sample->getData());
 
 		picojson::object data;
 		data["command"] = picojson::value("updateSample");
@@ -219,40 +223,40 @@ int main(int argc, char**argv) {
 	strategy->addStrategy(latinHyperCube);
 	*/
 
-	int pid = 0;
-#ifdef WIN32
-	pid = 1;
-	if (false) {
-#else
-	if ((pid = fork()) < 0) {
-#endif
-		std::cout << "fork failed" << std::endl;
-		return 1;
-	}
+// 	int pid = 0;
+// #ifdef WIN32
+// 	pid = 1;
+// 	if (false) {
+// #else
+// 	if ((pid = fork()) < 0) {
+// #endif
+// 		std::cout << "fork failed" << std::endl;
+// 		return 1;
+// 	}
 
-	if (pid != 0) {
-		//pid = fork();
-		//if (pid != 0) {
-			Server server;
-			server.registerModel(new TestModel("ModelA"));
-			server.registerModel(new TestModel("ModelB"));
-			while(true) {
-				server.service();
-			}
-			return 0;
-		//}
+// 	if (pid != 0) {
+// 		//pid = fork();
+// 		//if (pid != 0) {
+// 			Server server;
+// 			server.registerModel(new TestModel("ModelA"));
+// 			server.registerModel(new TestModel("ModelB"));
+// 			while(true) {
+// 				server.service();
+// 			}
+// 			return 0;
+// 		//}
 
-		/*Client client;
-		client.registerModel(new TestModel("ModelA"));
-		client.registerModel(new TestModel("ModelB"));
-		while(true) {
-			std::cout << "Waiting..." << std::endl;
-			client.service();
-		}*/
+// 		/*Client client;
+// 		client.registerModel(new TestModel("ModelA"));
+// 		client.registerModel(new TestModel("ModelB"));
+// 		while(true) {
+// 			std::cout << "Waiting..." << std::endl;
+// 			client.service();
+// 		}*/
 
-		return 0;
+// 		return 0;
 		
-	}
+// 	}
 
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 

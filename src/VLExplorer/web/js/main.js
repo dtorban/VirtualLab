@@ -10,7 +10,9 @@ var query = null;
 var sampleNavigation = {};
 var scene;
 var line = null;
+var line2 = null;
 var points = [];
+var points2 = [];
 var controls;
 var camera;
 var canUpdate = true;
@@ -62,8 +64,12 @@ $( document ).ready(function() {
         for (var key in data.sample.data) {
           $("#data-container").append(key + ": " + data.sample.data[key] + "<br>");
         }
+        for (var key in data.sample.navigation) {
+          $("#data-container").append(key + ": " + data.sample.navigation[key] + "<br>");
+        }
 
-        points.push( new THREE.Vector3( sampleNavigation["time"], data.sample.data["y"], 0.0 ) );
+        points.push( new THREE.Vector3( data.sample.data["x"]/1000.0, data.sample.data["y"]/1000.0, 0.0 ) );
+        points2.push( new THREE.Vector3( sampleNavigation["time"], data.sample.data["nm"], 0.0 ) );
         updateLines();
 
         canUpdate = true;
@@ -153,7 +159,7 @@ function updateQuery() {
 // This function kills the webpage's socket connection.
 function updateNavigation() {
   if (connected) {
-    sampleNavigation.time += 0.1;
+    sampleNavigation.time += 1.0;
     if (canUpdate) {
       canUpdate = false;
       socket.send(JSON.stringify({command: "updateNavigation", navigation: sampleNavigation}));
@@ -165,32 +171,27 @@ function updateLines() {
   if (line) {
     scene.remove(line);
   }
-
     //create a blue LineBasicMaterial
     var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
-    /*for (var point of  data["path"]) {
-      points.push( new THREE.Vector3( point[0], point[1], point[2] ) );
-    }*/
-    /*points.push( new THREE.Vector3( - 10, 0, 0 ) );
-    points.push( new THREE.Vector3( 0, 10, 0 ) );
-    points.push( new THREE.Vector3( 10, 0, 0 ) );*/
     const geometry = new THREE.BufferGeometry().setFromPoints( points );
-
     line = new THREE.Line( geometry, material );
-
-    //line.translation.x = -points[points.length-1].x;
-
     scene.add( line );
 
-    if (points.length > 0) {//new THREE.Vector3(data.e[i].dir_x, data.e[i].dir_y, data.e[i].dir_z)
-      //controls.target.copy(new THREE.Vector3(points[points.length-1].x,0,0));
-      //camera.position.copy(new THREE.Vector3(points[points.length-1].x,camera.position.y,camera.position.z));
-      line.position.copy(new THREE.Vector3(-points[points.length-1].x,0,0));
-      //controls.update();
-      //console.log(controls);
-      //console.log(points[points.length-1]);
-      //camera.position.copy(new THREE.Vector3(points[points.length-1][0], 0, 10));
+    if (points.length > 0) {
+      //line.position.copy(new THREE.Vector3(-points[points.length-1].x,0,0));
     }
+
+    if (line2) {
+      scene.remove(line2);
+    }
+      //create a blue LineBasicMaterial
+      const geometry2 = new THREE.BufferGeometry().setFromPoints( points2 );
+      line2 = new THREE.Line( geometry2, material );
+      scene.add( line2 );
+  
+      if (points.length > 0) {
+        line2.position.copy(new THREE.Vector3(-points2[points2.length-1].x,2.0,0));
+      }
 }
 
 // This function updates the scene's animation cycle.
