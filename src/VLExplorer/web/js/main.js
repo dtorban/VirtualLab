@@ -156,12 +156,15 @@ function updateQuery() {
   }
 }
 
+var time = 0.0;
+
 // This function kills the webpage's socket connection.
 function updateNavigation() {
   if (connected) {
-    sampleNavigation.time += 1.0;
     if (canUpdate) {
       canUpdate = false;
+      time += 1.0;
+      sampleNavigation.time = time;
       socket.send(JSON.stringify({command: "updateNavigation", navigation: sampleNavigation}));
     }
   }
@@ -181,7 +184,7 @@ function updateLines() {
       //line.position.copy(new THREE.Vector3(-points[points.length-1].x,0,0));
     }
 
-    if (line2) {
+    /*if (line2) {
       scene.remove(line2);
     }
       //create a blue LineBasicMaterial
@@ -191,7 +194,7 @@ function updateLines() {
   
       if (points.length > 0) {
         line2.position.copy(new THREE.Vector3(-points2[points2.length-1].x,2.0,0));
-      }
+      }*/
 }
 
 // This function updates the scene's animation cycle.

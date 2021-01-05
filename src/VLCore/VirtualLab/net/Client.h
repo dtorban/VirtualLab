@@ -63,9 +63,9 @@ public:
     virtual void update() {
         api->sendMessage(sd, MSG_updateModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
         api->sendString(sd, JSONSerializer::instance().serialize(navigation));
-        //std::string nav = api->receiveString(sd);
+        std::string nav = api->receiveString(sd);
         std::string ds = api->receiveString(sd);
-        //serializer.deserialize(nav, navigation);
+        serializer.deserialize(nav, navigation);
         serializer.deserialize(ds, data);
     }
 

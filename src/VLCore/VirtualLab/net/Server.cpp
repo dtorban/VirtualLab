@@ -385,6 +385,7 @@ void Server::service() {
                 std::string nav = receiveString(sd);
                 serializer.deserialize(nav, sample->getNavigation());
                 sample->update();
+                sendString(sd, JSONSerializer::instance().serialize(sample->getNavigation()));
                 sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
             }
             else if (messageType == MSG_deleteModelSample) {

@@ -33,7 +33,8 @@ public:
     virtual const IDataSet& getData() const { return *data; }
 
     virtual void update() {
-        s->Update(timeParam->get<double>());
+        double currentTime = s->GetTime();
+        s->Update(timeParam->get<double>() - currentTime);
         posx->set<double>(s->GetCell().GetPosition().x);
         posy->set<double>(s->GetCell().GetPosition().y);
         numModules->set<double>(s->GetCell().GetNumModules());
@@ -42,6 +43,7 @@ public:
             eng += s->GetCell().GetModule(i).GetEngageNum();
         }
         engageNum->set<double>(eng);
+        timeParam->set<double>(s->GetTime());
     }
 
 private:
