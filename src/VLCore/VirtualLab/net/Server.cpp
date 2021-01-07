@@ -184,7 +184,7 @@ public:
     const IDataSet& getData() const {
     }
 
-    void update() {
+    void startUpdate() {
     }
 
 private:

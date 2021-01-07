@@ -1,4 +1,4 @@
-project (VLExplorer)
+project (VirtualLab)
 
 include(${CMAKE_FRAMEWORK_DIR}/project/project.cmake)
 

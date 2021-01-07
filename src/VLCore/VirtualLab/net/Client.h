@@ -60,7 +60,7 @@ public:
         return data;
     }
 
-    virtual void update() {
+    virtual void startUpdate() {
         api->sendMessage(sd, MSG_updateModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
         api->sendString(sd, JSONSerializer::instance().serialize(navigation));
         std::string nav = api->receiveString(sd);

@@ -1,5 +1,6 @@
 // Important global data for the campus/city environment.
-var socket = new WebSocket("ws://" + location.hostname+(location.port ? ':'+location.port: ''), "web_server");
+//var socket = new WebSocket("ws://" + location.hostname+(location.port ? ':'+location.port: ''), "web_server");
+var socket = new WebSocket("ws://127.0.0.1:8081", "web_server");
 var connected = false;
 
 // More important related to models and animation.
@@ -31,6 +32,18 @@ $( document ).ready(function() {
   try {
     socket.onmessage =function got_packet(msg) {
       var data = JSON.parse(msg.data);
+      if (data.command == "updateModels") {
+        connected = true;
+        for (var model of data.models) {
+          $('#modelSelect')
+            .empty()
+            .append('<option selected="selected" value="-1">Select Model...</option>');
+          $("#modelSelect").append($('<option value="' + model.id + '">' + model.name + '</option>'));
+        }
+      }
+      if (data.command == "modelSampleCreated") {
+        console.log(data);
+      }
       if (data.command == "updateSample") {
         connected = true;
 
@@ -85,11 +98,29 @@ $( document ).ready(function() {
 
 // This function is triggered once the web socket is opened.
 socket.onopen = function() {
-  socket.send(JSON.stringify({command: "createSample"}));
+  //socket.send(JSON.stringify({command: "createSample"}));
+  socket.send(JSON.stringify({command: "getModels"}));
 }
 
 function updateQueryValue(key, val) {
 
+}
+
+function changeModel() {
+  currentModel = $("#modelSelect").val();
+  if (currentModel >= 0) {
+    $("#sampleCreate").show();
+  }
+  else {
+    $("#sampleCreate").hide();
+  }
+}
+
+function createSample() {
+  console.log("createSample");
+  if (connected) {
+    socket.send(JSON.stringify({command: "createModelSample", modelId: parseInt($("#modelSelect").val())}));
+  }
 }
 
 // This function defines the properties of the scene as well as starts the

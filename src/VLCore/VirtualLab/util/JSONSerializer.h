@@ -26,8 +26,6 @@ public:
         deserializeJSON(val, dataSet);
     }
 
-private:
-
     picojson::value serializeJSON(const IDataSet& dataSet) const {
         picojson::value val;
 
@@ -66,6 +64,8 @@ private:
             }
         }
     }
+
+private:
 
     virtual IDataSet* createDataSet(const picojson::value& val) const {
         if (val.is<double>()) {

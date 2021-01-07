@@ -38,7 +38,7 @@ public:
     virtual IDataSet& getNavigation() { return time; }
     virtual const IDataSet& getData() const { return *data; }
 
-    virtual void update() {
+    virtual void startUpdate() {
         // calculate a*cos(wt + b) + c
         (*yData).set<double>(a * std::cos(w*(*timeParam).get<double>() + b) + c);
     }

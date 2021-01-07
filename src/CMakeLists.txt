@@ -1,2 +1,2 @@
 add_subdirectory(VLCore)
-add_subdirectory(VLExplorer)
+add_subdirectory(VLWebSockets)

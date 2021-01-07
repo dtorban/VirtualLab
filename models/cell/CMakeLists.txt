@@ -42,9 +42,9 @@ set(DEP_INCLUDES ${DEP_INCLUDES}
   ${CMAKE_PROJECT_DIR}/../VLCore
 )
 
-set(DEP_LIBS ${DEP_LIBS} VLCore CppWebServer websockets)
+set(DEP_LIBS ${DEP_LIBS} VLCore VLWebSockets CppWebServer websockets)
 
-set(ALL_LIBS ${ALL_LIBS} crypto ssl z)
+set(ALL_LIBS ${ALL_LIBS} crypto ssl z pthread)
 
 include(${external_dir}/CPP11/CPP11.cmake)
 useCPP11()

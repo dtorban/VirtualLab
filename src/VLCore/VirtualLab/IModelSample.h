@@ -11,7 +11,13 @@ public:
 
     virtual IDataSet& getNavigation() = 0;
     virtual const IDataSet& getData() const = 0;
-    virtual void update() = 0;
+    virtual void startUpdate() = 0;
+    virtual void finishUpdate() {}
+
+    void update() {
+        startUpdate();
+        finishUpdate();
+    }
 };
 
 }

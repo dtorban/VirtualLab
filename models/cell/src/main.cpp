@@ -2,6 +2,8 @@
 #include "simulator.h"
 #include "VirtualLab/IModel.h"
 #include "VirtualLab/net/Server.h"
+#include <thread>
+#include "VirtualLab/ws/WebSocketAPI.h"
 
 using namespace vl;
 
@@ -32,7 +34,7 @@ public:
     virtual IDataSet& getNavigation() { return time; }
     virtual const IDataSet& getData() const { return *data; }
 
-    virtual void update() {
+    virtual void startUpdate() {
         double currentTime = s->GetTime();
         s->Update(timeParam->get<double>() - currentTime);
         posx->set<double>(s->GetCell().GetPosition().x);
@@ -75,6 +77,31 @@ private:
     std::string name;
 };
 
+class ServerRunner {
+public:
+    ServerRunner(Server& server) : server(server), serverThread(NULL) {}   
+
+    ~ServerRunner() {
+        if (serverThread) {
+            serverThread->join();
+            delete serverThread;
+        }
+    }
+
+    void start() {
+        serverThread = new std::thread(&ServerRunner::runServer, this);
+    }
+ 
+private:
+    void runServer() {
+        while (true) {
+            server.service();
+        }
+    }
+    Server& server;
+    std::thread* serverThread;
+};
+
 int main(int argc, char* argv[]) {
 	Config config("");
     int simulationNumber = 0;
@@ -89,9 +116,12 @@ int main(int argc, char* argv[]) {
 
     Server server;
     server.registerModel(new CellModel("ModelA"));
-    while(true) {
-        server.service();
-    }
+
+	ServerRunner runner(server);
+    runner.start();
+
+    WebSocketAPI api(server, 8081);
+    while (api.service()) {}
 
     delete s;
 

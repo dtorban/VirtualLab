@@ -59,6 +59,13 @@
 	<body>
 		<div id="notification-bar"></div>
 		<div id="menu">
+			<div>
+				<select id="modelSelect" onchange='changeModel()'>
+					<option value="-1">Select Model...</option>
+				</select>
+				<br>
+				<input id="sampleCreate" type="button" value="Create Sample" hidden onclick="createSample()">
+			</div>
 			<!--input type="button" value="Update Query" onclick='updateQuery()'>
 			<input type="button" value="Update Navigation" onclick='updateNavigation()'-->
 		</div>
