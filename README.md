@@ -10,25 +10,4 @@
   * Linux
     * Use [docker group instead of sudo](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-18-04)
 
-## Getting Started with Docker
 
-1. Build docker image
-
-    ```bash
-    bin/build-env.sh
-    ```
-
-2. Run docker image
-
-    ```bash
-    #Usage bin/run-env.sh <port - optional(default 8081)>
-    bin/run-env.sh
-    ```
- 
- 3. Build project web server (inside docker image)
-
-    ```bash
-    # Inside docker image
-    make -j
-    ```
-  
