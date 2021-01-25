@@ -10,37 +10,42 @@
   * Linux
     * Use [docker group instead of sudo](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-18-04)
 
-## Getting Started with Docker
+## Clone Virtual Lab repository
 
-1. Build docker image
+1. Clone your personal repository of VirtualLab. <clone-ref> can be found in the Virtual Lab git hub code page. Then, go to the VirtualLab directory using 'cd'
 
     ```bash
-    bin/build-env.sh
+    $ git clone https://github.umn.edu/ivlab-cs/VirtualLab.git
+    $ cd VirtualLab
     ```
+    
+## Get ready with Docker
 
-2. Run docker image
+1. Set up the system and build the environment
+
+    ```bash
+    $ bin/setup.sh
+    $ bin/build-dev.sh
+    ```
+If the commands return "-bash: bin/build-env.sh: No such file or directory", make sure that you add docker command without using sudo. This can be done by following step 2 in https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-18-04.
+Remember that after you follow step 2, close your terminal, open a new one and try again. 
+
+2. Make docker environment
 
     ```bash
     #Usage bin/run-env.sh <port - optional(default 8081)>
-    bin/run-env.sh
+    $ bin/run-env.sh
+    $ make
     ```
     
-3. Build project web server (inside docker image) NOTE: You won't be able to `cd` here yet because the project directory does not exist. If you were able to launch the above commands you should now be inside the docker image. You can exit it with CTRL+D now.
+This will lead to to a docker cell. 
+
+3. Run the docker image
 
     ```bash
-    # Inside docker image
-    cd /home/user/repo/project
-    make
+    $ build/bin/CellModel &
+    $ build/bin/VLExplorer 8081 src/VLExplorer/web
     ```
-    
-4. Run web server (inside docker image)
-
-    ```bash
-    # MUST be within project/ directory inside docker image
-    cd /home/user/repo/project
-    ./bin/run.sh
-    ```
-    
-5. Open up a web browser and browse to http://127.0.0.1:8081/
+4. Open up a web browser and browse to http://127.0.0.1:8081/
 
 
