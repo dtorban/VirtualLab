@@ -68,8 +68,9 @@ $( document ).ready(function() {
           $("#data-container").append(key + ": " + data.sample.navigation[key] + "<br>");
         }
 
-        points.push( new THREE.Vector3( data.sample.data["x"]/1000.0, data.sample.data["y"]/1000.0, 0.0 ) );
-        points2.push( new THREE.Vector3( sampleNavigation["time"], data.sample.data["nm"], 0.0 ) );
+        points.push( new THREE.Vector3( data.sample.navigation["time"], data.sample.data["y"], 0.0 ) );
+        //points.push( new THREE.Vector3( data.sample.data["x"]/1000.0, data.sample.data["y"]/1000.0, 0.0 ) );
+        //points2.push( new THREE.Vector3( sampleNavigation["time"], data.sample.data["nm"], 0.0 ) );
         updateLines();
 
         canUpdate = true;
@@ -163,7 +164,9 @@ function updateNavigation() {
   if (connected) {
     if (canUpdate) {
       canUpdate = false;
-      time += 1.0;
+      const delta = clock.getDelta();
+      time += delta;
+      //time += 0.1;
       sampleNavigation.time = time;
       socket.send(JSON.stringify({command: "updateNavigation", navigation: sampleNavigation}));
     }
@@ -181,7 +184,7 @@ function updateLines() {
     scene.add( line );
 
     if (points.length > 0) {
-      //line.position.copy(new THREE.Vector3(-points[points.length-1].x,0,0));
+      line.position.copy(new THREE.Vector3(-points[points.length-1].x,0,0));
     }
 
     /*if (line2) {

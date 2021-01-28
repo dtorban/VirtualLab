@@ -184,6 +184,10 @@ Client::Client(const std::string &serverIP, int serverPort)
       //exit(1);
    } 
 
+    // Disable Nagle's algorithm
+    char value = 1;
+    setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
+
     socketFD = sockfd;
 
 #endif

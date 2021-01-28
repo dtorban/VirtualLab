@@ -258,6 +258,17 @@ int main(int argc, char**argv) {
 		
 // 	}
 
+int pid = fork();
+		if (pid != 0) {
+			Server server;
+			server.registerModel(new TestModel("ModelA"));
+			//server.registerModel(new TestModel("ModelB"));
+			while(true) {
+				server.service();
+			}
+			return 0;
+		}
+
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 
 	Client api;
