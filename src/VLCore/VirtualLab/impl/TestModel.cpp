@@ -3,13 +3,14 @@
 namespace vl {
 
 IModelSample* TestModel::create(const IQuery& query) const {
-    CompositeDataSet* params = new CompositeDataSet();
-    params->addData("w", new TypedData<double>(1.0));
-    params->addData("a", new TypedData<double>(1.0));
-    params->addData("b", new TypedData<double>(0.0));
-    params->addData("c", new TypedData<double>(0.0));
-    query.setParameters(*params);
-    return new TestModelSample(params);
+    DataObject parameters;
+    parameters.get<Object>()["w"] = DoubleDataValue(1.0);
+    parameters.get<Object>()["a"] = DoubleDataValue(1.0);
+    parameters.get<Object>()["b"] = DoubleDataValue(0.0);
+    parameters.get<Object>()["c"] = DoubleDataValue(0.0);
+    query.setParameters(parameters);
+
+    return new TestModelSample(parameters);
 }
 
 }

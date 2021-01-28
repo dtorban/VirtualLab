@@ -3,6 +3,7 @@
 
 #include <picojson.h>
 #include "VirtualLab/IDataSet.h"
+#include "VirtualLab/DataValue.h"
 
 namespace vl {
 
@@ -24,6 +25,12 @@ public:
         picojson::parse(val, json);
         std::string err = picojson::parse(val, json);
         deserializeJSON(val, dataSet);
+    }
+
+    std::string serialize(const DataValue& dataSet) const {
+        std::string serializedValue = serializeJSON(dataSet).serialize();
+
+        return serializedValue;
     }
 
 private:
@@ -65,6 +72,27 @@ private:
                 deserializeJSON(it->second, dataSet[it->first]);
             }
         }
+    }
+
+    picojson::value serializeJSON(const DataValue& dataSet) const {
+        picojson::value val;
+
+        if (dataSet.isType<double>()) {
+            double d = dataSet.get<double>();
+            val = picojson::value(d);
+        }
+        else if (dataSet.isType<Object>()) {
+            picojson::object obj;
+            const Object& dataSetObj = dataSet.get<Object>();
+
+            for (Object::const_iterator it = dataSetObj.begin(); it != dataSetObj.end(); it++) {
+                obj[it->first] = serializeJSON(it->second);  
+            }
+            
+            val = picojson::value(obj);
+        }
+
+        return val;
     }
 
     virtual IDataSet* createDataSet(const picojson::value& val) const {

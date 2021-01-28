@@ -49,7 +49,7 @@ public:
     }
     
     template <typename T>
-    T get(const T& defaultValue = T()) const {
+    const T& get(const T& defaultValue = T()) const {
         static const std::type_info& type = typeid(T);
         if (impl) {
             void* val = impl->get(type, state);
@@ -84,6 +84,20 @@ public:
         return false;
     }
 
+    template <typename T>
+    T& get() {
+        static const std::type_info& type = typeid(T);
+        if (impl) {
+            void* val = impl->get(type, state);
+            if (val) {
+                return *static_cast<T*>(val);
+            }
+        }
+
+        static T defaultValue;
+        return defaultValue;
+    }
+
 protected:
     DataValueImpl* impl;
     void* state;
@@ -95,13 +109,11 @@ public:
     virtual ~TypedDataValueImpl() {}
 
     void* createState() const {
-        std::cout << "createState" << std::endl;
         return new T();
     }
 
     virtual void destroyState(void* state) const {
         T* s =static_cast<T*>(state);
-        std::cout << "destroyState " << *s << std::endl;
         delete s;
     }
 
@@ -109,7 +121,6 @@ public:
         const T* s = static_cast<const T*>(src);
         T* d = static_cast<T*>(dest);
         *d = *s;
-        std::cout << "copyState " << *s << std::endl;
     }
 
     virtual void* get(const std::type_info& type, void* state) const {
@@ -126,7 +137,6 @@ public:
         if (t == type) {
             T* s = static_cast<T*>(state);
             *s = *static_cast<const T*>(val);
-            std::cout << "set " << *s << std::endl;
         }
 
         return false;
@@ -147,6 +157,34 @@ public:
 typedef TypedDataValue<float> FloatDataValue;
 typedef TypedDataValue<double> DoubleDataValue;
 typedef TypedDataValue<std::string> StringDataValue;
+typedef std::map<std::string, DataValue> Object;
+typedef std::vector<DataValue> Array;
+typedef TypedDataValue<Array> DataArray;
+
+class DataObject : public TypedDataValue<Object> {
+public:
+    DataValue& operator[](const std::string& key) {
+        return get<Object>()[key];
+    }
+};
+
+class DataObjectStack {
+public:
+    DataObjectStack() {
+        DataObject d;
+        stack.push_back(d);
+    }
+
+    virtual ~DataObjectStack() {}
+
+    DataObject& top() { return stack[stack.size()-1]; }
+    void push() { return stack.push_back(stack[stack.size()-1]); }
+    void pop() { return stack.pop_back(); }
+
+private:
+    std::vector<DataObject> stack;
+};
+
 
 }
 

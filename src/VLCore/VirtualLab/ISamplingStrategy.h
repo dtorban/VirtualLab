@@ -1,7 +1,8 @@
-#ifndef VIRTUALLAB_ISAMPLING_STRATEGY_H_
+/*#ifndef VIRTUALLAB_ISAMPLING_STRATEGY_H_
 #define VIRTUALLAB_ISAMPLING_STRATEGY_H_
 
 #include "VirtualLab/IDataSet.h"
+#include "VirtualLab/DataValue.h"
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
@@ -221,11 +222,7 @@ public:
                 }
 
                 std::shuffle(it->second.begin(), it->second.end(), g);
-                /*std::cout << it->first << ": ";
-                for (int i = 0; i < bins; i++) {
-                    std::cout << it->second[i] << " ";
-                }
-                std::cout << std::endl;*/
+
             }
         }
         
@@ -243,19 +240,7 @@ public:
         currentIndex++;
 
 
-        /*
-        	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 
-	std::default_random_engine g(seed);
-
-	{
-		std::array<int,5> foo {1,2,3,4,5};
-		std::shuffle(foo.begin(), foo.end(), g);
-		std::cout << "shuffled elements:";
-		for (int& x: foo) std::cout << ' ' << x;
-		std::cout << std::endl;
-	}
-    */
     }
 
 private:
@@ -268,3 +253,4 @@ private:
 }
 
 #endif
+*/

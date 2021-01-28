@@ -21,33 +21,40 @@ private:
 
 class TestModelSample : public IModelSample {
 public:
-    TestModelSample(CompositeDataSet* data) : data(data) {
-        w = (*data)["w"].get<double>();
-        a = (*data)["a"].get<double>();
-        b = (*data)["b"].get<double>();
-        c = (*data)["c"].get<double>();
-        yData = new TypedData<double>(0.0);
-        data->addData("y", yData);
-        timeParam = new TypedData<double>();
-        time.addData("time", timeParam);
+    TestModelSample(const DataObject& object) {
+        data["y"] = DoubleDataValue(0.0);
+        yData = &(data["y"].get<double>());
+
+        nav["time"] = DoubleDataValue(0.0);
+        timeParam = &(nav["time"].get<double>());
+
+        parameters = object;
+        w = parameters["w"].get<double>();
+        a = parameters["a"].get<double>();
+        b = parameters["b"].get<double>();
+        c = parameters["c"].get<double>();
     }
     virtual ~TestModelSample() {
-        delete data;
+        //delete data;
     }
 
-    virtual IDataSet& getNavigation() { return time; }
-    virtual const IDataSet& getData() const { return *data; }
+    const DataObject& getParameters() const {
+        return parameters;
+    }
+    virtual DataObject& getNavigation() { return nav; }
+    virtual const DataObject& getData() const { return data; }
 
     virtual void update() {
         // calculate a*cos(wt + b) + c
-        (*yData).set<double>(a * std::cos(w*(*timeParam).get<double>() + b) + c);
+        (*yData) = (a * std::cos(w*(*timeParam) + b) + c);
     }
 
 private:
-    CompositeDataSet time;
-    CompositeDataSet* data;
-    IDataSet* timeParam;
-    IDataSet* yData;
+    DataObject parameters;
+    DataObject nav;
+    DataObject data;
+    double* timeParam;
+    double* yData;
     double w;
     double a;
     double b;
