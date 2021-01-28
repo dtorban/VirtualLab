@@ -15,7 +15,7 @@ class ClientQuery : public IQuery {
 public:
     ClientQuery(NetInterface* api, SOCKET sd) : api(api), sd(sd) {}
 
-    virtual void setParameters(IDataSet& params, DataSetStack& context) const {
+    virtual void setParameters(DataObject& params, DataObjectStack& context) const {
         /*std::cout << "start query" << std::endl;
         int modelId;
         std::string s = serializer.serialize(params);
@@ -52,11 +52,15 @@ public:
         api->sendMessage(sd, MSG_deleteModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
     }
 
-    virtual IDataSet& getNavigation() {
+    virtual const DataObject& getParameters() const {
+        return parameters;
+    }
+
+    virtual DataObject& getNavigation() {
         return navigation;
     }
 
-    virtual const IDataSet& getData() const {
+    virtual const DataObject& getData() const {
         return data;
     }
 
@@ -70,8 +74,9 @@ public:
     }
 
 private:
-    CompositeDataSet navigation;
-    CompositeDataSet data;
+    DataObject parameters;
+    DataObject navigation;
+    DataObject data;
     NetInterface* api;
     SOCKET sd;
     int modelSampleId;
@@ -86,7 +91,7 @@ public:
     virtual IModelSample* create(const IQuery& query) const {
         api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
         std::string json = api->receiveString(sd);
-        CompositeDataSet ds;
+        DataObject ds;
         serializer.deserialize(json, ds);
         query.setParameters(ds);
         json = serializer.serialize(ds);

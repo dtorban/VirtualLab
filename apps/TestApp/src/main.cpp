@@ -4,14 +4,28 @@ Copyright (c) 2019 Dan Orban
 
 #include <iostream>
 #include "VirtualLab/net/Server.h"
+#include "VirtualLab/net/Client.h"
 #include "VirtualLab/DataValue.h"
 #include "VirtualLab/util/JSONSerializer.h"
 
 using namespace vl;
 
 int main(int argc, char**argv) {
-	VirtualLabAPI api;
-	api.registerModel(new TestModel());
+
+	int pid = fork();
+	if (pid != 0) {
+		Server server;
+		server.registerModel(new TestModel("ModelA"));
+		server.registerModel(new TestModel("ModelB"));
+		while(true) {
+			server.service();
+		}
+		return 0;
+	}
+
+
+	Client api;
+	//api.registerModel(new TestModel());
 	IModel* model = api.getModels()[0];
 	
 	DefaultQuery query;
