@@ -20,10 +20,15 @@ int main(int argc, char**argv) {
 	std::cout << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
 	std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
 
+	std::string str = JSONSerializer::instance().serialize(sample->getParameters());
+	DataValue d;
+	JSONSerializer::instance().deserialize(str, d);
+	std::cout << str << " " << JSONSerializer::instance().serialize(d) << std::endl;
+
 	for (int i = 0; i < 10; i++) {
 		sample->getNavigation()["time"].set<double>(0.1*i);
 		sample->update();
-		std::cout << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
+		//std::cout << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
 		std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
 	}
 

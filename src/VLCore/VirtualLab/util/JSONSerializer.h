@@ -14,7 +14,7 @@ public:
         return instance;
     }
 
-    std::string serialize(const IDataSet& dataSet) const {
+    /*std::string serialize(const IDataSet& dataSet) const {
         std::string serializedValue = serializeJSON(dataSet).serialize();
 
         return serializedValue;
@@ -25,7 +25,7 @@ public:
         picojson::parse(val, json);
         std::string err = picojson::parse(val, json);
         deserializeJSON(val, dataSet);
-    }
+    }*/
 
     std::string serialize(const DataValue& dataSet) const {
         std::string serializedValue = serializeJSON(dataSet).serialize();
@@ -33,9 +33,16 @@ public:
         return serializedValue;
     }
 
+    void deserialize(const std::string& json, DataValue& dataSet) const {
+        picojson::value val;
+        picojson::parse(val, json);
+        std::string err = picojson::parse(val, json);
+        deserializeJSON(val, dataSet);
+    }
+
 private:
 
-    picojson::value serializeJSON(const IDataSet& dataSet) const {
+    /*picojson::value serializeJSON(const IDataSet& dataSet) const {
         picojson::value val;
 
         if (dataSet.isType<double>()) {
@@ -72,7 +79,7 @@ private:
                 deserializeJSON(it->second, dataSet[it->first]);
             }
         }
-    }
+    }*/
 
     picojson::value serializeJSON(const DataValue& dataSet) const {
         picojson::value val;
@@ -95,7 +102,36 @@ private:
         return val;
     }
 
-    virtual IDataSet* createDataSet(const picojson::value& val) const {
+    void deserializeJSON(picojson::value& json, DataValue& dataSet) const {
+        if (json.is<double>()) {
+            dataSet.set<double>(json.get<double>());
+        }
+
+        else if (json.is<picojson::object>()) {
+            picojson::object obj = json.get<picojson::object>();
+            if (!dataSet.isType<Object>()) {
+                dataSet = DataObject();
+            }
+
+            for (picojson::object::iterator it = obj.begin(); it != obj.end(); it++) {
+                dataSet.get<Object>()[it->first] = createDataSet(it->second);
+                deserializeJSON(it->second, dataSet.get<Object>()[it->first]);
+            }
+        }
+    }
+
+    virtual DataValue createDataSet(const picojson::value& val) const {
+        if (val.is<double>()) {
+            return DoubleDataValue();
+        }
+        else if (val.is<picojson::object>()) {
+            return DataObject();
+        }
+
+        return DataValue();
+    }
+
+    /*virtual IDataSet* createDataSet(const picojson::value& val) const {
         if (val.is<double>()) {
             return new TypedData<double>();
         }
@@ -104,7 +140,7 @@ private:
         }
 
         return NULL;
-    }
+    }*/
 
 };
 
