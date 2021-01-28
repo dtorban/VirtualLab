@@ -297,6 +297,7 @@ void Server::service() {
         int client_fd = accept(serverSocketFD, (struct sockaddr *) &client_addr, &client_len);
         int yes = 1;
         setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes));
+        setsockopt(client_fd, IPPROTO_TCP, TCP_QUICKACK, &yes, sizeof(yes));
 #ifdef WIN32
 		if (client_fd == INVALID_SOCKET) {
 #else
