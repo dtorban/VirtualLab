@@ -48,4 +48,8 @@ This will lead to to a docker cell.
     ```
 4. Open up a web browser and browse to http://127.0.0.1:8081/
 
+5. To exit docker, simply type
+    ```bash
+    $ exit
+    ```
 
