@@ -5,13 +5,13 @@
 
 namespace vl {
 
-class ByteBuffer {
+class ByteBufferWriter {
 public:
-    ByteBuffer(int size = 512) : size(size), pos(0) {
+    ByteBufferWriter(int size = 512) : size(size), pos(0) {
         bytes = new unsigned char[size];
     }
 
-    ~ByteBuffer() {
+    virtual ~ByteBufferWriter() {
         delete[] bytes;
     }
 
@@ -33,6 +33,8 @@ public:
     }
 
     void addString(const std::string& str) {
+        int strSize = str.size();
+        addData(strSize);
         addData((const unsigned char*)str.c_str(), str.size());
     }
 
@@ -44,6 +46,42 @@ private:
     int size;
     int pos;
 };
+
+class ByteBufferReader {
+public:
+    ByteBufferReader(const unsigned char* bytes) : bytes(bytes), pos(0) {}
+
+    virtual ~ByteBufferReader() {}
+
+    template<typename T>
+    void readData(T& val) {
+        readData((unsigned char*)&val, sizeof(val));
+    }
+
+    void readData(unsigned char* data, int len) {
+        memcpy(data, &bytes[pos], len);
+        pos += len;
+    }
+
+    void readString(std::string& str) {
+        int dataSize;
+        readData(dataSize);
+        unsigned char *buf = new unsigned char[dataSize+1];
+        readData(buf, dataSize);
+        buf[dataSize] = '\0';
+        str = std::string(reinterpret_cast<char*>(buf));
+        delete[] buf;
+        //addData((const unsigned char*)str.c_str(), str.size());
+    }
+
+    int getSize() const { return pos; }
+    const unsigned char* getBytes() const { return bytes; }
+
+private:
+    const unsigned char* bytes;
+    int pos;
+};
+
 
 }
 

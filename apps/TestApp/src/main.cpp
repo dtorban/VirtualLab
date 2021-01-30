@@ -40,7 +40,7 @@ int main(int argc, char**argv) {
 	JSONSerializer::instance().deserialize(str, d);
 	std::cout << str << " " << JSONSerializer::instance().serialize(d) << std::endl;
 
-	for (int i = 0; i < 1000; i++) {
+	for (int i = 1; i < 1000; i++) {
 		sample->getNavigation()["time"].set<double>(0.1*i);
 		sample->update();
 		//std::cout << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;

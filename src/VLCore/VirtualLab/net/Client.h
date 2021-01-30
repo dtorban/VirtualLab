@@ -67,12 +67,10 @@ public:
 
     virtual void update() {
         //unsigned char bytes[512];
-        std::string str = JSONSerializer::instance().serialize(navigation);
-        int size = str.size();
-        ByteBuffer buf;
+        std::string nav = JSONSerializer::instance().serialize(navigation);
+        ByteBufferWriter buf;
         buf.addData(modelSampleId);
-        buf.addData(size);
-        buf.addString(str);
+        buf.addString(nav);
         api->sendMessage(sd, MSG_updateModelSample, buf.getBytes(), buf.getSize());
         //api->sendMessage(sd, MSG_updateModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
         //api->sendString(sd, JSONSerializer::instance().serialize(navigation));
@@ -80,8 +78,18 @@ public:
         //std::string ds = api->receiveString(sd);
         //serializer.deserialize(nav, navigation);
         //serializer.deserialize(ds, data);
-        int modelSampleId2;
-        api->receiveData(sd, (unsigned char*)& modelSampleId2, sizeof(int));
+        int dataLength;
+        api->receiveData(sd, (unsigned char*)& dataLength, sizeof(int));
+        unsigned char* bytes = new unsigned char[dataLength];
+        api->receiveData(sd, bytes, dataLength);
+        ByteBufferReader reader(bytes);
+
+        std::string ds;
+        reader.readString(nav);
+        reader.readString(ds);
+        serializer.deserialize(nav, navigation);
+        serializer.deserialize(ds, data);
+        delete[] bytes;
     }
 
 private:

@@ -1,5 +1,6 @@
 #include "VirtualLab/net/Server.h"
 #include "VirtualLab/util/JSONSerializer.h"
+#include "VirtualLab/util/ByteBuffer.h"
 
 #include <sstream>
 #include <iostream>
@@ -388,27 +389,28 @@ void Server::service() {
             else if (messageType == MSG_updateModelSample) {
                 JSONSerializer serializer;
                 
-                unsigned char bytes[512];
+                unsigned char* bytes = new unsigned char[dataLength];
                 receiveData(sd, bytes, dataLength);
+                ByteBufferReader reader(bytes);
+
                 int modelSampleId;
-                memcpy((unsigned char*)&modelSampleId, &bytes[0], sizeof(int));
-                int dataSize;
-                memcpy((unsigned char*)&dataSize, &bytes[sizeof(int)], sizeof(int));
-                unsigned char *buf = new unsigned char[dataSize+1];
-                memcpy(buf, &bytes[2*sizeof(int)], dataSize);
-                buf[dataSize] = '\0';
-                std::string nav(reinterpret_cast<char*>(buf));
-                std::cout << nav<< std::endl;
-                delete[] buf;
-                //receiveData(sd, (unsigned char*)& modelSampleId, sizeof(int));
+                reader.readData(modelSampleId);
+                std::string nav;
+                reader.readString(nav);
                 IModelSample* sample = serverModelSamples[modelSampleId];
-                //std::string nav = receiveString(sd);
                 serializer.deserialize(nav, sample->getNavigation());
+                delete[] bytes;
+
                 sample->update();
-                std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
-                //sendString(sd, JSONSerializer::instance().serialize(sample->getNavigation()));
-                //sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
-                sendData(sd, (const unsigned char*)& modelSampleId, sizeof(int));
+
+                ByteBufferWriter writer;
+                nav = JSONSerializer::instance().serialize(sample->getNavigation());
+                std::string data = JSONSerializer::instance().serialize(sample->getData());
+                int dataSize = 2*sizeof(int) + nav.size() + data.size();
+                writer.addData(dataSize);
+                writer.addString(nav);
+                writer.addString(data);
+                sendData(sd, writer.getBytes(), writer.getSize());
             }
             else if (messageType == MSG_deleteModelSample) {
                 int modelSampleId;
