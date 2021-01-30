@@ -40,8 +40,6 @@ public:
         deserializeJSON(val, dataSet);
     }
 
-private:
-
     /*picojson::value serializeJSON(const IDataSet& dataSet) const {
         picojson::value val;
 

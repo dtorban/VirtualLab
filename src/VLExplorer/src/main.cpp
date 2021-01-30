@@ -17,6 +17,7 @@ Copyright (c) 2019 Dan Orban
 #include "VirtualLab/net/Server.h"
 #include "VirtualLab/net/Client.h"
 #include "VirtualLab/impl/TestModel.h"
+#include "VirtualLab/util/JSONSerializer.h"
 
 class VLWebServerSession;
 class VLWebServerCommand;
@@ -90,16 +91,8 @@ public:
 
 class JSONDataSetSerializer {
 public:
-	picojson::value serialize(const IDataSet& dataSet) {
-		picojson::object obj;
-		for (std::string key : dataSet.getKeys()) {
-			const IDataSet& ds = dataSet[key];
-			if (ds.isType<double>()) {
-				obj[key] = picojson::value((double)ds.get<double>());
-			}
-		}
-
-		return picojson::value(obj);
+	picojson::value serialize(const DataObject& dataSet) {
+		return JSONSerializer::instance().serializeJSON(dataSet);
 	}
 };
 
@@ -107,7 +100,7 @@ class JSONSerializedQuery : public IQuery {
 public:
 	JSONSerializedQuery(picojson::value* serializedParams) : serializedParams(serializedParams) {}
 
-	void setParameters(IDataSet& params, DataSetStack& context) const {
+	void setParameters(DataObject& params, DataObjectStack& context) const {
 		JSONDataSetSerializer serializer;
 		*serializedParams = serializer.serialize(params);
 	}
@@ -141,7 +134,7 @@ class JSONQuery : public IQuery {
 public:
 	JSONQuery(const picojson::object& jsonParams) : jsonParams(jsonParams) {}
 
-	void setParameters(IDataSet& params, DataSetStack& context) const {
+	void setParameters(DataObject& params, DataObjectStack& context) const {
 		for (picojson::object::const_iterator it = jsonParams.begin(); it != jsonParams.end(); it++) {
 			params[it->first].set<double>(it->second.get<double>());
 		}
@@ -189,7 +182,7 @@ public:
 			sample->getNavigation()[it->first].set<double>(it->second.get<double>());
 		}
 
-		CompositeDataSet ds;
+		//CompositeDataSet ds;
 		//JSONSerializer::instance().deserialize(picojson::value(navigation).serialize(), ds);
 		sample->update();
 		//JSONSerializer::instance().serialize(sample->getData());
@@ -223,40 +216,40 @@ int main(int argc, char**argv) {
 	strategy->addStrategy(latinHyperCube);
 	*/
 
-// 	int pid = 0;
-// #ifdef WIN32
-// 	pid = 1;
-// 	if (false) {
-// #else
-// 	if ((pid = fork()) < 0) {
-// #endif
-// 		std::cout << "fork failed" << std::endl;
-// 		return 1;
-// 	}
+	int pid = 0;
+#ifdef WIN32
+	pid = 1;
+	if (false) {
+#else
+	if ((pid = fork()) < 0) {
+#endif
+		std::cout << "fork failed" << std::endl;
+		return 1;
+	}
 
-// 	if (pid != 0) {
-// 		//pid = fork();
-// 		//if (pid != 0) {
-// 			Server server;
-// 			server.registerModel(new TestModel("ModelA"));
-// 			server.registerModel(new TestModel("ModelB"));
-// 			while(true) {
-// 				server.service();
-// 			}
-// 			return 0;
-// 		//}
+	if (pid != 0) {
+		//pid = fork();
+		//if (pid != 0) {
+			Server server;
+			server.registerModel(new TestModel("ModelA"));
+			server.registerModel(new TestModel("ModelB"));
+			while(true) {
+				server.service();
+			}
+			return 0;
+		//}
 
-// 		/*Client client;
-// 		client.registerModel(new TestModel("ModelA"));
-// 		client.registerModel(new TestModel("ModelB"));
-// 		while(true) {
-// 			std::cout << "Waiting..." << std::endl;
-// 			client.service();
-// 		}*/
+		/*Client client;
+		client.registerModel(new TestModel("ModelA"));
+		client.registerModel(new TestModel("ModelB"));
+		while(true) {
+			std::cout << "Waiting..." << std::endl;
+			client.service();
+		}*/
 
-// 		return 0;
+		return 0;
 		
-// 	}
+	}
 
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 
