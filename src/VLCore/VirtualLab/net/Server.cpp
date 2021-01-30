@@ -149,6 +149,9 @@ Server::Server(int listenPort, int numExpectedClients) {
 
 	std::cout << "Established all expected connections." << std::endl;
 
+    setsockopt(serv_fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes));
+    setsockopt(serv_fd, IPPROTO_TCP, TCP_QUICKACK, &yes, sizeof(yes));
+
     serverSocketFD = serv_fd;
 
 #endif
@@ -384,14 +387,28 @@ void Server::service() {
             }
             else if (messageType == MSG_updateModelSample) {
                 JSONSerializer serializer;
+                
+                unsigned char bytes[512];
+                receiveData(sd, bytes, dataLength);
                 int modelSampleId;
-                receiveData(sd, (unsigned char*)& modelSampleId, sizeof(int));
+                memcpy((unsigned char*)&modelSampleId, &bytes[0], sizeof(int));
+                int dataSize;
+                memcpy((unsigned char*)&dataSize, &bytes[sizeof(int)], sizeof(int));
+                unsigned char *buf = new unsigned char[dataSize+1];
+                memcpy(buf, &bytes[2*sizeof(int)], dataSize);
+                buf[dataSize] = '\0';
+                std::string nav(reinterpret_cast<char*>(buf));
+                std::cout << nav<< std::endl;
+                delete[] buf;
+                //receiveData(sd, (unsigned char*)& modelSampleId, sizeof(int));
                 IModelSample* sample = serverModelSamples[modelSampleId];
-                std::string nav = receiveString(sd);
+                //std::string nav = receiveString(sd);
                 serializer.deserialize(nav, sample->getNavigation());
                 sample->update();
-                sendString(sd, JSONSerializer::instance().serialize(sample->getNavigation()));
-                sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
+                std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
+                //sendString(sd, JSONSerializer::instance().serialize(sample->getNavigation()));
+                //sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
+                sendData(sd, (const unsigned char*)& modelSampleId, sizeof(int));
             }
             else if (messageType == MSG_deleteModelSample) {
                 int modelSampleId;

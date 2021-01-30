@@ -7,6 +7,7 @@
 #include "VirtualLab/net/NetInterface.h"
 #include "VirtualLab/IVirtualLabAPI.h"
 #include "VirtualLab/util/JSONSerializer.h"
+#include "VirtualLab/util/ByteBuffer.h"
 
 
 namespace vl {
@@ -65,12 +66,22 @@ public:
     }
 
     virtual void update() {
-        api->sendMessage(sd, MSG_updateModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
-        api->sendString(sd, JSONSerializer::instance().serialize(navigation));
-        std::string nav = api->receiveString(sd);
-        std::string ds = api->receiveString(sd);
-        serializer.deserialize(nav, navigation);
-        serializer.deserialize(ds, data);
+        //unsigned char bytes[512];
+        std::string str = JSONSerializer::instance().serialize(navigation);
+        int size = str.size();
+        ByteBuffer buf;
+        buf.addData(modelSampleId);
+        buf.addData(size);
+        buf.addString(str);
+        api->sendMessage(sd, MSG_updateModelSample, buf.getBytes(), buf.getSize());
+        //api->sendMessage(sd, MSG_updateModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
+        //api->sendString(sd, JSONSerializer::instance().serialize(navigation));
+        //std::string nav = api->receiveString(sd);
+        //std::string ds = api->receiveString(sd);
+        //serializer.deserialize(nav, navigation);
+        //serializer.deserialize(ds, data);
+        int modelSampleId2;
+        api->receiveData(sd, (unsigned char*)& modelSampleId2, sizeof(int));
     }
 
 private:
