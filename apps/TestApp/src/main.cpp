@@ -12,7 +12,7 @@ using namespace vl;
 
 int main(int argc, char**argv) {
 
-	int pid = fork();
+	/*int pid = fork();
 	if (pid != 0) {
 		Server server;
 		server.registerModel(new TestModel("ModelA"));
@@ -21,7 +21,7 @@ int main(int argc, char**argv) {
 			server.service();
 		}
 		return 0;
-	}
+	}*/
 
 
 	Client api;

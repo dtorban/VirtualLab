@@ -68,8 +68,8 @@ $( document ).ready(function() {
           $("#data-container").append(key + ": " + data.sample.navigation[key] + "<br>");
         }
 
-        //points.push( new THREE.Vector3( data.sample.data["x"]/1000.0, data.sample.data["y"]/1000.0, 0.0 ) );
-        points.push( new THREE.Vector3( sampleNavigation["time"], data.sample.data["y"], 0.0 ) );
+        points.push( new THREE.Vector3( data.sample.data["x"]/1000.0, data.sample.data["y"]/1000.0, 0.0 ) );
+        //points.push( new THREE.Vector3( sampleNavigation["time"], data.sample.data["y"], 0.0 ) );
         points2.push( new THREE.Vector3( sampleNavigation["time"], data.sample.data["nm"], 0.0 ) );
         updateLines();
 
@@ -182,7 +182,7 @@ function updateLines() {
     scene.add( line );
 
     if (points.length > 0) {
-      line.position.copy(new THREE.Vector3(-points[points.length-1].x,0,0));
+      //line.position.copy(new THREE.Vector3(-points[points.length-1].x,0,0));
     }
 
     /*if (line2) {

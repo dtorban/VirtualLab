@@ -2,59 +2,75 @@
 #include "simulator.h"
 #include "VirtualLab/IModel.h"
 #include "VirtualLab/net/Server.h"
+#include "VirtualLab/util/JSONSerializer.h"
 
 using namespace vl;
 
 class CellSample : public IModelSample {
 public:
-    CellSample(CompositeDataSet* data) : data(data) {
-        posx = new TypedData<double>(0.0);
-        posy = new TypedData<double>(0.0);
-        numModules = new TypedData<double>(0);
-        engageNum = new TypedData<double>(0);
-        data->addData("x", posx);
-        data->addData("y", posy);
-        data->addData("nm", numModules);
-        data->addData("en", engageNum);
-        timeParam = new TypedData<double>();
-        time.addData("time", timeParam);
+    CellSample(DataObject params) : params(params) {
+        std::cout << JSONSerializer::instance().serialize(params) << std::endl;
+        data["x"] = DoubleDataValue();
+        data["y"] = DoubleDataValue();
+        data["nm"] = DoubleDataValue();
+        data["en"] = DoubleDataValue();
+        posx = &data["x"].get<double>();
+        posy = &data["y"].get<double>();
+        std::cout << posx << " " << posy << std::endl;
+        numModules = &data["nm"].get<double>();
+        engageNum = &data["en"].get<double>();
+        time["time"] = DoubleDataValue();
+        timeParam = &time["time"].get<double>();
+        std::cout << JSONSerializer::instance().serialize(time) << std::endl;
+        std::cout << JSONSerializer::instance().serialize(data) << std::endl;
 
         Config config("");
         int simulationNumber = 0;
         int prefix = 0;
         s = new Simulator("", prefix, simulationNumber, config);
+        std::cout << posx << " " << posy << std::endl;
     }
     virtual ~CellSample() {
-        delete data;
+        std::cout << "Delete cell" << std::endl;
         delete s;
     }
 
-    virtual IDataSet& getNavigation() { return time; }
-    virtual const IDataSet& getData() const { return *data; }
+    virtual const DataObject& getParameters() const { return params; }
+    virtual DataObject& getNavigation() { return time; }
+    virtual const DataObject& getData() const { return data; }
 
     virtual void update() {
+        //std::cout << JSONSerializer::instance().serialize(time) << std::endl;
+        std::cout << "Update " << 0 << " " << 0 << std::endl;
         double currentTime = s->GetTime();
-        s->Update(timeParam->get<double>() - currentTime);
-        posx->set<double>(s->GetCell().GetPosition().x);
-        posy->set<double>(s->GetCell().GetPosition().y);
-        numModules->set<double>(s->GetCell().GetNumModules());
+        //double testTime = time["time"].get<double>();
+        //std::cout << testTime - currentTime << std::endl;
+        s->Update(1.0);
+        s->Update(time["time"].get<double>() - currentTime);
+        *posx = s->GetCell().GetPosition().x;
+        *posy = s->GetCell().GetPosition().y;
+        *numModules = s->GetCell().GetNumModules();
         int eng = 0;
         for (int i = 0; i < s->GetCell().GetNumModules(); i++) {
             eng += s->GetCell().GetModule(i).GetEngageNum();
         }
-        engageNum->set<double>(eng);
-        timeParam->set<double>(s->GetTime());
+        *engageNum = eng;
+        //*timeParam = s->GetTime();
+        time["time"].set<double>(s->GetTime());
+        std::cout << "Update end " << 0 << " " << s->GetTime() << std::endl;
+        std::cout << JSONSerializer::instance().serialize(data) << std::endl;
     }
 
 private:
     Simulator* s;
-    CompositeDataSet time;
-    CompositeDataSet* data;
-    IDataSet* timeParam;
-    IDataSet* posx;
-    IDataSet* posy;
-    IDataSet* numModules;
-    IDataSet* engageNum;
+    DataObject params;
+    DataObject time;
+    DataObject data;
+    double* timeParam;
+    double* posx;
+    double* posy;
+    double* numModules;
+    double* engageNum;
 };
 
 class CellModel : public IModel {
@@ -64,10 +80,10 @@ public:
 
     const std::string& getName() const { return name; }
     virtual IModelSample* create(const IQuery& query) const {
-        CompositeDataSet* params = new CompositeDataSet();
-        params->addData("id", new TypedData<double>(0));
-        params->addData("num", new TypedData<double>(0));
-        query.setParameters(*params);
+        DataObject params;
+        params["id"] = DoubleDataValue(0.0);
+        params["num"] = DoubleDataValue(0.0);
+        query.setParameters(params);
         return new CellSample(params);
     }
 
@@ -76,24 +92,39 @@ private:
 };
 
 int main(int argc, char* argv[]) {
-	Config config("");
-    int simulationNumber = 0;
-    int prefix = 0;
-    Simulator* s = new Simulator("", prefix, simulationNumber, config);
-
-    /*while (true) {
-        s->Update(1.0);
-        //std::cout << s->GetCell().GetPosition() << std::endl;
-    }*/
-    //s->Simulate();
-
     Server server;
     server.registerModel(new CellModel("ModelA"));
     while(true) {
         server.service();
     }
 
-    delete s;
+    /*VirtualLabAPI api;
+    api.registerModel(new CellModel("ModelA"));
+	//VirtualLabAPI api;
+	//api.registerModel(new TestModel());
+	IModel* model = api.getModels()[0];
+	
+	DefaultQuery query;
+	IModelSample* sample = model->create(query);
+	std::cout << JSONSerializer::instance().serialize(sample->getParameters()) << std::endl;
+	std::cout << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
+	std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
+
+	std::string str = JSONSerializer::instance().serialize(sample->getParameters());
+	DataValue d;
+	JSONSerializer::instance().deserialize(str, d);
+	std::cout << str << " " << JSONSerializer::instance().serialize(d) << std::endl;
+
+    DataObject time = sample->getNavigation();
+
+	for (int i = 1; i < 1000; i++) {
+		time["time"].set<double>(0.1*i);
+        std::string sTime = JSONSerializer::instance().serialize(time);
+        JSONSerializer::instance().deserialize(sTime, sample->getNavigation());
+		sample->update();
+		std::cout << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
+		std::cout << i << " " <<  JSONSerializer::instance().serialize(sample->getData()) << std::endl;
+	}*/
 
     return 0;
 }

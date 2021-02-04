@@ -29,6 +29,8 @@ public:
 	ModelNavigator(const IModel& model) : model(model), currentSample(NULL) {
 		DefaultQuery query;
 		createSample(query);
+		std::cout << "new sample" << currentSample << std::endl;
+		//createSample(query);
 	}
 
 	~ModelNavigator() {
@@ -36,8 +38,10 @@ public:
 	}
 
 	void createSample(const IQuery& query) {
+		std::cout << "delete current sample" << currentSample << std::endl;
 		delete currentSample;
 		currentSample = model.create(query);
+		currentSample->update();
 		currentSample->update();
 	}
 
@@ -198,6 +202,7 @@ public:
 		data["sample"] = picojson::value(jsonSample);
 		picojson::value ret(data);
 		session->sendJSON(ret);
+		std::cout << ret.serialize() << std::endl;
 	}
 };
 
@@ -216,7 +221,7 @@ int main(int argc, char**argv) {
 	strategy->addStrategy(latinHyperCube);
 	*/
 
-	int pid = 0;
+/*	int pid = 0;
 #ifdef WIN32
 	pid = 1;
 	if (false) {
@@ -228,8 +233,6 @@ int main(int argc, char**argv) {
 	}
 
 	if (pid != 0) {
-		//pid = fork();
-		//if (pid != 0) {
 			Server server;
 			server.registerModel(new TestModel("ModelA"));
 			server.registerModel(new TestModel("ModelB"));
@@ -237,19 +240,11 @@ int main(int argc, char**argv) {
 				server.service();
 			}
 			return 0;
-		//}
 
-		/*Client client;
-		client.registerModel(new TestModel("ModelA"));
-		client.registerModel(new TestModel("ModelB"));
-		while(true) {
-			std::cout << "Waiting..." << std::endl;
-			client.service();
-		}*/
 
 		return 0;
 		
-	}
+	}*/
 
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 

@@ -17,17 +17,6 @@ public:
     ClientQuery(NetInterface* api, SOCKET sd) : api(api), sd(sd) {}
 
     virtual void setParameters(DataObject& params, DataObjectStack& context) const {
-        /*std::cout << "start query" << std::endl;
-        int modelId;
-        std::string s = serializer.serialize(params);
-        std::cout << "send string" << std::endl;
-        api->sendString(sd, s);
-        s = api->receiveString(sd);
-        std::cout << "receive string" << std::endl;
-        serializer.deserialize("{\"a\": 12,\"abc\": {\"sdf\": 123}}", params);
-        s = serializer.serialize(params);
-        std::cout << s << std::endl;
-        std::cout << "end query" << std::endl;*/
         std::string s = serializer.serialize(params);
         api->sendString(sd, s);
         s = api->receiveString(sd);
@@ -43,13 +32,16 @@ private:
 class ClientModelSample : public IModelSample {
 public:
     ClientModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {
+        std::string params = api->receiveString(sd);
         std::string nav = api->receiveString(sd);
         std::string ds = api->receiveString(sd);
+        serializer.deserialize(params, parameters);
         serializer.deserialize(nav, navigation);
         serializer.deserialize(ds, data);
     }
 
     ~ClientModelSample() {
+        std::cout << "delete this craziness" << std::endl;
         api->sendMessage(sd, MSG_deleteModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
     }
 
@@ -66,11 +58,13 @@ public:
     }
 
     virtual void update() {
+        std::cout << "update on client" << std::endl;
         //unsigned char bytes[512];
         std::string nav = JSONSerializer::instance().serialize(navigation);
         ByteBufferWriter buf;
         buf.addData(modelSampleId);
         buf.addString(nav);
+        std::cout << "call update from client" << std::endl;
         api->sendMessage(sd, MSG_updateModelSample, buf.getBytes(), buf.getSize());
         //api->sendMessage(sd, MSG_updateModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
         //api->sendString(sd, JSONSerializer::instance().serialize(navigation));
@@ -80,15 +74,22 @@ public:
         //serializer.deserialize(ds, data);
         int dataLength;
         api->receiveData(sd, (unsigned char*)& dataLength, sizeof(int));
+        std::cout << "heard back from server" << std::endl;
+        
+        std::cout << dataLength << std::endl;
+        
         unsigned char* bytes = new unsigned char[dataLength];
         api->receiveData(sd, bytes, dataLength);
         ByteBufferReader reader(bytes);
+
+        std::cout << dataLength << std::endl;
 
         std::string ds;
         reader.readString(nav);
         reader.readString(ds);
         serializer.deserialize(nav, navigation);
         serializer.deserialize(ds, data);
+        std::cout << "Values: " <<  nav << " " << ds << std::endl;
         delete[] bytes;
     }
 
