@@ -164,7 +164,7 @@ function updateNavigation() {
   if (connected) {
     if (canUpdate) {
       canUpdate = false;
-      time += 0.1;
+      time += 1.0;//10.0*60.0;
       sampleNavigation.time = time;
       socket.send(JSON.stringify({command: "updateNavigation", navigation: sampleNavigation}));
     }

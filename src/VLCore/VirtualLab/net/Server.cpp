@@ -388,7 +388,6 @@ void Server::service() {
                 sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
             }
             else if (messageType == MSG_updateModelSample) {
-                std::cout << "update on server" << std::endl;
                 JSONSerializer serializer;
                 
                 unsigned char* bytes = new unsigned char[dataLength];
@@ -400,7 +399,6 @@ void Server::service() {
                 std::string nav;
                 reader.readString(nav);
                 IModelSample* sample = serverModelSamples[modelSampleId];
-                std::cout << sample << std::endl;
                 serializer.deserialize(nav, sample->getNavigation());
                 delete[] bytes;
 
@@ -414,15 +412,7 @@ void Server::service() {
                 writer.addData(dataSize);
                 writer.addString(nav);
                 writer.addString(data);
-
-                /*//nav = JSONSerializer::instance().serialize(sample->getNavigation());
-                //std::string data = JSONSerializer::instance().serialize(sample->getData());
-                int dataSize = 0;//2*sizeof(int) + nav.size() + data.size();
-                writer.addData(dataSize);
-                //writer.addString(nav);
-                //writer.addString(data);*/
                 sendData(sd, writer.getBytes(), writer.getSize());
-                std::cout << "finish update on server" << std::endl;
             }
             else if (messageType == MSG_deleteModelSample) {
                 int modelSampleId;

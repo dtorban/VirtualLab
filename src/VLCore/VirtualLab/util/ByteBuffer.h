@@ -13,7 +13,6 @@ public:
 
     virtual ~ByteBufferWriter() {
         delete[] bytes;
-        std::cout << "Delete writer" << std::endl;
     }
 
     template<typename T>
@@ -28,17 +27,14 @@ public:
             delete[] bytes;
             bytes = newBytes;
             size *= 2;
-            std::cout << "Grow!" << std::endl;
         }
         memcpy(&bytes[pos], data, len);
         pos += len;
-        std::cout << "Pos: " << pos << std::endl;
     }
 
     void addString(const std::string& str) {
         int strSize = str.size();
         addData(strSize);
-        std::cout << strSize << ": " << str << std::endl;
         addData((const unsigned char*)str.c_str(), str.size());
     }
 
@@ -70,13 +66,11 @@ public:
     void readString(std::string& str) {
         int dataSize;
         readData(dataSize);
-        std::cout << dataSize << std::endl;
         unsigned char *buf = new unsigned char[dataSize+1];
         readData(buf, dataSize);
         buf[dataSize] = '\0';
         str = std::string(reinterpret_cast<char*>(buf));
         delete[] buf;
-        //addData((const unsigned char*)str.c_str(), str.size());
     }
 
     int getSize() const { return pos; }

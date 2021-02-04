@@ -29,8 +29,6 @@ public:
 	ModelNavigator(const IModel& model) : model(model), currentSample(NULL) {
 		DefaultQuery query;
 		createSample(query);
-		std::cout << "new sample" << currentSample << std::endl;
-		//createSample(query);
 	}
 
 	~ModelNavigator() {
@@ -38,10 +36,8 @@ public:
 	}
 
 	void createSample(const IQuery& query) {
-		std::cout << "delete current sample" << currentSample << std::endl;
 		delete currentSample;
 		currentSample = model.create(query);
-		currentSample->update();
 		currentSample->update();
 	}
 
@@ -202,7 +198,6 @@ public:
 		data["sample"] = picojson::value(jsonSample);
 		picojson::value ret(data);
 		session->sendJSON(ret);
-		std::cout << ret.serialize() << std::endl;
 	}
 };
 

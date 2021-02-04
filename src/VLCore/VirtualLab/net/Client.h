@@ -58,38 +58,24 @@ public:
     }
 
     virtual void update() {
-        std::cout << "update on client" << std::endl;
         //unsigned char bytes[512];
         std::string nav = JSONSerializer::instance().serialize(navigation);
         ByteBufferWriter buf;
         buf.addData(modelSampleId);
         buf.addString(nav);
-        std::cout << "call update from client" << std::endl;
         api->sendMessage(sd, MSG_updateModelSample, buf.getBytes(), buf.getSize());
-        //api->sendMessage(sd, MSG_updateModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
-        //api->sendString(sd, JSONSerializer::instance().serialize(navigation));
-        //std::string nav = api->receiveString(sd);
-        //std::string ds = api->receiveString(sd);
-        //serializer.deserialize(nav, navigation);
-        //serializer.deserialize(ds, data);
         int dataLength;
         api->receiveData(sd, (unsigned char*)& dataLength, sizeof(int));
-        std::cout << "heard back from server" << std::endl;
-        
-        std::cout << dataLength << std::endl;
         
         unsigned char* bytes = new unsigned char[dataLength];
         api->receiveData(sd, bytes, dataLength);
         ByteBufferReader reader(bytes);
-
-        std::cout << dataLength << std::endl;
 
         std::string ds;
         reader.readString(nav);
         reader.readString(ds);
         serializer.deserialize(nav, navigation);
         serializer.deserialize(ds, data);
-        std::cout << "Values: " <<  nav << " " << ds << std::endl;
         delete[] bytes;
     }
 

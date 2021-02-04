@@ -21,14 +21,11 @@ public:
         engageNum = &data["en"].get<double>();
         time["time"] = DoubleDataValue();
         timeParam = &time["time"].get<double>();
-        std::cout << JSONSerializer::instance().serialize(time) << std::endl;
-        std::cout << JSONSerializer::instance().serialize(data) << std::endl;
 
         Config config("");
         int simulationNumber = 0;
         int prefix = 0;
         s = new Simulator("", prefix, simulationNumber, config);
-        std::cout << posx << " " << posy << std::endl;
     }
     virtual ~CellSample() {
         std::cout << "Delete cell" << std::endl;
@@ -40,12 +37,7 @@ public:
     virtual const DataObject& getData() const { return data; }
 
     virtual void update() {
-        //std::cout << JSONSerializer::instance().serialize(time) << std::endl;
-        std::cout << "Update " << 0 << " " << 0 << std::endl;
         double currentTime = s->GetTime();
-        //double testTime = time["time"].get<double>();
-        //std::cout << testTime - currentTime << std::endl;
-        s->Update(1.0);
         s->Update(time["time"].get<double>() - currentTime);
         *posx = s->GetCell().GetPosition().x;
         *posy = s->GetCell().GetPosition().y;
@@ -55,10 +47,7 @@ public:
             eng += s->GetCell().GetModule(i).GetEngageNum();
         }
         *engageNum = eng;
-        //*timeParam = s->GetTime();
         time["time"].set<double>(s->GetTime());
-        std::cout << "Update end " << 0 << " " << s->GetTime() << std::endl;
-        std::cout << JSONSerializer::instance().serialize(data) << std::endl;
     }
 
 private:
