@@ -167,7 +167,13 @@ public:
         return get<Object>()[key];
     }
     const DataValue& operator[](const std::string& key) const {
-        return get<Object>().find(key)->second;
+        static DataValue val;
+        Object::const_iterator it = get<Object>().find(key);
+        if (it != get<Object>().end()) {
+            return it->second;
+        }
+
+        return val;
     }
 };
 
