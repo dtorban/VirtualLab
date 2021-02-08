@@ -166,6 +166,9 @@ public:
     DataValue& operator[](const std::string& key) {
         return get<Object>()[key];
     }
+    const DataValue& operator[](const std::string& key) const {
+        return get<Object>().find(key)->second;
+    }
 };
 
 class DataObjectStack {

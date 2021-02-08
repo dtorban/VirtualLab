@@ -6,6 +6,19 @@
 
 using namespace vl;
 
+class DataObjectConfig : public IConfig {
+public:
+	DataObjectConfig(const DataObject& obj) : obj(obj) {}
+	int getInt(int id, const std::string& key, int defaultValue) { 
+        return obj[key].get<double>(defaultValue);
+    }
+	double getDouble(int id, const std::string& key, double defaultValue) {
+        return obj[key].get<double>(defaultValue);
+    }
+private:
+	const DataObject& obj;
+};
+
 class CellSample : public IModelSample {
 public:
     CellSample(DataObject params) : params(params) {
@@ -22,9 +35,10 @@ public:
         time["time"] = DoubleDataValue();
         timeParam = &time["time"].get<double>();
 
-        Config config("");
-        int simulationNumber = 0;
+        DataObjectConfig config(params);
+        int simulationNumber = params["num"].get<double>();
         int prefix = 0;
+        std::cout << "sim num" << simulationNumber << std::endl;
         s = new Simulator("", prefix, simulationNumber, config);
     }
     virtual ~CellSample() {
@@ -70,6 +84,7 @@ public:
     const std::string& getName() const { return name; }
     virtual IModelSample* create(const IQuery& query) const {
         DataObject params;
+        params["substrate_k"] = DoubleDataValue(5.0);
         params["id"] = DoubleDataValue(0.0);
         params["num"] = DoubleDataValue(0.0);
         query.setParameters(params);

@@ -10,6 +10,17 @@ Copyright (c) 2019 Dan Orban
 
 using namespace vl;
 
+class SimQuery : public IQuery {
+public:
+	SimQuery(int num) : num(num) {}
+    void setParameters(DataObject& params, DataObjectStack& context) const {
+		params["num"].set<double>(num);
+	}
+
+private:
+	int num;
+};
+
 int main(int argc, char**argv) {
 
 	/*int pid = fork();
@@ -29,7 +40,8 @@ int main(int argc, char**argv) {
 	//api.registerModel(new TestModel());
 	IModel* model = api.getModels()[0];
 	
-	DefaultQuery query;
+	//DefaultQuery query;
+	SimQuery query(5);
 	IModelSample* sample = model->create(query);
 	std::cout << JSONSerializer::instance().serialize(sample->getParameters()) << std::endl;
 	std::cout << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
@@ -40,7 +52,7 @@ int main(int argc, char**argv) {
 	JSONSerializer::instance().deserialize(str, d);
 	std::cout << str << " " << JSONSerializer::instance().serialize(d) << std::endl;
 
-	for (int i = 1; i < 1000; i++) {
+	for (int i = 1; i < 10; i++) {
 		sample->getNavigation()["time"].set<double>(0.1*i);
 		sample->update();
 		//std::cout << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
