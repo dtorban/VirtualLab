@@ -29,48 +29,26 @@ public:
         data["en"] = DoubleDataValue();
         data["fx"] = DoubleDataValue();
         data["fy"] = DoubleDataValue();
-
-/*
-class ICellModule {
-public:
-    virtual ~ICellModule() {}
-    virtual vec GetMotorPosition() const = 0;
-    virtual vec GetForce() const = 0;
-    virtual vec GetRef() const = 0;
-    virtual int GetEngageNum() const = 0;
-    virtual double GetKSub() const = 0;
-    virtual int GetId() const = 0;
-};
-
-class ICell {
-public:
-    virtual ~ICell() {}
-    virtual vec GetPosition() const = 0;
-    virtual double GetForceTotal() const = 0;
-    virtual double GetAFlow() const = 0;
-    virtual double GetFreeActin() const = 0;
-
-    virtual int GetNumModules() const = 0;
-    virtual const ICellModule& GetModule(int i) const = 0;
-};
-
-class ISimulator {
-public:
-    virtual ~ISimulator() {}
-    virtual void Simulate() = 0;
-    virtual double GetTime() const = 0;
-    virtual void Update(double dt) = 0;
-    virtual const ICell& GetCell() const = 0;
-};
-*/
+        data["actin"] = DoubleDataValue();
+        data["free_actin"] = DoubleDataValue();
+        data["aflow"] = DoubleDataValue();
+        data["m"] = DataArray();
+        data["ev"] = DataObject();
 
         posx = &data["x"].get<double>();
         posy = &data["y"].get<double>();
-        std::cout << posx << " " << posy << std::endl;
         numModules = &data["nm"].get<double>();
         engageNum = &data["en"].get<double>();
+        fx = &data["fx"].get<double>();
+        fy = &data["fy"].get<double>();
+        actin = &data["actin"].get<double>();
+        free_actin = &data["free_actin"].get<double>();
+        aflow = &data["aflow"].get<double>();
+        modules = &data["m"].get<vl::Array>();
+        events = &data["ev"].get<Object>();
 
-        time["t"] = DoubleDataValue();
+        nav["t"] = DoubleDataValue();
+        nav["m"] = DoubleDataValue(1);
 
         DataObjectConfig config(params);
         int simulationNumber = params["num"].get<double>();
@@ -84,32 +62,63 @@ public:
     }
 
     virtual const DataObject& getParameters() const { return params; }
-    virtual DataObject& getNavigation() { return time; }
+    virtual DataObject& getNavigation() { return nav; }
     virtual const DataObject& getData() const { return data; }
 
     virtual void update() {
         double currentTime = s->GetTime();
-        s->Update(time["t"].get<double>() - currentTime);
+        s->Update(nav["t"].get<double>() - currentTime);
         *posx = s->GetCell().GetPosition().x;
         *posy = s->GetCell().GetPosition().y;
         *numModules = s->GetCell().GetNumModules();
         int eng = 0;
+
+        vl::Array mods;
         for (int i = 0; i < s->GetCell().GetNumModules(); i++) {
             eng += s->GetCell().GetModule(i).GetEngageNum();
+            DataObject mod;
+            mod["id"] = DoubleDataValue(s->GetCell().GetModule(i).GetId());
+            mod["en"] = DoubleDataValue(s->GetCell().GetModule(i).GetEngageNum());
+            mod["fx"] = DoubleDataValue(s->GetCell().GetModule(i).GetForce().x);
+            mod["fy"] = DoubleDataValue(s->GetCell().GetModule(i).GetForce().y);
+            mod["x"] = DoubleDataValue(s->GetCell().GetModule(i).GetRef().x);
+            mod["y"] = DoubleDataValue(s->GetCell().GetModule(i).GetRef().y);
+            if (nav["m"].get<double>()) {
+                mods.push_back(mod);
+            }
         }
-        *engageNum = eng;
-        time["t"].set<double>(s->GetTime());
+        *engageNum = eng; 
+        *modules = mods;
+
+        const std::map<std::string, int>& eventCounts = s->GetCell().GetEventCounts();
+        for (std::map<std::string, int>::const_iterator it = eventCounts.begin(); it != eventCounts.end(); it++) {
+            (*events)[it->first] = DoubleDataValue(it->second);
+        }
+
+        *fx = s->GetCell().GetForce().x;
+        *fy = s->GetCell().GetForce().y;
+        *actin = s->GetCell().GetFActin();
+        *free_actin = s->GetCell().GetFreeActin();
+        *aflow = s->GetCell().GetAFlow();
+        nav["t"].set<double>(s->GetTime());
     }
 
 private:
     Simulator* s;
     DataObject params;
-    DataObject time;
+    DataObject nav;
     DataObject data;
     double* posx;
     double* posy;
     double* numModules;
     double* engageNum;
+    double* fx;
+    double* fy;
+    double* actin;
+    double* free_actin; 
+    double* aflow;
+    vl::Array* modules;
+    Object* events;
 };
 
 class CellModel : public IModel {

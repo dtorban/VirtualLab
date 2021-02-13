@@ -154,6 +154,7 @@ public:
     }
 };
 
+typedef TypedDataValue<int> IntDataValue;
 typedef TypedDataValue<float> FloatDataValue;
 typedef TypedDataValue<double> DoubleDataValue;
 typedef TypedDataValue<std::string> StringDataValue;

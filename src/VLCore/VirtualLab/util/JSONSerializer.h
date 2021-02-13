@@ -96,6 +96,16 @@ public:
             
             val = picojson::value(obj);
         }
+        else if (dataSet.isType<vl::Array>()) {
+            picojson::array arr;
+            const vl::Array& dataSetArr = dataSet.get<vl::Array>();
+
+            for (vl::Array::const_iterator it = dataSetArr.begin(); it != dataSetArr.end(); it++) {
+                arr.push_back(serializeJSON(*it));  
+            }
+            
+            val = picojson::value(arr);
+        }
 
         return val;
     }
@@ -104,7 +114,6 @@ public:
         if (json.is<double>()) {
             dataSet.set<double>(json.get<double>());
         }
-
         else if (json.is<picojson::object>()) {
             picojson::object obj = json.get<picojson::object>();
             if (!dataSet.isType<Object>()) {
@@ -116,6 +125,18 @@ public:
                 deserializeJSON(it->second, dataSet.get<Object>()[it->first]);
             }
         }
+        else if (json.is<picojson::array>()) {
+            picojson::array arr = json.get<picojson::array>();
+            if (!dataSet.isType<vl::Array>()) {
+                dataSet = DataArray();
+            }
+
+            for (picojson::array::iterator it = arr.begin(); it != arr.end(); it++) {
+                DataValue val = createDataSet(*it);
+                deserializeJSON(*it, val);
+                dataSet.get<vl::Array>().push_back(val);
+            }
+        }
     }
 
     virtual DataValue createDataSet(const picojson::value& val) const {
@@ -124,6 +145,9 @@ public:
         }
         else if (val.is<picojson::object>()) {
             return DataObject();
+        }
+        else if (val.is<picojson::array>()) {
+            return DataArray();
         }
 
         return DataValue();
