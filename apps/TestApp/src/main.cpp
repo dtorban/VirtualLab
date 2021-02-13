@@ -19,7 +19,9 @@ int main(int argc, char**argv) {
 	std::cout << "Navigation: " << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
 	std::cout << "Data: " << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
 
-	for (int i = 0; i < 10; i++) {
+	sample->getNavigation()["m"].set<double>(1);
+
+	for (int i = 0; i < 100; i++) {
 		sample->getNavigation()["t"].set<double>(0.1*i);
 		sample->update();
 		std::cout << "t=" << sample->getNavigation()["t"].get<double>() << ": ";

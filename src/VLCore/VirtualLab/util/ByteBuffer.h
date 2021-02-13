@@ -7,7 +7,7 @@ namespace vl {
 
 class ByteBufferWriter {
 public:
-    ByteBufferWriter(int size = 512) : size(size), pos(0) {
+    ByteBufferWriter(int size = 1024) : size(size), pos(0) {
         bytes = new unsigned char[size];
     }
 
@@ -22,11 +22,15 @@ public:
 
     void addData(const unsigned char* data, int len) {
         if (pos + len > size) {
-            unsigned char* newBytes = new  unsigned char[size*2];
+            int newSize = size;
+            while (pos + len > newSize) {
+                newSize *= 2;
+            }
+            unsigned char* newBytes = new  unsigned char[newSize];
             memcpy(newBytes, bytes, size);
             delete[] bytes;
             bytes = newBytes;
-            size *= 2;
+            size = newSize;
         }
         memcpy(&bytes[pos], data, len);
         pos += len;
