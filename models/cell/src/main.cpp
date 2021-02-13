@@ -140,7 +140,6 @@ public:
         params["maxpoly"] = DoubleDataValue(200);
         params["kbirth"] = DoubleDataValue(1);
         params["cap_k"] = DoubleDataValue(0.001);
-        params["id"] = DoubleDataValue(0.0);
         params["num"] = DoubleDataValue(0.0);
     }
     virtual ~CellModel() {}
