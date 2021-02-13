@@ -37,7 +37,7 @@ public:
 
 	void createSample(const IQuery& query) {
 		delete currentSample;
-		currentSample = model.create(query);
+		currentSample = model.create(model.getParameters());
 		currentSample->update();
 	}
 
@@ -254,7 +254,7 @@ int main(int argc, char**argv) {
 		}
 	}
 
-	DefaultQuery query;
+	//DefaultQuery query;
 	std::vector<IModel*> models = api.getModels();
 	//IModelSample* sample = models[0]->create(query);
 	//sample->getNavigation()["time"].set<double>(0.1);

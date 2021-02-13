@@ -91,16 +91,32 @@ private:
 
 class ClientModel : public IModel {
 public:
-    ClientModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(api), name(name), sd(sd), modelId(modelId) {}
+    ClientModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(api), name(name), sd(sd), modelId(modelId) {
+        std::string json = api->receiveString(sd);
+        serializer.deserialize(json, parameters);
+    }
 
     const std::string& getName() const { return name; }
-    virtual IModelSample* create(const IQuery& query) const {
+    /*virtual IModelSample* create(const IQuery& query) const {
         api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
         std::string json = api->receiveString(sd);
         DataObject ds;
         serializer.deserialize(json, ds);
         query.setParameters(ds);
         json = serializer.serialize(ds);
+        api->sendString(sd, json);
+        int modelSampleId;
+        api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
+        return new ClientModelSample(api, sd, modelSampleId);
+    }*/
+    virtual const DataObject& getParameters() const { return parameters; }
+    virtual IModelSample* create(const DataObject& params) const {
+        api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
+        /*std::string json = api->receiveString(sd);
+        DataObject ds;
+        serializer.deserialize(json, ds);
+        query.setParameters(ds);*/
+        std::string json = serializer.serialize(params);
         api->sendString(sd, json);
         int modelSampleId;
         api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
@@ -113,6 +129,7 @@ private:
     SOCKET sd;
     int modelId;
     JSONSerializer serializer;
+    DataObject parameters;
 };
 
 class Client : public NetInterface, public IVirtualLabAPI  {

@@ -11,7 +11,8 @@ public:
     virtual ~IModel() {}
 
     virtual const std::string& getName() const = 0;
-    virtual IModelSample* create(const IQuery& query) const = 0;
+    virtual const DataObject& getParameters() const = 0;
+    virtual IModelSample* create(const DataObject& params) const = 0;
 };
 
 }

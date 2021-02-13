@@ -217,23 +217,18 @@ private:
     JSONSerializer serializer;
 };
 
-class ServerModel : public IModel {
+/*class ServerModel : public IModel {
 public:
     ServerModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(api), name(name), sd(sd), modelId(modelId) {}
 
     const std::string& getName() const { return name; }
-    virtual IModelSample* create(const IQuery& query) const {
+    virtual IModelSample* create(const DataObject& params) const {
         api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
 
-        // query
-        std::string json = api->receiveString(sd);
-        DataObject ds;
-        serializer.deserialize(json, ds);
-        json = serializer.serialize(ds);
-        query.setParameters(ds);
+        std::string json = serializer.serialize(params);
         api->sendString(sd, json);
-
         int modelSampleId;
+        api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
         return new ServerModelSample(api, sd, modelSampleId);
     }
 
@@ -243,7 +238,7 @@ private:
     SOCKET sd;
     int modelId;
     JSONSerializer serializer;
-};
+};*/
 
 void Server::service() {
     //Adapted from https://www.geeksforgeeks.org/socket-programming-in-cc-handling-multiple-clients-on-server-without-multi-threading/
@@ -349,7 +344,7 @@ void Server::service() {
                 std::cout <<"Host disconnected " << std::endl;   
                 clientSocketFDs[f] = 0;
             }
-            else if (messageType == MSG_registerModel) {
+            /*else if (messageType == MSG_registerModel) {
                 unsigned char* buf = new unsigned char[dataLength+1];
                 receiveData(sd, buf, dataLength);
                 int modelId;
@@ -358,7 +353,7 @@ void Server::service() {
                 std::string val(reinterpret_cast<char*>(buf));
                 registerModel(new ServerModel(this, sd, val, modelId));
                 delete[] buf;
-            }
+            }*/
             else if (messageType == MSG_getModels) {
                 std::vector<IModel*> models = getModels();
                 int numModels = models.size();
@@ -370,14 +365,19 @@ void Server::service() {
                     sendData(sd, (const unsigned char*)name.c_str(), name.size());
                     int modelId = i;
                     sendData(sd, (unsigned char*)& modelId, sizeof(int));
+                    std::string json = JSONSerializer::instance().serialize(models[i]->getParameters());
+                    sendString(sd, json);
                     //std::cout << name << std::endl;
                 }
             }
             else if (messageType == MSG_createModelSample) {
                 int modelId;
                 receiveData(sd, (unsigned char*)& modelId, sizeof(int));
-                ServerQuery q(this, sd);
-                IModelSample* sample = getModels()[modelId]->create(q);
+                //ServerQuery q(this, sd);
+                std::string json = receiveString(sd);
+                DataObject params;
+                JSONSerializer::instance().deserialize(json, params);
+                IModelSample* sample = getModels()[modelId]->create(params);
                 static int modelSamplesCount = 0;
                 int modelSampleId = modelSamplesCount;
                 modelSamplesCount++;

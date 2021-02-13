@@ -9,14 +9,21 @@ namespace vl {
 
 class TestModel : public IModel {
 public:
-    TestModel(const std::string& name = "TestModel") : name(name) {}
+    TestModel(const std::string& name = "TestModel") : name(name) {
+        defaultParams["w"] = DoubleDataValue(1.0);
+        defaultParams["a"] = DoubleDataValue(1.0);
+        defaultParams["b"] = DoubleDataValue(0.0);
+        defaultParams["c"] = DoubleDataValue(0.0);
+    }
     virtual ~TestModel() {}
 
     const std::string& getName() const { return name; }
-    virtual IModelSample* create(const IQuery& query) const;
+    const DataObject& getParameters() const { return defaultParams; }
+    IModelSample* create(const DataObject& params) const;
 
 private:
     std::string name;
+    DataObject defaultParams;
 };
 
 class TestModelSample : public IModelSample {
