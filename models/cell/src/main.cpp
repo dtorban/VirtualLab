@@ -156,9 +156,84 @@ private:
     DataObject params;
 };
 
+class NSample : public IModelSample {
+public:
+    NSample(DataObject params, const std::vector<IModelSample*>& samples) : params(params), samples(samples) {
+        data["data"] = DataArray();
+        d = &data["data"].get<vl::Array>();
+
+        nav = samples[0]->getNavigation();
+    }
+
+    virtual ~NSample() {
+        for (int i = 0; i < samples.size(); i++) {
+            delete samples[i];
+        }
+    }
+
+    virtual const DataObject& getParameters() const { return params; }
+    virtual DataObject& getNavigation() { return nav; }
+    virtual const DataObject& getData() const { return data; }
+
+    virtual void update() {
+        vl::Array array;
+        
+        for (int i = 0; i < samples.size(); i++) {
+            samples[i]->getNavigation() = nav;
+            samples[i]->update();
+            array.push_back(samples[i]->getData());
+        }
+
+        *d = array;
+    }
+
+private:
+    std::vector<IModelSample*> samples;
+    DataObject params;
+    DataObject nav;
+    DataObject data;
+    vl::Array* d;
+};
+
+class NModel : public IModel {
+public:
+    NModel(const std::string& name, IModel* model) : name(name), model(model) {
+        params = model->getParameters();
+        params["N"] = DoubleDataValue(10);
+    }
+    virtual ~NModel() {
+        delete model;
+    }
+
+    const std::string& getName() const { return name; }
+
+    const DataObject& getParameters() const { return params; }
+
+    IModelSample* create(const DataObject& params) const {
+        std::vector<IModelSample*> samples;
+
+        int numSamples = params["N"].get<double>();
+
+        for (int i = 0; i < numSamples; i++) {
+            DataObject parameters = params;
+            parameters["num"].set<double>(i);
+            IModelSample* sample = model->create(parameters);
+            samples.push_back(sample);
+        }
+
+        return new NSample(params, samples);
+    }
+
+private:
+    IModel* model;
+    std::string name;
+    DataObject params;
+};
+
 int main(int argc, char* argv[]) {
     Server server;
-    server.registerModel(new CellModel("ModelA"));
+    server.registerModel(new CellModel("Cell"));
+    server.registerModel(new NModel("N-Cell", new CellModel("Cell")));
     while(true) {
         server.service();
     }
