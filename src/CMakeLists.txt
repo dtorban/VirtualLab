@@ -1,2 +1,1 @@
 add_subdirectory(VLCore)
-add_subdirectory(VLExplorer)

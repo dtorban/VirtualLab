@@ -24,36 +24,9 @@ class VLWebServerCommand;
 
 using namespace vl;
 
-class ModelNavigator {
-public:
-	ModelNavigator(const IModel& model) : model(model), currentSample(NULL) {
-		DefaultQuery query;
-		createSample(query);
-	}
-
-	~ModelNavigator() {
-		delete currentSample;
-	}
-
-	void createSample(const IQuery& query) {
-		delete currentSample;
-		currentSample = model.create(model.getParameters());
-		currentSample->update();
-	}
-
-	IModelSample* getSample() {
-		return currentSample;
-	}
-
-private:
-	const IModel& model;
-	IModelSample* currentSample;
-};
-
 struct VLWebServerSessionState {
 	std::map<std::string, VLWebServerCommand*> commands;
-    bool* running;
-	ModelNavigator* navigator;
+	IVirtualLabAPI* api;
 };
 
 class VLWebServerCommand {
@@ -65,12 +38,16 @@ public:
 class VLWebServerSession : public JSONSession {
 public:
 	VLWebServerSession(VLWebServerSessionState state) : state(state) {
+		IModel* model = state.api->getModels()[1];
+		DataObject params = model->getParameters();
+		params["N"] = DoubleDataValue(10);
+		sample = model->create(params);
 	}
 	~VLWebServerSession() {
+		delete sample;
 	}
 	void receiveJSON(picojson::value& val) {
 		std::string cmd = val.get<picojson::object>()["command"].get<std::string>();
-		//std::cout << val.get<picojson::object>()["command"].get<std::string>() << std::endl;
 		std::map<std::string, VLWebServerCommand*>::iterator it = state.commands.find(cmd);
 		if (it != state.commands.end()) {
 			it->second->execute(this, val, &state);
@@ -78,18 +55,16 @@ public:
 	}
 	void update() {}
 
+	IModelSample* getSample() {
+		return sample;
+	}
+
 private:
 	VLWebServerSessionState state;
+	IModelSample* sample;
 };
 
-class KillCommand : public VLWebServerCommand {
-public:
-	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
-		*(state->running) = false;
-	}
-};
-
-class JSONDataSetSerializer {
+/*class JSONDataSetSerializer {
 public:
 	picojson::value serialize(const DataObject& dataSet) {
 		return JSONSerializer::instance().serializeJSON(dataSet);
@@ -129,6 +104,8 @@ public:
 		session->sendJSON(ret);
 	}
 };
+
+
 
 class JSONQuery : public IQuery {
 public:
@@ -199,48 +176,38 @@ public:
 		picojson::value ret(data);
 		session->sendJSON(ret);
 	}
+};*/
+
+class GetNavigationCommand : public VLWebServerCommand {
+public:
+	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
+		picojson::object data;
+		data["command"] = picojson::value("getNavigation");
+		data["nav"] = JSONSerializer::instance().serializeJSON(session->getSample()->getNavigation());
+
+		picojson::value ret(data);
+		session->sendJSON(ret);
+	}
+};
+
+class UpdateNavigationCommand : public VLWebServerCommand {
+public:
+	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
+		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["nav"], session->getSample()->getNavigation());
+		std::cout << session->getSample()->getNavigation()["t"].get<double>() << std::endl;
+
+		session->getSample()->update();
+
+		picojson::object data;
+		data["command"] = picojson::value("updateNavigation");
+		data["data"] = JSONSerializer::instance().serializeJSON(session->getSample()->getData());
+
+		picojson::value ret(data);
+		session->sendJSON(ret);
+	}
 };
 
 int main(int argc, char**argv) {
-    /*using namespace vl;
-	//DefaultQuery query;
-	CompositeSamplingStrategy* strategy = new CompositeSamplingStrategy(false);
-	strategy->addStrategy(new SetSamplingRange<double>("w", 0.1, 100));
-	strategy->addStrategy(new SetSamplingRange<double>("a", 1, 1000));
-	strategy->addStrategy(new SetSamplingRange<double>("c", 0, 10));
-	strategy->addStrategy(new SetSamplingScale("a", new LogrithmicScale()));
-	LatinHypercubeSampler* latinHyperCube = new LatinHypercubeSampler(4);
-	latinHyperCube->addParameter<double>("w");
-	latinHyperCube->addParameter<double>("a");
-	latinHyperCube->addParameter<double>("c");
-	strategy->addStrategy(latinHyperCube);
-	*/
-
-/*	int pid = 0;
-#ifdef WIN32
-	pid = 1;
-	if (false) {
-#else
-	if ((pid = fork()) < 0) {
-#endif
-		std::cout << "fork failed" << std::endl;
-		return 1;
-	}
-
-	if (pid != 0) {
-			Server server;
-			server.registerModel(new TestModel("ModelA"));
-			server.registerModel(new TestModel("ModelB"));
-			while(true) {
-				server.service();
-			}
-			return 0;
-
-
-		return 0;
-		
-	}*/
-
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 
 	Client api;
@@ -262,7 +229,7 @@ int main(int argc, char**argv) {
 	//api.registerModel(new TestModel());
 	//ModelNavigator navigator(*api.getModels()[0]);
 	//ModelNavigator navigator(*new TestModel());
-	ModelNavigator navigator(*models[0]);
+	//ModelNavigator navigator(*models[0]);
 
 	if (argc > 2) {
 		int port = std::atoi(argv[1]);
@@ -271,12 +238,15 @@ int main(int argc, char**argv) {
         bool running = true;
 
 		VLWebServerSessionState state;
-		state.commands["kill"] = new KillCommand();
+		/*state.commands["kill"] = new KillCommand();
 		state.commands["createSample"] = new CreateSampleCommand();
 		state.commands["updateQuery"] = new UpdateQueryCommand();
 		state.commands["updateNavigation"] = new UpdateNavigationCommand();
         state.running = &running;
-		state.navigator = &navigator;
+		state.navigator = &navigator;*/
+		state.commands["getNavigation"] = new GetNavigationCommand();
+		state.commands["updateNavigation"] = new UpdateNavigationCommand();
+		state.api = &api;
 		WebServerWithState<VLWebServerSession, VLWebServerSessionState> server(state,port, webDir);
 		while (running) {
 			server.service();

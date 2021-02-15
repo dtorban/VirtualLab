@@ -17,6 +17,7 @@ int main(int argc, char**argv) {
 	DataObject params = model->getParameters();
 	params["N"].set<double>(10);
 	IModelSample* sample = model->create(params);
+	
 	std::cout << "Parameters: " << JSONSerializer::instance().serialize(sample->getParameters()) << std::endl;
 	std::cout << "Navigation: " << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
 	std::cout << "Data: " << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
