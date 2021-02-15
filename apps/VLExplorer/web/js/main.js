@@ -145,7 +145,7 @@ function updateLines() {
 
       {
     //create a blue LineBasicMaterial
-    var material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+    var material = new THREE.LineBasicMaterial( { color: 0xff751a } );
     const geometry = new THREE.BufferGeometry().setFromPoints( lines[i].points );
     lines[i].line = new THREE.Line( geometry, material );
     scene.add( lines[i].line );
