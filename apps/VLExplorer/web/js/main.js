@@ -39,8 +39,10 @@ $( document ).ready(function() {
       if (data["command"] == "updateNavigation") {
         if (lines.length == 0) {
           for (var i = 0; i < data.data.data.length; i++) {
-            lines.push( { line: null, points: []} );            
-            lines[i].points.push( new THREE.Vector3( 0.0, 1.0, 0.0 ) );
+            lines.push( { line: null, points: [], modules: [], mods: null} );            
+            //lines[i].points.push( new THREE.Vector3( 0.0, 1.0, 0.0 ) );
+            lines[i].modules.push( new THREE.Vector3( 0.0, 1.0, 0.0 ) );
+            lines[i].modules.push( new THREE.Vector3( 0.0, 0.0, 0.0 ) );
           }
         }
         //console.log(data["data"]);
@@ -48,6 +50,14 @@ $( document ).ready(function() {
         //lines.push( new THREE.Vector3( data.data.data[0]["x"]/1000.0, data.data.data[0]["y"]/1000.0, 0.0 ) );
         for (var i = 0; i < data.data.data.length; i++) {
           lines[i].points.push( new THREE.Vector3( data.data.data[i]["x"]/1000.0, data.data.data[i]["y"]/1000.0, 0.0 ) );
+          lines[i].modules = [];
+
+          for (var j = 0; j < data.data.data[i].m.length; j++) {
+            //lines[i].modules.push( new THREE.Vector3( 0.0, 0.0, 0.0 ) );
+            
+            lines[i].modules.push( new THREE.Vector3( data.data.data[i]["x"]/1000.0, data.data.data[i]["y"]/1000.0, 0.0 ) );
+            lines[i].modules.push(new THREE.Vector3( data.data.data[i].m[j]["x"]/1000.0, data.data.data[i].m[j]["y"]/1000.0, 0.0 ));
+          }
         }
 
         updateLines();
@@ -126,18 +136,22 @@ function updateNavigation() {
 }
 
 function updateLines() {
+    const dist = 30;
+
     for (var i = 0; i < lines.length; i++) {
       if (lines[i].line) {
         scene.remove(lines[i].line);
       }
 
+      {
     //create a blue LineBasicMaterial
-    var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+    var material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
     const geometry = new THREE.BufferGeometry().setFromPoints( lines[i].points );
     lines[i].line = new THREE.Line( geometry, material );
     scene.add( lines[i].line );
 
-    lines[i].line.position.copy(new THREE.Vector3(10*Math.floor(i/3),10*Math.floor(i%3),0));
+    lines[i].line.position.copy(new THREE.Vector3(dist*Math.floor(i%3),dist*Math.floor(i/3),0));
+  }
     /*if (lines.length > 0) {
       //line.position.copy(new THREE.Vector3(-lines[lines.length-1].x,0,0));
     }*/
@@ -154,6 +168,20 @@ function updateLines() {
         line2.position.copy(new THREE.Vector3(-lines2[lines2.length-1].x,2.0,0));
       }*/
       
+
+      if (lines[i].mods) {
+        scene.remove(lines[i].mods);
+      }
+
+      {
+        //create a blue LineBasicMaterial
+        var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+        const geometry = new THREE.BufferGeometry().setFromPoints( lines[i].modules );
+        lines[i].mods = new THREE.Line( geometry, material );
+        scene.add( lines[i].mods );
+
+        lines[i].mods.position.copy(new THREE.Vector3(dist*Math.floor(i%3),dist*Math.floor(i/3),0));
+      }
     }
 }
 

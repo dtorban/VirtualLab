@@ -40,7 +40,7 @@ public:
 	VLWebServerSession(VLWebServerSessionState state) : state(state) {
 		IModel* model = state.api->getModels()[1];
 		DataObject params = model->getParameters();
-		params["N"] = DoubleDataValue(10);
+		params["N"] = DoubleDataValue(3);
 		sample = model->create(params);
 	}
 	~VLWebServerSession() {
