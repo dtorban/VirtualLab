@@ -26,19 +26,30 @@ void RunPCA(arma::mat& dataset,
 {
   PCA<DecompositionPolicy> p(scale);
 
-  Log::Info << "Performing PCA on dataset..." << std::endl;
+  std::cout << "Performing PCA on dataset..." << std::endl;
   double varRetained;
 
     varRetained = p.Apply(dataset, newDimension);
 
-  Log::Info << (varRetained * 100) << "% of variance retained (" <<
+  std::cout << (varRetained * 100) << "% of variance retained (" <<
       dataset.n_rows << " dimensions)." << std::endl;
 }
 
 int main(int argc, char**argv) {
-	arma::mat dataset(10, 10);
+	//arma::mat dataset(10, 10);
+	arma::Mat<double> A;
+	A.load("iris.csv");
+	A = A.t();
 
-	RunPCA<ExactSVDPolicy>(dataset, 2, 1.0, 1.0);
+
+
+	std::cout << A << std::endl;
+
+	RunPCA<ExactSVDPolicy>(A, 2, 1.0, 1.0);
+
+	std::cout << A.t() << std::endl;
+
+	std::cout << A(0,0) << std::endl;
 
 	/*Client api;
 	IModel* model = api.getModels()[1];
