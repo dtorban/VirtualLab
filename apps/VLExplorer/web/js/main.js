@@ -4,17 +4,22 @@ var connected = false;
 
 // More important related to models and animation.
 var container = document.querySelector( '#scene-container' );
+var container2 = document.querySelector( '#scene-container2' );
 const mixers = [];
 const clock = new THREE.Clock();
 var query = null;
 var sampleNavigation = {};
 var scene;
+var scene2;
 var line = null;
 var line2 = null;
 var lines = [];
 var controls;
 var camera;
+var camera2d;
+var renderer;
 var canUpdate = true;
+var dataLines = [];
 
 // Function definitions start here...
 
@@ -38,11 +43,18 @@ $( document ).ready(function() {
       }
       if (data["command"] == "updateNavigation") {
         if (lines.length == 0) {
+          console.log(data["data"]);
           for (var i = 0; i < data.data.data.length; i++) {
             lines.push( { line: null, points: [], modules: [], mods: null} );            
             //lines[i].points.push( new THREE.Vector3( 0.0, 1.0, 0.0 ) );
             lines[i].modules.push( new THREE.Vector3( 0.0, 1.0, 0.0 ) );
             lines[i].modules.push( new THREE.Vector3( 0.0, 0.0, 0.0 ) );
+
+            dataLines.push( { line: null, points: [], modules: [], mods: null} );  
+            dataLines.push( { line: null, points: [], modules: [], mods: null} );  
+            dataLines.push( { line: null, points: [], modules: [], mods: null} );  
+            dataLines.push( { line: null, points: [], modules: [], mods: null} );  
+            //dataLines.push( { line: null, points: [], modules: [], mods: null} );  
           }
         }
         //console.log(data["data"]);
@@ -57,7 +69,21 @@ $( document ).ready(function() {
             
             lines[i].modules.push( new THREE.Vector3( data.data.data[i]["x"]/1000.0, data.data.data[i]["y"]/1000.0, 0.0 ) );
             lines[i].modules.push(new THREE.Vector3( data.data.data[i].m[j]["x"]/1000.0, data.data.data[i].m[j]["y"]/1000.0, 0.0 ));
+
           }
+          var d = data.data.data[i];
+
+          var dist = 80;
+          var scale = 3.0;
+
+          dataLines[i*4+0].points.push(new THREE.Vector3( time/1.0, scale*d["actin"]/3000.0 + dist*-1.0-dist, 0.0 ));
+          dataLines[i*4+1].points.push(new THREE.Vector3( time/1.0, scale*d["aflow"]/5.0 + dist*0.0-dist, 0.0 ));
+          var f = Math.sqrt(d["fx"]*d["fx"] + d["fy"]*d["fy"]);
+          dataLines[i*4+2].points.push(new THREE.Vector3( time/1.0, scale*f/5.0 + dist*1.0-dist, 0.0 ));
+          var s = Math.sqrt(d["x"]*d["x"] + d["y"]*d["y"]);
+          dataLines[i*4+3].points.push(new THREE.Vector3( time/1.0, scale*s/500.0 + dist*2.0-dist, 0.0 ));
+          //dataLines[i*data.data.data.length+3].points.push(new THREE.Vector3( time/10.0, d["fy"]/5.0 + 50*3.0-50.0, 0.0 ));
+          console.log(dataLines);
         }
 
         updateLines();
@@ -76,9 +102,62 @@ socket.onopen = function() {
   socket.send(JSON.stringify({command: "getNavigation"})); //updateNavigation
 }
 
+function init2d() {
+  var w = $("#scene-container2").width();
+  var h = $("#scene-container2").height();
+  var viewSize = w;
+  var aspectRatio = w / h;
+  
+  var viewport = {
+      viewSize: viewSize,
+      aspectRatio: aspectRatio,
+      left: (-aspectRatio * viewSize) / 2,
+      right: (aspectRatio * viewSize) / 2,
+      top: viewSize / 2,
+      bottom: -viewSize / 2,
+      near: -100,
+      far: 100
+  }
+  
+  camera2d = new THREE.OrthographicCamera ( 
+    viewport.left, 
+    viewport.right, 
+    viewport.top, 
+    viewport.bottom, 
+    viewport.near, 
+    viewport.far 
+  );
+  //camera2d.position.set( 0, 0, 0.01 );
+
+  scene2 = new THREE.Scene();
+  //scene2.background = new THREE.Color( 'red' );
+
+  scene2.add( camera2d );
+
+  /*var p = [
+    new THREE.Vector3(0,0,0),
+    new THREE.Vector3(0,700,10),
+    new THREE.Vector3(10,10,0),
+    new THREE.Vector3(0,10,70),
+    new THREE.Vector3(0,10,-20)
+  ];
+
+  var material = new THREE.LineBasicMaterial( { color: 0xffffff } );
+  const geometry = new THREE.BufferGeometry().setFromPoints( p );
+  var line = new THREE.Line( geometry, material );
+  scene2.add( line );*/
+  
+  renderer2 = new THREE.WebGLRenderer( { antialias: true } );
+  renderer2.setSize( $("#scene-container2").width(), $("#scene-container2").height() );
+  renderer2.setClearColor( 0x000000, 0 );
+  container2.appendChild( renderer2.domElement );
+}
+
 // This function defines the properties of the scene as well as starts the
 // update loop.
 function init() {
+  init2d();
+
   const fov = 35; // fov = Field Of View
   const aspect = container.clientWidth / container.clientHeight;
   const near = 0.1;
@@ -144,14 +223,14 @@ function updateLines() {
       }
 
       {
-    //create a blue LineBasicMaterial
-    var material = new THREE.LineBasicMaterial( { color: 0xff751a } );
-    const geometry = new THREE.BufferGeometry().setFromPoints( lines[i].points );
-    lines[i].line = new THREE.Line( geometry, material );
-    scene.add( lines[i].line );
+        //create a blue LineBasicMaterial
+        var material = new THREE.LineBasicMaterial( { color: 0xff751a } );
+        const geometry = new THREE.BufferGeometry().setFromPoints( lines[i].points );
+        lines[i].line = new THREE.Line( geometry, material );
+        scene.add( lines[i].line );
 
-    lines[i].line.position.copy(new THREE.Vector3(dist*Math.floor(i%3),dist*Math.floor(i/3),0));
-  }
+        lines[i].line.position.copy(new THREE.Vector3(dist*Math.floor(i%3),dist*Math.floor(i/3),0));
+      }
     /*if (lines.length > 0) {
       //line.position.copy(new THREE.Vector3(-lines[lines.length-1].x,0,0));
     }*/
@@ -180,7 +259,23 @@ function updateLines() {
         lines[i].mods = new THREE.Line( geometry, material );
         scene.add( lines[i].mods );
 
-        lines[i].mods.position.copy(new THREE.Vector3(dist*Math.floor(i%3),dist*Math.floor(i/3),0));
+	      lines[i].mods.position.copy(new THREE.Vector3(dist*Math.floor(i%3),dist*Math.floor(i/3),0));
+      }
+    }
+
+    for (var i = 0; i < dataLines.length; i++) {
+      if (dataLines[i].line) {
+        scene2.remove(dataLines[i].line);
+      }
+
+      {
+        //create a blue LineBasicMaterial
+        var material = new THREE.LineBasicMaterial( { color: 0xffffff } );
+        const geometry = new THREE.BufferGeometry().setFromPoints( dataLines[i].points );
+        dataLines[i].line = new THREE.Line( geometry, material );
+        scene2.add( dataLines[i].line );
+
+        dataLines[i].line.position.copy(new THREE.Vector3(-dataLines[i].points[dataLines[i].points.length-1].x + 45,0,0));
       }
     }
 }
@@ -199,6 +294,7 @@ function update() {
 // This function simply renders the scene based on the camera position.
 function render() {
   renderer.render( scene, camera );
+  renderer2.render( scene2, camera2d );
 }
 
 // This function updates the projection matrix and renderer whenever the

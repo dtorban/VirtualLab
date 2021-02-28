@@ -7,10 +7,40 @@ Copyright (c) 2019 Dan Orban
 #include "VirtualLab/DataValue.h"
 #include "VirtualLab/util/JSONSerializer.h"
 
+#include <mlpack/prereqs.hpp>
+#include <mlpack/methods/pca/pca.hpp>
+#include <mlpack/methods/pca/decomposition_policies/exact_svd_method.hpp>
+#include <mlpack/methods/pca/decomposition_policies/quic_svd_method.hpp>
+#include <mlpack/methods/pca/decomposition_policies/randomized_svd_method.hpp>
+using namespace mlpack;
+using namespace mlpack::pca;
+using namespace mlpack::util;
 using namespace vl;
 
+// Run RunPCA on the specified dataset with the given decomposition method.
+template<typename DecompositionPolicy>
+void RunPCA(arma::mat& dataset,
+            const size_t newDimension,
+            const bool scale,
+            const double varToRetain)
+{
+  PCA<DecompositionPolicy> p(scale);
+
+  Log::Info << "Performing PCA on dataset..." << std::endl;
+  double varRetained;
+
+    varRetained = p.Apply(dataset, newDimension);
+
+  Log::Info << (varRetained * 100) << "% of variance retained (" <<
+      dataset.n_rows << " dimensions)." << std::endl;
+}
+
 int main(int argc, char**argv) {
-	Client api;
+	arma::mat dataset(10, 10);
+
+	RunPCA<ExactSVDPolicy>(dataset, 2, 1.0, 1.0);
+
+	/*Client api;
 	IModel* model = api.getModels()[1];
 	std::cout << model->getName() << std::endl;
 	
@@ -30,7 +60,7 @@ int main(int argc, char**argv) {
 		std::cout << "t=" << sample->getNavigation()["t"].get<double>() << ": ";
 		std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
 		std::cout << std::endl;
-	}
+	}*/
 
 	return 0;
 }

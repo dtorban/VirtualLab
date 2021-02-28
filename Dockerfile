@@ -1,5 +1,5 @@
 # Builder image
-FROM ubuntu:18.04 as builder
+FROM ubuntu:20.10 as builder
 RUN groupdel dialout
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y \
     rsync \
     libmysqlcppconn-dev \
     cmake \
-    libgtest-dev
+    libgtest-dev \
+    libmlpack-dev
 
 ARG DEP_DIR=/dependencies
 ARG SETUP_DIR=/env
@@ -26,6 +27,7 @@ RUN make install -j
 
 RUN find ${DEP_DIR} -type d -exec chmod 775 {} \;
 RUN find ${DEP_DIR} -type f -exec chmod 664 {} \;
+RUN apt-get install 
 
 # Dev image
 FROM builder as dev
