@@ -44,7 +44,10 @@ set(DEP_INCLUDES ${DEP_INCLUDES}
 
 set(DEP_LIBS ${DEP_LIBS} VLCore CppWebServer websockets)
 
-set(ALL_LIBS ${ALL_LIBS} crypto ssl z)
+set(ALL_LIBS ${ALL_LIBS} crypto ssl z mlpack armadillo)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp") 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp") 
 
 include(${external_dir}/CPP11/CPP11.cmake)
 useCPP11()

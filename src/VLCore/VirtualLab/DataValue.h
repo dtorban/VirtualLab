@@ -160,7 +160,6 @@ typedef TypedDataValue<double> DoubleDataValue;
 typedef TypedDataValue<std::string> StringDataValue;
 typedef std::map<std::string, DataValue> Object;
 typedef std::vector<DataValue> Array;
-typedef TypedDataValue<Array> DataArray;
 
 class DataObject : public TypedDataValue<Object> {
 public:
@@ -175,6 +174,23 @@ public:
         }
 
         return val;
+    }
+
+    void operator=(const DataValue& value) {
+        DataValue::operator=(value);
+    }
+};
+
+class DataArray : public TypedDataValue<Array> {
+public:
+    DataValue& operator[](int index) {
+        return get<Array>()[index];
+    }
+    const DataValue& operator[](int index) const {
+        return get<Array>()[index];
+    }
+    int size() const {
+        return get<Array>().size();
     }
 };
 

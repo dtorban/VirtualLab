@@ -4,6 +4,15 @@
 #include "VirtualLab/net/Server.h"
 #include "VirtualLab/util/JSONSerializer.h"
 
+#include <mlpack/prereqs.hpp>
+#include <mlpack/methods/pca/pca.hpp>
+#include <mlpack/methods/pca/decomposition_policies/exact_svd_method.hpp>
+#include <mlpack/methods/pca/decomposition_policies/quic_svd_method.hpp>
+#include <mlpack/methods/pca/decomposition_policies/randomized_svd_method.hpp>
+using namespace mlpack;
+using namespace mlpack::pca;
+using namespace mlpack::util;
+
 using namespace vl;
 
 class DataObjectConfig : public IConfig {
@@ -230,10 +239,149 @@ private:
     DataObject params;
 };
 
+// Run RunPCA on the specified dataset with the given decomposition method.
+template<typename DecompositionPolicy>
+void RunPCA(arma::mat& dataset,
+            const size_t newDimension,
+            const bool scale,
+            const double varToRetain)
+{
+  PCA<DecompositionPolicy> p(scale);
+
+  //std::cout << "Performing PCA on dataset..." << std::endl;
+  double varRetained;
+
+    varRetained = p.Apply(dataset, newDimension);
+
+  //std::cout << (varRetained * 100) << "% of variance retained (" <<
+      //dataset.n_rows << " dimensions)." << std::endl;
+}
+
+class PCASample : public IModelSample {
+public:
+    PCASample(DataObject params, IModelSample* sample) : params(params), sample(sample) {
+        data["pca"] = DataArray();
+        d = &data["pca"].get<vl::Array>();
+
+        nav = sample->getNavigation();
+    }
+
+    virtual ~PCASample() {
+        delete sample;
+    }
+
+    virtual const DataObject& getParameters() const { return params; }
+    virtual DataObject& getNavigation() { return nav; }
+    virtual const DataObject& getData() const { return data; }
+
+    virtual void update(int id, Object& prev, Object& obj) {
+
+        double x = prev["x"].get<double>();
+        double y = prev["y"].get<double>();
+        double dx = obj["x"].get<double>() - x;
+        double dy = obj["y"].get<double>() - y;
+        double dist = std::sqrt(std::pow(dx,2.0)+std::pow(dy,2.0)) ;
+
+        arma::rowvec r;
+		r << obj["actin"].get<double>()
+			<< obj["aflow"].get<double>() 
+			<< obj["en"].get<double>() 
+			<< obj["free_actin"].get<double>() 
+			<< obj["nm"].get<double>()
+			<< std::sqrt(std::pow(obj["fx"].get<double>(),2.0)+std::pow(obj["fy"].get<double>(),2.0)) 
+            << dist
+			<< arma::endr;
+        if (nav["t"].get<double>() > 50.0) {
+		    rows.push_back(r);
+        }
+
+
+
+    }
+
+    virtual void update() {
+        std::vector<Object> prev;
+        //std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
+        for (int i = 0; i < sample->getData()["data"].get<vl::Array>().size(); i++) {
+            prev.push_back(sample->getData()["data"].get<vl::Array>()[i].get<Object>());
+        }
+
+        sample->getNavigation() = nav;
+        sample->update();
+        
+        vl::Array array;
+        if (prev.size() > 0) {
+            for (int i = 0; i < sample->getData()["data"].get<vl::Array>().size(); i++) {
+                Object obj = sample->getData()["data"].get<vl::Array>()[i].get<Object>();
+                update(i, prev[i], obj);
+            }
+
+            if (rows.size() > 2) {
+                arma::mat A(rows.size(), rows[0].n_cols);
+            
+                //B << sample->getNavigation()["t"].get<double>() << arma::endr << sample->getNavigation()["t"].get<double>() << arma::endr;
+                for (int i = 0; i < rows.size(); i++) {
+                    A.row(i) = rows[i];
+                }
+                A = A.t();
+                RunPCA<ExactSVDPolicy>(A, 2, true, 1.0);
+                A = A.t();
+
+
+                for (int f = 0; f < rows.size(); f+=10*prev.size()) {
+                    for (int i = 0; i < prev.size(); i++) {
+                        vl::DataObject obj;
+                        //std::cout << A.row(f);
+                        obj["x"] = DoubleDataValue(A(f+i,0));
+                        obj["y"] = DoubleDataValue(A(f+i,1));
+                        obj["id"] = DoubleDataValue(i);
+                        array.push_back(obj);
+                    }
+                }
+            }
+        }
+        *d = array;
+    }
+
+private:
+    IModelSample* sample;
+    DataObject params;
+    DataObject nav;
+    DataObject data;
+    vl::Array* d;
+	std::vector<arma::rowvec> rows;
+};
+
+class PCAModel : public IModel {
+public:
+    PCAModel(const std::string& name, IModel* model) : name(name), model(model) {
+        params = model->getParameters();
+        params["N"] = DoubleDataValue(10);
+    }
+    virtual ~PCAModel() {
+        delete model;
+    }
+
+    const std::string& getName() const { return name; }
+
+    const DataObject& getParameters() const { return params; }
+
+    IModelSample* create(const DataObject& params) const {
+        return new PCASample(params, model->create(params));
+    }
+
+private:
+    IModel* model;
+    std::string name;
+    DataObject params;
+};
+
 int main(int argc, char* argv[]) {
     Server server;
     server.registerModel(new CellModel("Cell"));
     server.registerModel(new NModel("N-Cell", new CellModel("Cell")));
+    server.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
+    server.registerModel(new PCAModel("N-PCA-Cell", new NModel("N-Cell", new CellModel("Cell"))));
     while(true) {
         server.service();
     }
