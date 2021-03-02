@@ -88,7 +88,7 @@ var svg = d3.select("#my_dataviz")
 function drawPlot(data) {
   // Add X axis
   var x = d3.scaleLinear()
-    .domain([-4, 10])
+    .domain([-4, 6])
     .range([ 0, width ]);
   svg.append("g")
     .attr("transform", "translate(0," + height + ")")
@@ -117,25 +117,25 @@ function drawPlot(data) {
 }
 
 function updatePlot(data) {
-    /*var x = d3.scaleLinear()
-      .domain([-4, 10])
+    var x = d3.scaleLinear()
+      .domain([-4, 6])
       .range([ 0, width ]);
 
     // Add Y axis
     var y = d3.scaleLinear()
-      .domain([d3.min(data, function(d) { return d.x; }), d3.max(data, function(d) {return d.x; })]);
-      .range([ height, 0]);*/
+      .domain([-4, 5])
+      .range([ height, 0]);
     //x.domain([d3.min(data, function(d) { return d.x; }), d3.max(data, function(d) {return d.x; })]);
     //y.domain([d3.min(data, function(d) { return d.y; }), d3.max(data, function(d) {return d.y; })]);
 
-    var x = d3.scaleLinear()
+    /*var x = d3.scaleLinear()
         .domain([d3.min(data, function(d) { return Math.floor(d.x); }), d3.max(data, function(d) {return Math.ceil(d.x); })])
         .range([ 0, width ]);
 
     // Add Y axis
     var y = d3.scaleLinear()
         .domain([d3.min(data, function(d) { return Math.floor(d.y); }), d3.max(data, function(d) {return Math.ceil(d.y); })])
-        .range([ height, 0]);
+        .range([ height, 0]);*/
 
     svg.selectAll("circle")
         .data(data)

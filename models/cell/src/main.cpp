@@ -226,6 +226,7 @@ public:
         for (int i = 0; i < numSamples; i++) {
             DataObject parameters = params;
             parameters["num"].set<double>(i);
+            parameters["substrate_k"].set<double>(std::exp(std::log(0.1) + ((1.0*i)/(numSamples-1))*(std::log(300)-std::log(0.1))));
             IModelSample* sample = model->create(parameters);
             samples.push_back(sample);
         }
@@ -260,8 +261,12 @@ void RunPCA(arma::mat& dataset,
 class PCASample : public IModelSample {
 public:
     PCASample(DataObject params, IModelSample* sample) : params(params), sample(sample) {
+        data["data"] = DataArray();
         data["pca"] = DataArray();
+        data["pca2"] = DataArray();
+        arr = &data["data"].get<vl::Array>();
         d = &data["pca"].get<vl::Array>();
+        d2 = &data["pca2"].get<vl::Array>();
 
         nav = sample->getNavigation();
     }
@@ -300,6 +305,7 @@ public:
     }
 
     virtual void update() {
+
         std::vector<Object> prev;
         //std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
         for (int i = 0; i < sample->getData()["data"].get<vl::Array>().size(); i++) {
@@ -310,6 +316,7 @@ public:
         sample->update();
         
         vl::Array array;
+        vl::Array array2;
         if (prev.size() > 0) {
             for (int i = 0; i < sample->getData()["data"].get<vl::Array>().size(); i++) {
                 Object obj = sample->getData()["data"].get<vl::Array>()[i].get<Object>();
@@ -335,12 +342,25 @@ public:
                         obj["x"] = DoubleDataValue(A(f+i,0));
                         obj["y"] = DoubleDataValue(A(f+i,1));
                         obj["id"] = DoubleDataValue(i);
+                        array2.push_back(obj);
+                    }
+                }
+
+                for (int f = rows.size() - 20*prev.size(); f < rows.size(); f+=1*prev.size()) {
+                    for (int i = 0; i < prev.size(); i++) {
+                        vl::DataObject obj;
+                        //std::cout << A.row(f);
+                        obj["x"] = DoubleDataValue(A(f+i,0));
+                        obj["y"] = DoubleDataValue(A(f+i,1));
+                        obj["id"] = DoubleDataValue(i);
                         array.push_back(obj);
                     }
                 }
             }
         }
         *d = array;
+        *d2 = array2;
+        *arr = sample->getData()["data"].get<vl::Array>();
     }
 
 private:
@@ -349,6 +369,8 @@ private:
     DataObject nav;
     DataObject data;
     vl::Array* d;
+    vl::Array* d2;
+    vl::Array* arr;
 	std::vector<arma::rowvec> rows;
 };
 

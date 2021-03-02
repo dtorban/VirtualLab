@@ -22,6 +22,178 @@ var canUpdate = true;
 var dataLines = [];
 
 // Function definitions start here...
+  // Adapted from http://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+  
+  var randomColor = (function(){
+    var golden_ratio_conjugate = 0.618033988749895;
+    var h = Math.random();
+  
+    var hslToRgb = function (h, s, l){
+        var r, g, b;
+  
+        if(s == 0){
+            r = g = b = l; // achromatic
+        }else{
+            function hue2rgb(p, q, t){
+                if(t < 0) t += 1;
+                if(t > 1) t -= 1;
+                if(t < 1/6) return p + (q - p) * 6 * t;
+                if(t < 1/2) return q;
+                if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+            }
+  
+            var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            var p = 2 * l - q;
+            r = hue2rgb(p, q, h + 1/3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1/3);
+        }
+  
+        return '#'+Math.round(r * 255).toString(16)+Math.round(g * 255).toString(16)+Math.round(b * 255).toString(16);
+    };
+    
+    return function(){
+      h += golden_ratio_conjugate;
+      h %= 1;
+      return hslToRgb(h, 0.5, 0.60);
+    };
+  })();
+
+var colors = [];
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+colors.push(randomColor())
+console.log(colors);
+
+// set the dimensions and margins of the graph
+var margin = {top: 10, right: 30, bottom: 30, left: 60},
+    width = 400 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+var radius = 3.0;
+
+// append the svg object to the body of the page
+var svg1 = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+var svg2 = d3.select("#my_dataviz2")
+.append("svg")
+  .attr("width", width + margin.left + margin.right)
+  .attr("height", height + margin.top + margin.bottom)
+.append("g")
+  .attr("transform",
+        "translate(" + margin.left + "," + margin.top + ")");
+
+
+function drawPlot(svg, data) {
+  // Add X axis
+  var x = d3.scaleLinear()
+    .domain([-4, 6])
+    .range([ 0, width ]);
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x));
+
+  // Add Y axis
+  var y = d3.scaleLinear()
+    .domain([-4, 5])
+    .range([ height, 0]);
+  svg.append("g")
+    .call(d3.axisLeft(y));
+
+  // Add dots
+  svg.append('g')
+    .selectAll("dot")
+    .data(data)
+    .enter()
+    .append("circle")
+      .attr("cx", function (d) { return x(d.x); } )
+      .attr("cy", function (d) { return y(d.y); } )
+      .attr("r", radius)
+      .style("fill", "#69b3a2");
+
+    //x.domain([d3.min(data, function(d) { return d.x; }), d3.max(data, function(d) {return d.x; })]);
+    //y.domain([d3.min(data, function(d) { return d.y; }), d3.max(data, function(d) {return d.y; })]);
+}
+
+function updatePlot(svg, data) {
+    var x = d3.scaleLinear()
+      .domain([-4, 6])
+      .range([ 0, width ]);
+
+    // Add Y axis
+    var y = d3.scaleLinear()
+      .domain([-4, 5])
+      .range([ height, 0]);
+    //x.domain([d3.min(data, function(d) { return d.x; }), d3.max(data, function(d) {return d.x; })]);
+    //y.domain([d3.min(data, function(d) { return d.y; }), d3.max(data, function(d) {return d.y; })]);
+
+    /*var x = d3.scaleLinear()
+        .domain([d3.min(data, function(d) { return Math.floor(d.x); }), d3.max(data, function(d) {return Math.ceil(d.x); })])
+        .range([ 0, width ]);
+
+    // Add Y axis
+    var y = d3.scaleLinear()
+        .domain([d3.min(data, function(d) { return Math.floor(d.y); }), d3.max(data, function(d) {return Math.ceil(d.y); })])
+        .range([ height, 0]);*/
+
+    svg.selectAll("circle")
+        .data(data)
+        .transition()
+        .duration(0)
+        //.append("circle")
+        .attr("cx", function (d) { return x(d.x); } )
+        .attr("cy", function (d) { return y(d.y); } )
+        .attr("r", radius)
+        .style("fill", function (d) { return colors[d.id % colors.length]; });
+        //.style("fill", "#69b3a2");
+
+    svg.selectAll("circle")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", function (d) { return x(d.x); } )
+        .attr("cy", function (d) { return y(d.y); } )
+        .attr("r", radius)
+        .style("fill", function (d) { return colors[d.id % colors.length]; });
+        //.style("fill", "#69b3a2");
+
+    /*// Update X Axis
+    svg.select(".x.axis")
+        .transition()
+        .duration(0)
+        .call(x);
+
+    // Update Y Axis
+    svg.select(".y.axis")
+        .transition()
+        .duration(0)
+        .call(y);*/
+}
+
+
+//Read the data
+//d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/2_TwoNum.csv", function(data) { drawPlot(data); })
+
+var data = [{x:3.14, y: 1}];
+drawPlot(svg1, data);
+drawPlot(svg2, data);
 
 // This is the function that is called once the document is started.
 $( document ).ready(function() {
@@ -37,13 +209,13 @@ $( document ).ready(function() {
       var data = JSON.parse(msg.data);
       //console.log(data);
       if (data["command"] == "getNavigation") {
-        console.log(data["nav"]);
+        //console.log(data["nav"]);
         sampleNavigation = data["nav"];
         connected = true;
       }
       if (data["command"] == "updateNavigation") {
         if (lines.length == 0) {
-          console.log(data["data"]);
+          //console.log(data["data"]);
           for (var i = 0; i < data.data.data.length; i++) {
             lines.push( { line: null, points: [], modules: [], mods: null} );            
             //lines[i].points.push( new THREE.Vector3( 0.0, 1.0, 0.0 ) );
@@ -83,10 +255,12 @@ $( document ).ready(function() {
           var s = Math.sqrt(d["x"]*d["x"] + d["y"]*d["y"]);
           dataLines[i*4+3].points.push(new THREE.Vector3( time/1.0, scale*s/500.0 + dist*2.0-dist, 0.0 ));
           //dataLines[i*data.data.data.length+3].points.push(new THREE.Vector3( time/10.0, d["fy"]/5.0 + 50*3.0-50.0, 0.0 ));
-          console.log(dataLines);
+          //console.log(dataLines);
         }
 
         updateLines();
+        updatePlot(svg1, data.data.pca);
+        updatePlot(svg2, data.data.pca2);
         canUpdate = true;
       }
     }
@@ -168,7 +342,8 @@ function init() {
   controls = new THREE.OrbitControls( camera, container );
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color( 'lightgrey' );
+  scene.background = new THREE.Color( 'white' );
+  //scene.background = new THREE.Color( 'lightgrey' );
 
   // create a Standard material using the texture we just loaded as a color map
   material = new THREE.MeshStandardMaterial( {color: 0x85868f});
@@ -224,12 +399,14 @@ function updateLines() {
 
       {
         //create a blue LineBasicMaterial
+        //var material = new THREE.LineBasicMaterial( { color: 0xff751a } );
         var material = new THREE.LineBasicMaterial( { color: 0xff751a } );
         const geometry = new THREE.BufferGeometry().setFromPoints( lines[i].points );
         lines[i].line = new THREE.Line( geometry, material );
         scene.add( lines[i].line );
 
         lines[i].line.position.copy(new THREE.Vector3(dist*Math.floor(i%3),dist*Math.floor(i/3),0));
+        
       }
     /*if (lines.length > 0) {
       //line.position.copy(new THREE.Vector3(-lines[lines.length-1].x,0,0));
@@ -255,6 +432,7 @@ function updateLines() {
       {
         //create a blue LineBasicMaterial
         var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+        material.color.setHex(parseInt(colors[i%10].replace("#","0x"), 16));
         const geometry = new THREE.BufferGeometry().setFromPoints( lines[i].modules );
         lines[i].mods = new THREE.Line( geometry, material );
         scene.add( lines[i].mods );
