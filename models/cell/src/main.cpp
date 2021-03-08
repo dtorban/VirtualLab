@@ -227,6 +227,8 @@ public:
             DataObject parameters = params;
             parameters["num"].set<double>(i);
             parameters["substrate_k"].set<double>(std::exp(std::log(0.1) + ((1.0*i)/(numSamples-1))*(std::log(300)-std::log(0.1))));
+            //parameters["cpool"].set<double>(std::exp(std::log(75) + ((1.0*i)/(numSamples-1))*(std::log(750)-std::log(75))));
+            //parameters["mpool"].set<double>(std::exp(std::log(100) + ((1.0*i)/(numSamples-1))*(std::log(10000)-std::log(100))));
             IModelSample* sample = model->create(parameters);
             samples.push_back(sample);
         }
@@ -295,6 +297,7 @@ public:
 			<< obj["nm"].get<double>()
 			<< std::sqrt(std::pow(obj["fx"].get<double>(),2.0)+std::pow(obj["fy"].get<double>(),2.0)) 
             << dist
+			<< sample->getData()["rmc"].get<double>()
 			<< arma::endr;
         if (nav["t"].get<double>() > 50.0) {
 		    rows.push_back(r);
@@ -398,12 +401,96 @@ private:
     DataObject params;
 };
 
+class MovingAverageSample : public IModelSample {
+public:
+    MovingAverageSample(DataObject params, IModelSample* sample) : params(params), sample(sample) {
+        radius = params["radius"].get<double>();
+        nav = sample->getNavigation();
+    }
+
+    virtual ~MovingAverageSample() {
+        delete sample;
+    }
+
+    virtual const DataObject& getParameters() const { return params; }
+    virtual DataObject& getNavigation() { return nav; }
+    virtual const DataObject& getData() const { return data; }
+
+    virtual void update() {
+        sample->getNavigation() = nav;
+        sample->update();
+        
+        window.push_back(sample->getData());
+
+        int dataIndex = window.size() > radius ? window.size()-radius-1 : 0;
+        //data = sample->getData();
+        data.set<Object>(window[dataIndex].get<Object>());
+
+        if (window.size() > radius*2+1) {
+            window.erase(window.begin());
+            double x = 0;
+            double y = 0;
+            double fx = 0;
+            double fy = 0;
+            double rmc = 0;
+            for (int i = 0; i < window.size(); i++) {
+                x += window[i].get<Object>().find("x")->second.get<double>();
+                y += window[i].get<Object>().find("y")->second.get<double>();
+                fx += window[i].get<Object>().find("fx")->second.get<double>();
+                fy += window[i].get<Object>().find("fy")->second.get<double>();
+                if (i > 0) {
+                    double prevX = window[i-1].get<Object>().find("x")->second.get<double>();
+                    double prevY = window[i-1].get<Object>().find("x")->second.get<double>();
+                    rmc += std::sqrt(std::pow(x-prevX,2) + std::pow(x-prevY,2));
+                }
+            }
+            data["x"].set<double>(x/window.size());
+            data["y"].set<double>(y/window.size());
+            data["fx"].set<double>(x/window.size());
+            data["fy"].set<double>(y/window.size());
+            data["rmc"] = DoubleDataValue(rmc/(window.size()-1));
+        }
+    }
+
+private:
+    IModelSample* sample;
+    DataObject params;
+    DataObject nav;
+    DataObject data;
+    int radius;
+    std::vector<DataValue> window;
+};
+
+class MovingAverageModel : public IModel {
+public:
+    MovingAverageModel(const std::string& name, IModel* model) : name(name), model(model) {
+        params = model->getParameters();
+        params["radius"] = DoubleDataValue(5);
+    }
+    virtual ~MovingAverageModel() {
+        delete model;
+    }
+
+    const std::string& getName() const { return name; }
+
+    const DataObject& getParameters() const { return params; }
+
+    IModelSample* create(const DataObject& params) const {
+        return new MovingAverageSample(params, model->create(params));
+    }
+
+private:
+    IModel* model;
+    std::string name;
+    DataObject params;
+};
+
 int main(int argc, char* argv[]) {
     Server server;
     server.registerModel(new CellModel("Cell"));
     server.registerModel(new NModel("N-Cell", new CellModel("Cell")));
     server.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
-    server.registerModel(new PCAModel("N-PCA-Cell", new NModel("N-Cell", new CellModel("Cell"))));
+    server.registerModel(new PCAModel("N-PCA-Cell", new NModel("N-Cell", new MovingAverageModel("Moving-Average", new CellModel("Cell")))));
     while(true) {
         server.service();
     }

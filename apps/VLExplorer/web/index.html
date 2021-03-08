@@ -76,6 +76,18 @@
 				background-color: white;
 			}
 
+			.selected {
+				opacity: 1 !important;
+				stroke: black;
+				stroke-width: 1px;
+			}
+
+			.prospected {
+				opacity: 1 !important;
+				stroke: black;
+				stroke-width: 1px;
+			}
+
 		</style>
 
 		<script src="https://d3js.org/d3.v4.js"></script>
@@ -84,6 +96,8 @@
 		<script src="js/OrbitControls.js"></script>
 		<script src="js/GLTFLoader.js"></script>
 		<script src="js/OBJLoader.js"></script>
+
+		<!-- style of selected circles -->
 	</head>
 	<body>
 		<div id="my_dataviz"></div>
@@ -92,6 +106,7 @@
 		<div id="menu">
 			<!--input type="button" value="Update Query" onclick='updateQuery()'>
 			<input type="button" value="Update Navigation" onclick='updateNavigation()'-->
+			<input type="button" value="Pause" onclick='running = !running;'>
 		</div>
 		<div id="scene-container"></div>
 		<script src="js/main.js"></script>

@@ -20,6 +20,7 @@ var camera2d;
 var renderer;
 var canUpdate = true;
 var dataLines = [];
+var running = true;
 
 // Function definitions start here...
   // Adapted from http://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
@@ -130,6 +131,70 @@ function drawPlot(svg, data) {
 
     //x.domain([d3.min(data, function(d) { return d.x; }), d3.max(data, function(d) {return d.x; })]);
     //y.domain([d3.min(data, function(d) { return d.y; }), d3.max(data, function(d) {return d.y; })]);
+
+      // Add brushing
+  svg
+  .call( d3.brush()                 // Add the brush feature using the d3.brush function
+    .extent( [ [0,0], [width,height] ] ) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
+    .on("start brush end", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
+  )
+}
+
+function updateChart() {
+  var x = d3.scaleLinear()
+    .domain([-4, 6])
+    .range([ 0, width ]);
+  var y = d3.scaleLinear()
+    .domain([-4, 5])
+    .range([ height, 0]);
+    
+  if (d3.event.type == "start") {
+    //console.log("the start");
+    var extent = d3.event.selection;
+    d3.select(this).selectAll("circle").classed("prospected", function(d){ return isBrushed(extent, x(d.x), y(d.y) ) } );
+    d3.select(this).selectAll(".prospected").classed("selected", function(d){ return false; } );
+  }
+  else if (d3.event.type == "end") {
+    //console.log("the end");
+    console.log(d3.event, d3.select(this).selectAll(".prospected"));
+    d3.select(this).selectAll(".prospected").classed("selected", function(d){ return true; } );
+    d3.select(this).selectAll("circle").classed("prospected", function(d){ return false; } );
+  }
+  else {
+    var extent = d3.event.selection;
+    d3.select(this).selectAll("circle:not(.selected)").classed("prospected", function(d){ return isBrushed(extent, x(d.x), y(d.y) ) } );
+    d3.select(this).selectAll(".selected").classed("selected", function(d){ return !isBrushed(extent, x(d.x), y(d.y) ) } );
+  }
+}
+
+/*function updateChart() {
+  if (d3.event.type == "end") {
+    d3.select(this).call( d3.brush()                 // Add the brush feature using the d3.brush function
+        .extent( [ [0,0], [width,height] ] ) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
+        .on("start brush end", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
+      )
+  }
+  else {
+    var x = d3.scaleLinear()
+      .domain([-4, 6])
+      .range([ 0, width ]);
+    var y = d3.scaleLinear()
+      .domain([-4, 5])
+      .range([ height, 0]);
+  
+    var extent = d3.event.selection;
+    d3.select(this).selectAll("circle").classed("selected", function(d){ return isBrushed(extent, x(d.x), y(d.y) ) } );
+  }
+}*/
+
+
+// A function that return TRUE or FALSE according if a dot is in the selection or not
+function isBrushed(brush_coords, cx, cy) {
+    var x0 = brush_coords[0][0],
+        x1 = brush_coords[1][0],
+        y0 = brush_coords[0][1],
+        y1 = brush_coords[1][1];
+   return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
 }
 
 function updatePlot(svg, data) {
@@ -191,7 +256,7 @@ function updatePlot(svg, data) {
 //Read the data
 //d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/2_TwoNum.csv", function(data) { drawPlot(data); })
 
-var data = [{x:3.14, y: 1}];
+var data = [{x:3.14, y: 1}, {x:3.14, y: 2}];
 drawPlot(svg1, data);
 drawPlot(svg2, data);
 
@@ -378,7 +443,7 @@ var time = 0.0;
 
 function updateNavigation() {
   if (connected) {
-    if (canUpdate) {
+    if (canUpdate && running) {
       canUpdate = false;
       time += 1.0;//10.0*60.0;
       //const delta = clock.getDelta();

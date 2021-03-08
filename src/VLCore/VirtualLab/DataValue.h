@@ -175,10 +175,6 @@ public:
 
         return val;
     }
-
-    void operator=(const DataValue& value) {
-        DataValue::operator=(value);
-    }
 };
 
 class DataArray : public TypedDataValue<Array> {
