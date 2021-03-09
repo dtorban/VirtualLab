@@ -470,7 +470,7 @@ function updateLines() {
         lines[i].line = new THREE.Line( geometry, material );
         scene.add( lines[i].line );
 
-        lines[i].line.position.copy(new THREE.Vector3(dist*Math.floor(i%3),dist*Math.floor(i/3),0));
+        lines[i].line.position.copy(new THREE.Vector3(dist*Math.floor(i%5),dist*Math.floor(i/5),0));
         
       }
     /*if (lines.length > 0) {
@@ -502,7 +502,7 @@ function updateLines() {
         lines[i].mods = new THREE.Line( geometry, material );
         scene.add( lines[i].mods );
 
-	      lines[i].mods.position.copy(new THREE.Vector3(dist*Math.floor(i%3),dist*Math.floor(i/3),0));
+	      lines[i].mods.position.copy(new THREE.Vector3(dist*Math.floor(i%5),dist*Math.floor(i/5),0));
       }
     }
 

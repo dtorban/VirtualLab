@@ -64,6 +64,12 @@ public:
         int prefix = 0;
         std::cout << "sim num" << simulationNumber << std::endl;
         s = new Simulator("", prefix, simulationNumber, config);
+
+        std::cout << "Start" << std::endl;
+        #pragma omp parallel for 
+        for (int f = 0; f < 10; f++) {
+            std::cout << f << std::endl;
+        }
     }
     virtual ~CellSample() {
         std::cout << "Delete cell" << std::endl;
@@ -186,10 +192,15 @@ public:
 
     virtual void update() {
         vl::Array array;
-        
+
+        #pragma omp parallel for 
         for (int i = 0; i < samples.size(); i++) {
             samples[i]->getNavigation() = nav;
             samples[i]->update();
+            //array.push_back(samples[i]->getData());
+        }
+
+        for (int i = 0; i < samples.size(); i++) {
             array.push_back(samples[i]->getData());
         }
 
