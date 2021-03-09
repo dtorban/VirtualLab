@@ -132,17 +132,77 @@ private:
     DataObject parameters;
 };
 
+class ExternalModel : public IModel {
+public:
+    ExternalModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : name(name), modelId(modelId) {
+        ip = api->receiveString(sd);
+        api->receiveData(sd, (unsigned char*)&port, sizeof(int));
+        std::cout << ip << ":" << port << std::endl;
+        lazyLoadApi();
+    }
+    ~ExternalModel() { delete api; }
+
+    const std::string& getName() const { return name; }
+
+    virtual const DataObject& getParameters() const { 
+        return parameters;
+    }
+    
+    virtual IModelSample* create(const DataObject& params) const {
+        return model->create(params);
+    }
+
+private:
+    void lazyLoadApi();
+    IModel* model;
+
+    IVirtualLabAPI* api;
+    std::string name;
+    int modelId;
+    JSONSerializer serializer;
+    DataObject parameters;
+    std::string ip;
+    int port;
+};
+
+class RemoteModel : public IModel {
+public:
+    RemoteModel(const std::string &serverIP, int serverPort, IModel* model) : serverIP(serverIP), serverPort(serverPort), model(model) {}
+
+    const std::string& getName() const { return model->getName(); }
+    const DataObject& getParameters() const { return model->getParameters(); }
+    IModelSample* create(const DataObject& params) const {
+        return model->create(params);
+    }
+
+    const std::string& getIP() { return serverIP; }
+    int getPort() { return serverPort; }
+
+private:
+    std::string serverIP;
+    int serverPort;
+    IModel* model;
+};
+
 class Client : public NetInterface, public IVirtualLabAPI  {
 public:
 	Client(const std::string &serverIP = "127.0.0.1", int serverPort = 3457);
 	~Client();
 
     virtual void registerModel(IModel* model) {
-        localModels.push_back(model);
-        std::string name = model->getName();
-        sendMessage(socketFD, MSG_registerModel, (const unsigned char*)name.c_str(), name.size());
-        int modelId = localModels.size() - 1;
-        sendData(socketFD, (unsigned char*)& modelId, sizeof(int));
+        RemoteModel* remoteModel = dynamic_cast<RemoteModel*>(model);
+        if (remoteModel) {
+            std::string name = model->getName();
+            sendMessage(socketFD, MSG_registerModel, (const unsigned char*)name.c_str(), name.size());
+            int modelId = 0;//localModels.size() - 1;
+            sendData(socketFD, (unsigned char*)& modelId, sizeof(int));
+            sendString(socketFD, remoteModel->getIP());
+            int port = remoteModel->getPort();
+            sendData(socketFD, (unsigned char*)& port, sizeof(int));
+            //std::cout << remoteModel->getIP() << ":" << remoteModel->getPort() << std::endl;
+        }
+
+        //localModels.push_back(model);
     }
     virtual void deregisterModel(IModel* model) {
         std::string name = model->getName();
@@ -167,8 +227,16 @@ public:
             delete[] buf;
             int modelId;
             receiveData(socketFD, (unsigned char*)& modelId, sizeof(int));
+            int modelType;
+            receiveData(socketFD, (unsigned char*)& modelType, sizeof(int));
             //std::cout << name << " " << modelId << std::endl;
-            models.push_back(new ClientModel(this, socketFD, name, modelId));
+
+            if (modelType == 1) {
+                models.push_back(new ExternalModel(this, socketFD, name, modelId));
+            }
+            else {
+                models.push_back(new ClientModel(this, socketFD, name, modelId));
+            }
         }
         
         return models;
@@ -199,7 +267,7 @@ public:
     }*/
 
     std::vector<IModel*> models;
-    std::vector<IModel*> localModels;
+    //std::vector<IModel*> localModels;
     std::vector<IModelSample*> localModelSamples;
 
 /*	virtual void createSharedTexture(const std::string& name, const TextureInfo& info, int deviceIndex) {
@@ -290,6 +358,18 @@ private:
 	//std::vector<MessageQueue*> messageQueues;
 	SOCKET socketFD;
 };
+
+inline void ExternalModel::lazyLoadApi() {
+    api = new Client(ip, port);
+    std::vector<IModel*> models = api->getModels();
+    for (int i = 0; i < models.size(); i++) {
+        if (name == models[i]->getName()) {
+            model = models[i];
+            parameters = model->getParameters();
+            break;
+        }
+    }
+}
 
 }
 

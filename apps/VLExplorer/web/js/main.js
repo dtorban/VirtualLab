@@ -287,10 +287,10 @@ $( document ).ready(function() {
             lines[i].modules.push( new THREE.Vector3( 0.0, 1.0, 0.0 ) );
             lines[i].modules.push( new THREE.Vector3( 0.0, 0.0, 0.0 ) );
 
+            /*dataLines.push( { line: null, points: [], modules: [], mods: null} );  
             dataLines.push( { line: null, points: [], modules: [], mods: null} );  
             dataLines.push( { line: null, points: [], modules: [], mods: null} );  
-            dataLines.push( { line: null, points: [], modules: [], mods: null} );  
-            dataLines.push( { line: null, points: [], modules: [], mods: null} );  
+            dataLines.push( { line: null, points: [], modules: [], mods: null} );  */
             //dataLines.push( { line: null, points: [], modules: [], mods: null} );  
           }
         }
@@ -298,6 +298,9 @@ $( document ).ready(function() {
 
         //lines.push( new THREE.Vector3( data.data.data[0]["x"]/1000.0, data.data.data[0]["y"]/1000.0, 0.0 ) );
         for (var i = 0; i < data.data.data.length; i++) {
+          if (lines[i].points.length >= 3600) {
+            lines[i].points.shift();
+          }
           lines[i].points.push( new THREE.Vector3( data.data.data[i]["x"]/1000.0, data.data.data[i]["y"]/1000.0, 0.0 ) );
           lines[i].modules = [];
 
@@ -313,12 +316,12 @@ $( document ).ready(function() {
           var dist = 80;
           var scale = 3.0;
 
-          dataLines[i*4+0].points.push(new THREE.Vector3( time/1.0, scale*d["actin"]/3000.0 + dist*-1.0-dist, 0.0 ));
+          /*dataLines[i*4+0].points.push(new THREE.Vector3( time/1.0, scale*d["actin"]/3000.0 + dist*-1.0-dist, 0.0 ));
           dataLines[i*4+1].points.push(new THREE.Vector3( time/1.0, scale*d["aflow"]/5.0 + dist*0.0-dist, 0.0 ));
           var f = Math.sqrt(d["fx"]*d["fx"] + d["fy"]*d["fy"]);
           dataLines[i*4+2].points.push(new THREE.Vector3( time/1.0, scale*f/5.0 + dist*1.0-dist, 0.0 ));
           var s = Math.sqrt(d["x"]*d["x"] + d["y"]*d["y"]);
-          dataLines[i*4+3].points.push(new THREE.Vector3( time/1.0, scale*s/500.0 + dist*2.0-dist, 0.0 ));
+          dataLines[i*4+3].points.push(new THREE.Vector3( time/1.0, scale*s/500.0 + dist*2.0-dist, 0.0 ));*/
           //dataLines[i*data.data.data.length+3].points.push(new THREE.Vector3( time/10.0, d["fy"]/5.0 + 50*3.0-50.0, 0.0 ));
           //console.log(dataLines);
         }

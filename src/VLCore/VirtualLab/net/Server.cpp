@@ -240,6 +240,26 @@ private:
     JSONSerializer serializer;
 };*/
 
+class ServerRemoteModel : public IModel {
+public:
+    ServerRemoteModel(const std::string &serverIP, int serverPort, const std::string& name) : serverIP(serverIP), serverPort(serverPort), name(name) {}
+
+    const std::string& getName() const { return name; }
+    const DataObject& getParameters() const { return params; }
+    IModelSample* create(const DataObject& params) const {
+        return NULL;
+    }
+
+    const std::string& getIP() { return serverIP; }
+    int getPort() { return serverPort; }
+
+private:
+    std::string name;
+    std::string serverIP;
+    int serverPort;
+    DataObject params;
+};
+
 void Server::service() {
     //Adapted from https://www.geeksforgeeks.org/socket-programming-in-cc-handling-multiple-clients-on-server-without-multi-threading/
     //clear the socket set  
@@ -344,16 +364,21 @@ void Server::service() {
                 std::cout <<"Host disconnected " << std::endl;   
                 clientSocketFDs[f] = 0;
             }
-            /*else if (messageType == MSG_registerModel) {
+            else if (messageType == MSG_registerModel) {
                 unsigned char* buf = new unsigned char[dataLength+1];
                 receiveData(sd, buf, dataLength);
                 int modelId;
                 receiveData(sd, (unsigned char*)& modelId, sizeof(int));
                 buf[dataLength] = '\0';
                 std::string val(reinterpret_cast<char*>(buf));
-                registerModel(new ServerModel(this, sd, val, modelId));
+                //registerModel(new ServerModel(this, sd, val, modelId));
+                std::string ip = receiveString(sd);
+                int port;
+                receiveData(sd, (unsigned char*)& port, sizeof(int));
+                std::cout << val << " " << ip << ":" << port << std::endl;
+                registerModel(new ServerRemoteModel(ip, port, val));
                 delete[] buf;
-            }*/
+            }
             else if (messageType == MSG_getModels) {
                 std::vector<IModel*> models = getModels();
                 int numModels = models.size();
@@ -365,8 +390,19 @@ void Server::service() {
                     sendData(sd, (const unsigned char*)name.c_str(), name.size());
                     int modelId = i;
                     sendData(sd, (unsigned char*)& modelId, sizeof(int));
-                    std::string json = JSONSerializer::instance().serialize(models[i]->getParameters());
-                    sendString(sd, json);
+                    ServerRemoteModel* remoteModel = dynamic_cast<ServerRemoteModel*>(models[i]);
+                    int modelType = remoteModel ? 1 : 0;
+                    sendData(sd, (unsigned char*)& modelType, sizeof(int));
+                    if (modelType == 0) {
+                        std::string json = JSONSerializer::instance().serialize(models[i]->getParameters());
+                        sendString(sd, json);
+                    }
+                    else if (modelType == 1) {
+                        std::string ip = remoteModel->getIP();
+                        sendString(sd, ip);
+                        int port = remoteModel->getPort();
+                        sendData(sd, (unsigned char*)& port, sizeof(int));
+                    }
                     //std::cout << name << std::endl;
                 }
             }

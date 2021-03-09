@@ -2,6 +2,7 @@
 #include "simulator.h"
 #include "VirtualLab/IModel.h"
 #include "VirtualLab/net/Server.h"
+#include "VirtualLab/net/Client.h"
 #include "VirtualLab/util/JSONSerializer.h"
 
 #include <mlpack/prereqs.hpp>
@@ -545,14 +546,49 @@ private:
     DataObject params;
 };
 
+class VLApiConnector : public IVirtualLabAPI {
+public:
+    VLApiConnector(Server* server, const std::string& ip, int port) : server(server), ip(ip), port(port) {
+        client = new Client();
+    }
+    ~VLApiConnector() {
+        delete client;
+    }
+    void registerModel(IModel* model) {
+        server->registerModel(model);
+        RemoteModel remoteModel(ip, port, model);
+        client->registerModel(&remoteModel);
+    }
+    void deregisterModel(IModel* model) {
+        server->deregisterModel(model);
+        client->deregisterModel(model);
+    }
+    const std::vector<IModel*>& getModels() {
+        return client->getModels();
+    }
+
+private:
+    Client* client;
+    Server* server;
+    std::string ip;
+    int port;
+};
+
 int main(int argc, char* argv[]) {
-    Server server;
-    server.registerModel(new CellModel("Cell"));
-    server.registerModel(new NModel("N-Cell", new CellModel("Cell")));
-    server.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
-    server.registerModel(new PCAModel("N-PCA-Cell", new NModel("N-Cell", new MovingAverageModel("Moving-Average", new CellModel("Cell")))));
-    while(true) {
-        server.service();
+    std::cout << "Usage: CellModel <port>" << std::endl;
+
+	if (argc > 1) {
+		int port = std::atoi(argv[1]);
+
+        Server server(port);
+        VLApiConnector api(&server, "127.0.0.1", port);
+        api.registerModel(new CellModel("Cell"));
+        api.registerModel(new NModel("N-Cell", new CellModel("Cell")));
+        api.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
+        api.registerModel(new PCAModel("N-PCA-Cell", new NModel("N-Cell", new MovingAverageModel("Moving-Average", new CellModel("Cell")))));
+        while(true) {
+            server.service();
+        }
     }
 
     /*VirtualLabAPI api;
