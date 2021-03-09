@@ -2,6 +2,7 @@
 #define VIRTUALLAB_UTIL_BYTE_BUFFER_H_
 
 #include <iostream>
+#include <cstring>
 
 namespace vl {
 

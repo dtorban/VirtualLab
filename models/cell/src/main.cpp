@@ -28,6 +28,31 @@ private:
 	const DataObject& obj;
 };
 
+class CellSimStateWriter : public SimState {
+public:
+    CellSimStateWriter(ByteBufferWriter& writer) : writer(writer) {}
+    void WriteBytes(const unsigned char* bytes, int len) {
+        writer.addData(bytes, len);
+    }
+    void ReadBytes(unsigned char* bytes, int len) const {}
+
+private:
+    ByteBufferWriter& writer;
+};
+
+class CellSimStateReader : public SimState {
+public:
+    CellSimStateReader(ByteBufferReader& reader) : reader(reader) {}
+    void WriteBytes(const unsigned char* bytes, int len) {
+    }
+    void ReadBytes(unsigned char* bytes, int len) const {
+        reader.readData(bytes, len);
+    }
+
+private:
+    ByteBufferReader& reader;
+};
+
 class CellSample : public IModelSample {
 public:
     CellSample(DataObject params) : params(params) {
@@ -115,7 +140,30 @@ public:
         *actin = s->GetCell().GetFActin();
         *free_actin = s->GetCell().GetFreeActin();
         *aflow = s->GetCell().GetAFlow();
+
+        /*if (30.0 == nav["t"].get<double>()) {
+            //ByteBufferWriter writer;
+            saveState(writer);
+            std::cout << writer.getSize() << std::endl;
+        }
+        if (100.0 == nav["t"].get<double>()) {
+            ByteBufferReader reader(writer.getBytes());
+            loadState(reader);
+        }*/
+
         nav["t"].set<double>(s->GetTime());
+    }
+
+    bool saveState(ByteBufferWriter& writer) {
+        CellSimStateWriter w(writer);
+        s->saveState(w);
+        return true;
+    }
+
+    bool loadState(ByteBufferReader& reader) {
+        CellSimStateReader r(reader);
+        s->loadState(r);
+        return true;
     }
 
 private:
@@ -134,6 +182,7 @@ private:
     double* aflow;
     vl::Array* modules;
     Object* events;
+    ByteBufferWriter writer;
 };
 
 class CellModel : public IModel {
