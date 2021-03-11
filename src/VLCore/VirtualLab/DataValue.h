@@ -152,6 +152,8 @@ public:
         state = impl->createState();
         set<T>(defaultValue);
     }
+
+    TypedDataValue(const TypedDataValue<T>& val) : DataValue(val) {}
 };
 
 typedef TypedDataValue<int> IntDataValue;
@@ -163,6 +165,9 @@ typedef std::vector<DataValue> Array;
 
 class DataObject : public TypedDataValue<Object> {
 public:
+    DataObject() : TypedDataValue<Object>() {}
+    DataObject(const DataObject& obj) : TypedDataValue<Object>(obj) {}
+
     DataValue& operator[](const std::string& key) {
         return get<Object>()[key];
     }
@@ -179,6 +184,8 @@ public:
 
 class DataArray : public TypedDataValue<Array> {
 public:
+    DataArray() : TypedDataValue<Array>() {}
+    DataArray(const DataArray& arr) : TypedDataValue<Array>(arr) {}
     DataValue& operator[](int index) {
         return get<Array>()[index];
     }
