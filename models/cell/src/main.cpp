@@ -548,15 +548,15 @@ private:
 
 class VLApiConnector : public IVirtualLabAPI {
 public:
-    VLApiConnector(Server* server, const std::string& ip, int port) : server(server), ip(ip), port(port) {
-        client = new Client();
+    VLApiConnector(Server* server, int port) : server(server), port(port) {
+        client = new Client("172.21.0.2");
     }
     ~VLApiConnector() {
         delete client;
     }
     void registerModel(IModel* model) {
         server->registerModel(model);
-        RemoteModel remoteModel(ip, port, model);
+        RemoteModel remoteModel(port, model);
         client->registerModel(&remoteModel);
     }
     void deregisterModel(IModel* model) {
@@ -570,7 +570,6 @@ public:
 private:
     Client* client;
     Server* server;
-    std::string ip;
     int port;
 };
 
@@ -581,7 +580,7 @@ int main(int argc, char* argv[]) {
 		int port = std::atoi(argv[1]);
 
         Server server(port);
-        VLApiConnector api(&server, "127.0.0.1", port);
+        VLApiConnector api(&server, port);
         api.registerModel(new CellModel("Cell"));
         api.registerModel(new NModel("N-Cell", new CellModel("Cell")));
         api.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));

@@ -167,7 +167,7 @@ private:
 
 class RemoteModel : public IModel {
 public:
-    RemoteModel(const std::string &serverIP, int serverPort, IModel* model) : serverIP(serverIP), serverPort(serverPort), model(model) {}
+    RemoteModel(int serverPort, IModel* model) : serverPort(serverPort), model(model) {}
 
     const std::string& getName() const { return model->getName(); }
     const DataObject& getParameters() const { return model->getParameters(); }
@@ -175,11 +175,9 @@ public:
         return model->create(params);
     }
 
-    const std::string& getIP() { return serverIP; }
     int getPort() { return serverPort; }
 
 private:
-    std::string serverIP;
     int serverPort;
     IModel* model;
 };
@@ -196,7 +194,7 @@ public:
             sendMessage(socketFD, MSG_registerModel, (const unsigned char*)name.c_str(), name.size());
             int modelId = 0;//localModels.size() - 1;
             sendData(socketFD, (unsigned char*)& modelId, sizeof(int));
-            sendString(socketFD, remoteModel->getIP());
+            //sendString(socketFD, remoteModel->getIP());
             int port = remoteModel->getPort();
             sendData(socketFD, (unsigned char*)& port, sizeof(int));
             //std::cout << remoteModel->getIP() << ":" << remoteModel->getPort() << std::endl;

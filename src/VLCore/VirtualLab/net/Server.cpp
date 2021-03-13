@@ -310,10 +310,11 @@ void Server::service() {
 #ifdef WIN32
 		struct sockaddr_in client_addr;
 #else
-        struct sockaddr_un client_addr;
+        struct sockaddr_in client_addr;
 #endif
         socklen_t client_len = sizeof(client_addr);
         int client_fd = accept(serverSocketFD, (struct sockaddr *) &client_addr, &client_len);
+        std::cout << inet_ntoa(client_addr.sin_addr) << " "  << std::endl;
         int yes = 1;
         setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes));
         setsockopt(client_fd, IPPROTO_TCP, TCP_QUICKACK, &yes, sizeof(yes));
@@ -357,25 +358,37 @@ void Server::service() {
 #ifdef WIN32
 				struct sockaddr_in client_addr;
 #else
-				struct sockaddr_un client_addr;
+				struct sockaddr_in client_addr;
 #endif
                 socklen_t client_len;
                 getpeername(sd , (struct sockaddr*)&client_addr , (socklen_t*)&client_len);   
-                std::cout <<"Host disconnected " << std::endl;   
+                std::cout <<"Host disconnected "<< inet_ntoa(client_addr.sin_addr) << std::endl;   
                 clientSocketFDs[f] = 0;
             }
             else if (messageType == MSG_registerModel) {
+                //struct sockaddr_in client_addr;
+                //socklen_t client_len;
+                //getpeername(sd , (struct sockaddr*)&client_addr , (socklen_t*)&client_len); 
+                //std::cout <<"Register Model "<< inet_ntoa(client_addr.sin_addr) << std::endl;   
                 unsigned char* buf = new unsigned char[dataLength+1];
                 receiveData(sd, buf, dataLength);
+ 
+
                 int modelId;
                 receiveData(sd, (unsigned char*)& modelId, sizeof(int));
                 buf[dataLength] = '\0';
                 std::string val(reinterpret_cast<char*>(buf));
                 //registerModel(new ServerModel(this, sd, val, modelId));
-                std::string ip = receiveString(sd);
                 int port;
                 receiveData(sd, (unsigned char*)& port, sizeof(int));
+
+                struct sockaddr_in client_addr;
+                socklen_t client_len;
+                getpeername(sd , (struct sockaddr*)&client_addr , (socklen_t*)&client_len); 
+                std::cout <<"Register Model "<< inet_ntoa(client_addr.sin_addr) << std::endl; 
+                std::string ip(inet_ntoa(client_addr.sin_addr));//receiveString(sd);
                 std::cout << val << " " << ip << ":" << port << std::endl;
+
                 registerModel(new ServerRemoteModel(ip, port, val));
                 delete[] buf;
             }
