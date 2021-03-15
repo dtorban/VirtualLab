@@ -245,8 +245,8 @@ public:
     ServerRemoteModel(const std::string &serverIP, int serverPort, const std::string& name) : serverIP(serverIP), serverPort(serverPort), name(name) {}
 
     const std::string& getName() const { return name; }
-    const DataObject& getParameters() const { return params; }
-    IModelSample* create(const DataObject& params) const {
+    const DataObject& getParameters() { return params; }
+    IModelSample* create(const DataObject& params) {
         return NULL;
     }
 
@@ -314,7 +314,8 @@ void Server::service() {
 #endif
         socklen_t client_len = sizeof(client_addr);
         int client_fd = accept(serverSocketFD, (struct sockaddr *) &client_addr, &client_len);
-        std::cout << inet_ntoa(client_addr.sin_addr) << " "  << std::endl;
+        //std::cout << inet_ntoa(client_addr.sin_addr) << " "  << std::endl;
+        std::string ip(inet_ntoa(client_addr.sin_addr));
         int yes = 1;
         setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes));
         setsockopt(client_fd, IPPROTO_TCP, TCP_QUICKACK, &yes, sizeof(yes));
@@ -333,12 +334,14 @@ void Server::service() {
         for (int f = 0; f < clientSocketFDs.size(); f++) {
             if (clientSocketFDs[f] == 0) {
                 clientSocketFDs[f] = client_fd;
+                clientSocketIPs[f] = ip;
                 foundReplacement = true;
                 break;
             }
         }
         if (!foundReplacement) {
             clientSocketFDs.push_back(client_fd);  
+            clientSocketIPs.push_back(ip);
         }
     }
 
@@ -346,6 +349,7 @@ void Server::service() {
     for (int f = 0; f < clientSocketFDs.size(); f++) {
         //socket descriptor  
         int sd = clientSocketFDs[f]; 
+        std::string sdIP = clientSocketIPs[f];
 
         if (FD_ISSET(sd , &readfds)) {
             //Check if it was for closing , and also read the  
@@ -362,7 +366,7 @@ void Server::service() {
 #endif
                 socklen_t client_len;
                 getpeername(sd , (struct sockaddr*)&client_addr , (socklen_t*)&client_len);   
-                std::cout <<"Host disconnected "<< inet_ntoa(client_addr.sin_addr) << std::endl;   
+                std::cout <<"Host disconnected "<< sdIP << std::endl;   
                 clientSocketFDs[f] = 0;
             }
             else if (messageType == MSG_registerModel) {
@@ -385,11 +389,10 @@ void Server::service() {
                 struct sockaddr_in client_addr;
                 socklen_t client_len;
                 getpeername(sd , (struct sockaddr*)&client_addr , (socklen_t*)&client_len); 
-                std::cout <<"Register Model "<< inet_ntoa(client_addr.sin_addr) << std::endl; 
-                std::string ip(inet_ntoa(client_addr.sin_addr));//receiveString(sd);
-                std::cout << val << " " << ip << ":" << port << std::endl;
+                //std::string ip(inet_ntoa(client_addr.sin_addr));//receiveString(sd);
+                std::cout << val << " " << sdIP << ":" << port << std::endl;
 
-                registerModel(new ServerRemoteModel(ip, port, val));
+                registerModel(new ServerRemoteModel(sdIP, port, val));
                 delete[] buf;
             }
             else if (messageType == MSG_getModels) {

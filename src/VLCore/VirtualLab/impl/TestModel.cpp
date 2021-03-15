@@ -2,7 +2,7 @@
 
 namespace vl {
 
-IModelSample* TestModel::create(const DataObject& params) const {
+IModelSample* TestModel::create(const DataObject& params) {
     return new TestModelSample(params);
 }
 

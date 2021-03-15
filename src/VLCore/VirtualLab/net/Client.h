@@ -109,8 +109,8 @@ public:
         api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
         return new ClientModelSample(api, sd, modelSampleId);
     }*/
-    virtual const DataObject& getParameters() const { return parameters; }
-    virtual IModelSample* create(const DataObject& params) const {
+    virtual const DataObject& getParameters() { return parameters; }
+    virtual IModelSample* create(const DataObject& params) {
         api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
         /*std::string json = api->receiveString(sd);
         DataObject ds;
@@ -134,21 +134,22 @@ private:
 
 class ExternalModel : public IModel {
 public:
-    ExternalModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : name(name), modelId(modelId) {
+    ExternalModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(NULL), name(name), modelId(modelId) {
         ip = api->receiveString(sd);
         api->receiveData(sd, (unsigned char*)&port, sizeof(int));
         std::cout << ip << ":" << port << std::endl;
-        lazyLoadApi();
     }
     ~ExternalModel() { delete api; }
 
     const std::string& getName() const { return name; }
 
-    virtual const DataObject& getParameters() const { 
+    virtual const DataObject& getParameters() { 
+        lazyLoadApi();
         return parameters;
     }
     
-    virtual IModelSample* create(const DataObject& params) const {
+    virtual IModelSample* create(const DataObject& params) {
+        lazyLoadApi();
         return model->create(params);
     }
 
@@ -170,8 +171,8 @@ public:
     RemoteModel(int serverPort, IModel* model) : serverPort(serverPort), model(model) {}
 
     const std::string& getName() const { return model->getName(); }
-    const DataObject& getParameters() const { return model->getParameters(); }
-    IModelSample* create(const DataObject& params) const {
+    const DataObject& getParameters() { return model->getParameters(); }
+    IModelSample* create(const DataObject& params) {
         return model->create(params);
     }
 

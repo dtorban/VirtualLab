@@ -211,8 +211,8 @@ public:
 
     const std::string& getName() const { return name; }
 
-    const DataObject& getParameters() const { return params; }
-    IModelSample* create(const DataObject& params) const {
+    const DataObject& getParameters() { return params; }
+    IModelSample* create(const DataObject& params) {
         return new CellSample(params);
     }
 
@@ -277,9 +277,9 @@ public:
 
     const std::string& getName() const { return name; }
 
-    const DataObject& getParameters() const { return params; }
+    const DataObject& getParameters() { return params; }
 
-    IModelSample* create(const DataObject& params) const {
+    IModelSample* create(const DataObject& params) {
         std::vector<IModelSample*> samples;
 
         int numSamples = params["N"].get<double>();
@@ -450,9 +450,9 @@ public:
 
     const std::string& getName() const { return name; }
 
-    const DataObject& getParameters() const { return params; }
+    const DataObject& getParameters() { return params; }
 
-    IModelSample* create(const DataObject& params) const {
+    IModelSample* create(const DataObject& params) {
         return new PCASample(params, model->create(params));
     }
 
@@ -534,9 +534,9 @@ public:
 
     const std::string& getName() const { return name; }
 
-    const DataObject& getParameters() const { return params; }
+    const DataObject& getParameters() { return params; }
 
-    IModelSample* create(const DataObject& params) const {
+    IModelSample* create(const DataObject& params) {
         return new MovingAverageSample(params, model->create(params));
     }
 

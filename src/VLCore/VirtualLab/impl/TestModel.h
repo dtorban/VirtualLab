@@ -18,8 +18,8 @@ public:
     virtual ~TestModel() {}
 
     const std::string& getName() const { return name; }
-    const DataObject& getParameters() const { return defaultParams; }
-    IModelSample* create(const DataObject& params) const;
+    const DataObject& getParameters() { return defaultParams; }
+    IModelSample* create(const DataObject& params);
 
 private:
     std::string name;

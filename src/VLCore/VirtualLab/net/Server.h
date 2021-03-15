@@ -34,6 +34,7 @@ private:
 
 	SOCKET serverSocketFD;
 	std::vector<SOCKET> clientSocketFDs;
+	std::vector<std::string> clientSocketIPs;
 	VirtualLabAPI impl;
 	fd_set readfds;
     std::map<int, IModelSample*> serverModelSamples;
