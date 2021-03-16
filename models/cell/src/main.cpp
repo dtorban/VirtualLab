@@ -406,6 +406,7 @@ public:
                         obj["x"] = DoubleDataValue(A(f+i,0));
                         obj["y"] = DoubleDataValue(A(f+i,1));
                         obj["id"] = DoubleDataValue(i);
+                        obj["t"] = DoubleDataValue(f/prev.size());
                         array2.push_back(obj);
                     }
                 }
@@ -417,6 +418,7 @@ public:
                         obj["x"] = DoubleDataValue(A(f+i,0));
                         obj["y"] = DoubleDataValue(A(f+i,1));
                         obj["id"] = DoubleDataValue(i);
+                        obj["t"] = DoubleDataValue(f/prev.size());
                         array.push_back(obj);
                     }
                 }

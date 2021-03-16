@@ -62,19 +62,11 @@ var running = true;
   })();
 
 var colors = [];
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
-colors.push(randomColor())
+var options = {luminosity: 'dark'};
+for (var i = 0; i < 30; i++) {
+  //colors.push(randomColor(options))
+  colors.push(randomColor())
+}
 console.log(colors);
 
 // set the dimensions and margins of the graph
@@ -153,6 +145,14 @@ function updateChart() {
     var extent = d3.event.selection;
     d3.select(this).selectAll("circle").classed("prospected", function(d){ return isBrushed(extent, x(d.x), y(d.y) ) } );
     d3.select(this).selectAll(".prospected").classed("selected", function(d){ return false; } );
+    var allData = d3.select(this).selectAll("circle").data();
+    allData.forEach(d => {
+      for (var i = 0; i < 10; i++) {
+        lines[d.id].colors[(d.t+i)*3+0] = 0.5;
+        lines[d.id].colors[(d.t+i)*3+1] = 0.5;
+        lines[d.id].colors[(d.t+i)*3+2] = 0.5;
+      }
+    });
   }
   else if (d3.event.type == "end") {
     //console.log("the end");
@@ -164,6 +164,14 @@ function updateChart() {
     var extent = d3.event.selection;
     d3.select(this).selectAll("circle:not(.selected)").classed("prospected", function(d){ return isBrushed(extent, x(d.x), y(d.y) ) } );
     d3.select(this).selectAll(".selected").classed("selected", function(d){ return !isBrushed(extent, x(d.x), y(d.y) ) } );
+    var prospected = d3.select(this).selectAll(".prospected").data();
+    prospected.forEach(d => {
+      for (var i = 0; i < 10; i++) {
+        lines[d.id].colors[(d.t+i)*3+0] = 1.0;
+        lines[d.id].colors[(d.t+i)*3+1] = 0.0;
+        lines[d.id].colors[(d.t+i)*3+2] = 0.0;
+      }
+    });
   }
 }
 
@@ -282,7 +290,7 @@ $( document ).ready(function() {
         if (lines.length == 0) {
           //console.log(data["data"]);
           for (var i = 0; i < data.data.data.length; i++) {
-            lines.push( { line: null, points: [], modules: [], mods: null} );            
+            lines.push( { line: null, points: [], colors: [], modules: [], mods: null, selected: [0]} );            
             //lines[i].points.push( new THREE.Vector3( 0.0, 1.0, 0.0 ) );
             lines[i].modules.push( new THREE.Vector3( 0.0, 1.0, 0.0 ) );
             lines[i].modules.push( new THREE.Vector3( 0.0, 0.0, 0.0 ) );
@@ -298,17 +306,40 @@ $( document ).ready(function() {
 
         //lines.push( new THREE.Vector3( data.data.data[0]["x"]/1000.0, data.data.data[0]["y"]/1000.0, 0.0 ) );
         for (var i = 0; i < data.data.data.length; i++) {
-          if (lines[i].points.length >= 3600) {
+          if (lines[i].points.length/3 >= 3600) {
             lines[i].points.shift();
+            lines[i].points.shift();
+            lines[i].points.shift();
+            lines[i].colors.shift();
+            lines[i].colors.shift();
+            lines[i].colors.shift();
           }
-          lines[i].points.push( new THREE.Vector3( data.data.data[i]["x"]/1000.0, data.data.data[i]["y"]/1000.0, 0.0 ) );
+          //
+          lines[i].points.push( data.data.data[i]["x"]/1000.0 );
+          lines[i].points.push( data.data.data[i]["y"]/1000.0 );
+          lines[i].points.push( 0.0 );
+          /*
+          lines[i].colors.push( 255.0/255 );
+          lines[i].colors.push( 117.0/255 );
+          lines[i].colors.push( 26.0/255 );*/
+          lines[i].colors.push( (3.0)/6.0 );
+          lines[i].colors.push(  (3.0)/6.0  );
+          lines[i].colors.push( (3.0)/6.0  );
+          //255	117	26
           lines[i].modules = [];
 
           for (var j = 0; j < data.data.data[i].m.length; j++) {
-            //lines[i].modules.push( new THREE.Vector3( 0.0, 0.0, 0.0 ) );
-            
-            lines[i].modules.push( new THREE.Vector3( data.data.data[i]["x"]/1000.0, data.data.data[i]["y"]/1000.0, 0.0 ) );
-            lines[i].modules.push(new THREE.Vector3( data.data.data[i].m[j]["x"]/1000.0, data.data.data[i].m[j]["y"]/1000.0, 0.0 ));
+            lines[i].modules.push(data.data.data[i]["x"]/1000.0);
+            lines[i].modules.push(data.data.data[i]["y"]/1000.0);
+            lines[i].modules.push(0.0);
+            lines[i].modules.push(data.data.data[i].m[j]["x"]/1000.0);
+            lines[i].modules.push(data.data.data[i].m[j]["y"]/1000.0);
+            lines[i].modules.push(0.0);
+            lines[i].modules.push(data.data.data[i]["x"]/1000.0);
+            lines[i].modules.push(data.data.data[i]["y"]/1000.0);
+            lines[i].modules.push(0.0);
+            //lines[i].modules.push( new THREE.Vector3( data.data.data[i]["x"]/1000.0, data.data.data[i]["y"]/1000.0, 0.0 ) );
+            //lines[i].modules.push(new THREE.Vector3( data.data.data[i].m[j]["x"]/1000.0, data.data.data[i].m[j]["y"]/1000.0, 0.0 ));
 
           }
           var d = data.data.data[i];
@@ -459,6 +490,7 @@ function updateNavigation() {
 
 function updateLines() {
     const dist = 30;
+    const grid = Math.floor(Math.ceil(Math.sqrt(lines.length)));
 
     for (var i = 0; i < lines.length; i++) {
       if (lines[i].line) {
@@ -466,14 +498,22 @@ function updateLines() {
       }
 
       {
-        //create a blue LineBasicMaterial
-        //var material = new THREE.LineBasicMaterial( { color: 0xff751a } );
-        var material = new THREE.LineBasicMaterial( { color: 0xff751a } );
-        const geometry = new THREE.BufferGeometry().setFromPoints( lines[i].points );
-        lines[i].line = new THREE.Line( geometry, material );
-        scene.add( lines[i].line );
 
-        lines[i].line.position.copy(new THREE.Vector3(dist*Math.floor(i%5),dist*Math.floor(i/5),0));
+        if (lines[i].points.length >= 3) {
+          //var material = new THREE.LineMaterial( { color: 0xff751a, linewidth: 0.001, vertexColors: true, opacity: 1.0 } );
+          var material = new THREE.LineMaterial( { color: 0xffffff, linewidth: 0.001, vertexColors: true, opacity: 1.0 } );
+          const geometry = new THREE.LineGeometry();
+          geometry.setPositions( lines[i].points );
+          geometry.setColors( lines[i].colors );
+          lines[i].line = new THREE.Line2( geometry, material );
+          lines[i].line.computeLineDistances();
+          lines[i].line.scale.set( 1, 1, 1 );
+          
+          scene.add( lines[i].line );
+
+          lines[i].line.position.copy(new THREE.Vector3(dist*Math.floor(i%grid),dist*Math.floor(i/grid),0));
+            
+        }
         
       }
     /*if (lines.length > 0) {
@@ -499,13 +539,18 @@ function updateLines() {
 
       {
         //create a blue LineBasicMaterial
-        var material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
-        material.color.setHex(parseInt(colors[i%10].replace("#","0x"), 16));
-        const geometry = new THREE.BufferGeometry().setFromPoints( lines[i].modules );
-        lines[i].mods = new THREE.Line( geometry, material );
+
+        var material = new THREE.LineMaterial( { color: 0xffffff, linewidth: 0.005, vertexColors: false, opacity: 0.50, transparent: true, dashed: true } );
+        material.color.setHex(parseInt(colors[i%colors.length].replace("#","0x"), 16));
+        const geometry = new THREE.LineGeometry();
+        geometry.setPositions( lines[i].modules );
+        //geometry.setColors( lines[i].colors );
+        lines[i].mods = new THREE.Line2( geometry, material );
+        lines[i].mods.computeLineDistances();
+        lines[i].mods.scale.set( 1, 1, 1 );
         scene.add( lines[i].mods );
 
-	      lines[i].mods.position.copy(new THREE.Vector3(dist*Math.floor(i%5),dist*Math.floor(i/5),0));
+	      lines[i].mods.position.copy(new THREE.Vector3(dist*Math.floor(i%grid),dist*Math.floor(i/grid),0));
       }
     }
 
