@@ -501,7 +501,7 @@ function updateLines() {
 
         if (lines[i].points.length >= 3) {
           //var material = new THREE.LineMaterial( { color: 0xff751a, linewidth: 0.001, vertexColors: true, opacity: 1.0 } );
-          var material = new THREE.LineMaterial( { color: 0xffffff, linewidth: 0.001, vertexColors: true, opacity: 1.0 } );
+          var material = new THREE.LineMaterial( { color: 0xffffff, linewidth: 0.002, vertexColors: true, opacity: 1.0 } );
           const geometry = new THREE.LineGeometry();
           geometry.setPositions( lines[i].points );
           geometry.setColors( lines[i].colors );
@@ -533,6 +533,7 @@ function updateLines() {
       }*/
       
 
+      // Modules
       if (lines[i].mods) {
         scene.remove(lines[i].mods);
       }
