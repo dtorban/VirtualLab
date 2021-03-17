@@ -552,7 +552,8 @@ private:
 class VLApiConnector : public IVirtualLabAPI {
 public:
     VLApiConnector(Server* server, int port) : server(server), port(port) {
-        client = new Client("172.21.0.2");
+	std::cout << "Before Client." << std::endl; 
+     	    client = new Client();
     }
     ~VLApiConnector() {
         delete client;
