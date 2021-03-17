@@ -2,8 +2,58 @@
 
 #include <sstream>
 #include <iostream>
+#include "VirtualLab/util/JSONSerializer.h"
 
 namespace vl {
+
+ClientModelSample::ClientModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {
+    std::string params = api->receiveString(sd);
+    std::string nav = api->receiveString(sd);
+    std::string ds = api->receiveString(sd);
+    JSONSerializer::instance().deserialize(params, parameters);
+    JSONSerializer::instance().deserialize(nav, navigation);
+    JSONSerializer::instance().deserialize(ds, data);
+}
+
+void ClientModelSample::update() {
+    //unsigned char bytes[512];
+    std::string nav = JSONSerializer::instance().serialize(navigation);
+    ByteBufferWriter buf;
+    buf.addData(modelSampleId);
+    buf.addString(nav);
+    api->sendMessage(sd, MSG_updateModelSample, buf.getBytes(), buf.getSize());
+    int dataLength;
+    api->receiveData(sd, (unsigned char*)& dataLength, sizeof(int));
+    
+    unsigned char* bytes = new unsigned char[dataLength];
+    api->receiveData(sd, bytes, dataLength);
+    ByteBufferReader reader(bytes);
+
+    std::string ds;
+    reader.readString(nav);
+    reader.readString(ds);
+    JSONSerializer::instance().deserialize(nav, navigation);
+    JSONSerializer::instance().deserialize(ds, data);
+    delete[] bytes;
+}
+
+ClientModel::ClientModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(api), name(name), sd(sd), modelId(modelId) {
+    std::string json = api->receiveString(sd);
+    JSONSerializer::instance().deserialize(json, parameters);
+}
+
+IModelSample* ClientModel::create(const DataObject& params) {
+    api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
+    /*std::string json = api->receiveString(sd);
+    DataObject ds;
+    serializer.deserialize(json, ds);
+    query.setParameters(ds);*/
+    std::string json = JSONSerializer::instance().serialize(params);
+    api->sendString(sd, json);
+    int modelSampleId;
+    api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
+    return new ClientModelSample(api, sd, modelSampleId);
+}
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr2(struct sockaddr *sa) {

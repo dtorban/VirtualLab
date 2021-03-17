@@ -6,13 +6,12 @@
 
 #include "VirtualLab/net/NetInterface.h"
 #include "VirtualLab/IVirtualLabAPI.h"
-#include "VirtualLab/util/JSONSerializer.h"
 #include "VirtualLab/util/ByteBuffer.h"
 
 
 namespace vl {
 
-class ClientQuery : public IQuery {
+/*class ClientQuery : public IQuery {
 public:
     ClientQuery(NetInterface* api, SOCKET sd) : api(api), sd(sd) {}
 
@@ -27,18 +26,11 @@ private:
     NetInterface* api;
     SOCKET sd;
     JSONSerializer serializer;
-};
+};*/
 
 class ClientModelSample : public IModelSample {
 public:
-    ClientModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {
-        std::string params = api->receiveString(sd);
-        std::string nav = api->receiveString(sd);
-        std::string ds = api->receiveString(sd);
-        serializer.deserialize(params, parameters);
-        serializer.deserialize(nav, navigation);
-        serializer.deserialize(ds, data);
-    }
+    ClientModelSample(NetInterface* api, SOCKET sd, int modelSampleId);
 
     ~ClientModelSample() {
         std::cout << "delete this craziness" << std::endl;
@@ -57,27 +49,7 @@ public:
         return data;
     }
 
-    virtual void update() {
-        //unsigned char bytes[512];
-        std::string nav = JSONSerializer::instance().serialize(navigation);
-        ByteBufferWriter buf;
-        buf.addData(modelSampleId);
-        buf.addString(nav);
-        api->sendMessage(sd, MSG_updateModelSample, buf.getBytes(), buf.getSize());
-        int dataLength;
-        api->receiveData(sd, (unsigned char*)& dataLength, sizeof(int));
-        
-        unsigned char* bytes = new unsigned char[dataLength];
-        api->receiveData(sd, bytes, dataLength);
-        ByteBufferReader reader(bytes);
-
-        std::string ds;
-        reader.readString(nav);
-        reader.readString(ds);
-        serializer.deserialize(nav, navigation);
-        serializer.deserialize(ds, data);
-        delete[] bytes;
-    }
+    virtual void update();
 
 private:
     DataObject parameters;
@@ -86,49 +58,21 @@ private:
     NetInterface* api;
     SOCKET sd;
     int modelSampleId;
-    JSONSerializer serializer;
 };
 
 class ClientModel : public IModel {
 public:
-    ClientModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(api), name(name), sd(sd), modelId(modelId) {
-        std::string json = api->receiveString(sd);
-        serializer.deserialize(json, parameters);
-    }
+    ClientModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId);
 
     const std::string& getName() const { return name; }
-    /*virtual IModelSample* create(const IQuery& query) const {
-        api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
-        std::string json = api->receiveString(sd);
-        DataObject ds;
-        serializer.deserialize(json, ds);
-        query.setParameters(ds);
-        json = serializer.serialize(ds);
-        api->sendString(sd, json);
-        int modelSampleId;
-        api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
-        return new ClientModelSample(api, sd, modelSampleId);
-    }*/
     virtual const DataObject& getParameters() { return parameters; }
-    virtual IModelSample* create(const DataObject& params) {
-        api->sendMessage(sd, MSG_createModelSample, (const unsigned char*)&modelId, sizeof(int));
-        /*std::string json = api->receiveString(sd);
-        DataObject ds;
-        serializer.deserialize(json, ds);
-        query.setParameters(ds);*/
-        std::string json = serializer.serialize(params);
-        api->sendString(sd, json);
-        int modelSampleId;
-        api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
-        return new ClientModelSample(api, sd, modelSampleId);
-    }
+    virtual IModelSample* create(const DataObject& params);
 
 private:
     NetInterface* api;
     std::string name;
     SOCKET sd;
     int modelId;
-    JSONSerializer serializer;
     DataObject parameters;
 };
 
@@ -160,7 +104,6 @@ private:
     IVirtualLabAPI* api;
     std::string name;
     int modelId;
-    JSONSerializer serializer;
     DataObject parameters;
     std::string ip;
     int port;

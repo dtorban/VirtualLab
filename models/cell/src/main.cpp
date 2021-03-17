@@ -5,14 +5,14 @@
 #include "VirtualLab/net/Client.h"
 #include "VirtualLab/util/JSONSerializer.h"
 
-#include <mlpack/prereqs.hpp>
+/*#include <mlpack/prereqs.hpp>
 #include <mlpack/methods/pca/pca.hpp>
 #include <mlpack/methods/pca/decomposition_policies/exact_svd_method.hpp>
 #include <mlpack/methods/pca/decomposition_policies/quic_svd_method.hpp>
 #include <mlpack/methods/pca/decomposition_policies/randomized_svd_method.hpp>
 using namespace mlpack;
 using namespace mlpack::pca;
-using namespace mlpack::util;
+using namespace mlpack::util;*/
 
 using namespace vl;
 
@@ -303,6 +303,7 @@ private:
     DataObject params;
 };
 
+/*
 // Run RunPCA on the specified dataset with the given decomposition method.
 template<typename DecompositionPolicy>
 void RunPCA(arma::mat& dataset,
@@ -462,7 +463,7 @@ private:
     IModel* model;
     std::string name;
     DataObject params;
-};
+};*/
 
 class MovingAverageSample : public IModelSample {
 public:
@@ -585,8 +586,8 @@ int main(int argc, char* argv[]) {
         VLApiConnector api(&server, port);
         api.registerModel(new CellModel("Cell"));
         api.registerModel(new NModel("N-Cell", new CellModel("Cell")));
-        api.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
-        api.registerModel(new PCAModel("N-PCA-Cell", new NModel("N-Cell", new MovingAverageModel("Moving-Average", new CellModel("Cell")))));
+        //api.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
+        //api.registerModel(new PCAModel("N-PCA-Cell", new NModel("N-Cell", new MovingAverageModel("Moving-Average", new CellModel("Cell")))));
         while(true) {
             server.service();
         }
