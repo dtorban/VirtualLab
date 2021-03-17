@@ -14,5 +14,9 @@ CONTAINER=virtual-lab-dev-container
 #do
 #    docker rm ${CONTAINER}
 #done
-docker run --rm --network=VLNetwork --name=${CONTAINER} -p 127.0.0.1:$PORT:$PORT -v "${ROOTDIR}:/home/user/vl" -it virtual-lab/dev
+#docker run --rm --network=VLNetwork --name=${CONTAINER} -p 127.0.0.1:$PORT:$PORT -v "${ROOTDIR}:/home/user/vl" -it virtual-lab/dev
+docker run --network=VLNetwork --rm --name=${CONTAINER} -p 127.0.0.1:$PORT:$PORT -v "${ROOTDIR}:/home/user/vl" -it virtual-lab/dev
 #docker run --network=VLNetwork --name=${CONTAINER} -p 127.0.0.1:$PORT:$PORT -p 127.0.0.1:3457:3457 -v "${ROOTDIR}:/home/user/vl" -it virtual-lab/dev
+# ssh -R 3457:172.21.0.2:3457 -L 172.21.0.1:1234:127.0.0.1:1234 dtorban@jimmypage.cs.umn.edu
+# ssh -R 3457:dockerServerIP:3457 -L localhostIP:1234:127.0.0.1:1234 dtorban@jimmypage.cs.umn.edu
+# ssh -R 3457:172.21.0.2:3457 -L 172.21.0.1:1234:127.0.0.1:1234 dtorban@jimmypage.cs.umn.edu
