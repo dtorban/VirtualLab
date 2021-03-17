@@ -302,13 +302,15 @@ private:
 };
 
 inline void ExternalModel::lazyLoadApi() {
-    api = new Client(ip, port);
-    std::vector<IModel*> models = api->getModels();
-    for (int i = 0; i < models.size(); i++) {
-        if (name == models[i]->getName()) {
-            model = models[i];
-            parameters = model->getParameters();
-            break;
+    if (!api) {
+        api = new Client(ip, port);
+        std::vector<IModel*> models = api->getModels();
+        for (int i = 0; i < models.size(); i++) {
+            if (name == models[i]->getName()) {
+                model = models[i];
+                parameters = model->getParameters();
+                break;
+            }
         }
     }
 }

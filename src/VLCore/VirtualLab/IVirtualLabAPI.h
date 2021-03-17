@@ -13,7 +13,6 @@ public:
     virtual const std::vector<IModel*>& getModels() = 0;
 };
 
-
 }
 
 
