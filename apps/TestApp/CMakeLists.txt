@@ -19,7 +19,7 @@ set(DEP_INCLUDES ${DEP_INCLUDES}
   ${CMAKE_PROJECT_DIR}/../VLCore
 )
 
-set(DEP_LIBS ${DEP_LIBS} VLCore CppWebServer websockets)
+set(DEP_LIBS ${DEP_LIBS} VLml VLCore CppWebServer websockets)
 
 set(ALL_LIBS ${ALL_LIBS} crypto ssl z mlpack armadillo)
 
