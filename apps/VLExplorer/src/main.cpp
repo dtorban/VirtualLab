@@ -32,9 +32,12 @@ public:
 
 class VLWebServerSession : public JSONSession {
 public:
-	VLWebServerSession(VLWebServerSessionState state) : state(state) {
+	VLWebServerSession(VLWebServerSessionState state) : state(state), currentSampleIndex(0) {
 	}
 	~VLWebServerSession() {
+		for (std::map<int, IModelSample*>::iterator it = samples.begin(); it != samples.end(); it++) {
+			delete it->second;
+		}
 	}
 	void receiveJSON(picojson::value& val) {
 		std::string cmd = val.get<picojson::object>()["command"].get<std::string>();
@@ -43,10 +46,63 @@ public:
 			it->second->execute(this, val, &state);
 		}
 	}
+
 	void update() {}
+
+	IModelSample* getSample(int id) {
+		return samples[id];
+	}
+
+	int addSample(IModelSample* sample) {
+		samples[currentSampleIndex] = sample;
+		currentSampleIndex++;
+		return currentSampleIndex-1;
+	}
 
 private:
 	VLWebServerSessionState state;
+	std::map<int, IModelSample*> samples;
+	int currentSampleIndex;
+};
+
+class UpdateSampleCommand : public VLWebServerCommand {
+public:
+	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
+		picojson::object data = command.get<picojson::object>();
+		double sampleId = command.get<picojson::object>()["sampleId"].get<double>();
+
+		IModelSample* sample = session->getSample(sampleId);
+		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["nav"], sample->getNavigation());
+		std::cout << sample->getNavigation()["t"].get<double>() << std::endl;
+		sample->update();
+
+		data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
+		data["data"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getData()));
+
+		picojson::value ret(data);
+		session->sendJSON(ret);
+
+	}
+};
+
+class CreateSampleCommand : public VLWebServerCommand {
+public:
+	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
+		picojson::object data = command.get<picojson::object>();
+		double modelIndex = command.get<picojson::object>()["index"].get<double>();
+		DataObject obj;
+		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["params"], obj);
+
+		IModelSample* sample = state->models[modelIndex]->create(obj);
+		int id = session->addSample(sample);
+
+		data["sampleId"] = picojson::value((double)id);
+		data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
+		
+		picojson::value ret(data);
+		session->sendJSON(ret);
+
+	}
 };
 
 class GetParametersCommand : public VLWebServerCommand {
@@ -65,7 +121,7 @@ public:
 
 class InitCommand : public VLWebServerCommand {
 public:
-	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {\
+	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
 		picojson::object data = command.get<picojson::object>();
 		picojson::array modelNames;
 		for (int i = 0; i < state->models.size(); i++) {
@@ -93,6 +149,8 @@ int main(int argc, char**argv) {
 		VLWebServerSessionState state;
 		state.commands["init"] = new InitCommand();
 		state.commands["getParameters"] = new GetParametersCommand();
+		state.commands["createSample"] = new CreateSampleCommand();
+		state.commands["updateSample"] = new UpdateSampleCommand();
 		state.api = &api;
 		state.models = api.getModels();
 		WebServerWithState<VLWebServerSession, VLWebServerSessionState> server(state,port, webDir);

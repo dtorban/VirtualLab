@@ -1,3 +1,20 @@
+function VLModelSample(api, id, params, nav) {
+    this.api = api;
+    this.id = id;
+    this.params = params;
+    this.nav = nav;
+    this.data = {};
+}
+
+VLModelSample.prototype.update = function() {
+    let self = this;
+    return this.api.sendCommand({command: "updateSample", sampleId: this.id, nav: this.nav}, function(data) {
+        self.nav = data.nav;
+        self.data = data;
+        return data;
+    });
+};
+
 function VLModel(api, name, index) {
     this.api = api;
     this.name = name;
@@ -10,6 +27,14 @@ VLModel.prototype.getParameters = function() {
     return this.api.sendCommand({command: "getParameters", index: this.index}, function(data) {
         self.params = data.params;
         return self.params;
+    });
+};
+
+VLModel.prototype.create = function(params) {
+    let self = this;
+    return this.api.sendCommand({command: "createSample", index: this.index, params: params}, function(data) {
+        let sample = new VLModelSample(self.api, data.sampleId, self.params, data.nav);
+        return sample;
     });
 };
 

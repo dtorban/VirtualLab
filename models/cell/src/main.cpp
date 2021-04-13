@@ -585,7 +585,8 @@ int main(int argc, char* argv[]) {
 
         Server server(port);
         VLApiConnector api(&server, port);
-        api.registerModel(new MovingAverageModel("Cell", new CellModel("Cell")));
+        api.registerModel(new CellModel("Cell"));
+        //api.registerModel(new MovingAverageModel("Cell", new CellModel("Cell")));
         api.registerModel(new NModel("N-Cell", new CellModel("Cell")));
         //api.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
         //api.registerModel(new PCAModel("N-PCA-Cell", new NModel("N-Cell", new MovingAverageModel("Moving-Average", new CellModel("Cell")))));
