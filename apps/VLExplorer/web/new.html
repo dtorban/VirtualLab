@@ -47,6 +47,7 @@
 				padding-top: 15px;
 				padding-right: 15px;
 				padding-bottom: 15px;
+				word-wrap: break-word;
 			}
 
 		</style>
@@ -65,9 +66,22 @@
 		<script src="js/VLApi.js"></script>
 	</head>
 	<body>
-		<div id="notification-bar"></div>
+		<div id="notification-bar">
+			<div id="params"></div>
+			<br>
+			<div id="nav"></div>
+			<br>
+			<div id="data"></div>
+		</div>
 		<div id="menu">
-			<input type="button" value="Pause" onclick='running = !running;'>
+			<div>
+				<select id="modelSelect" onchange='changeModel()'>
+					<option value="-1">Select Model...</option>
+				</select>
+				<br>
+				<input id="sampleCreate" type="button" value="Create Sample" hidden onclick="createSample()">
+			</div>
+			<!--input type="button" value="Pause" onclick='running = !running;'-->
 		</div>
 		<div id="scene-container"></div>
 		<script src="js/new.js"></script>

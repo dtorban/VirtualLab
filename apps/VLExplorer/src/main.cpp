@@ -59,10 +59,30 @@ public:
 		return currentSampleIndex-1;
 	}
 
+	void deleteSample(int id) {
+		std::map<int, IModelSample*>::iterator it = samples.find(id);
+		delete it->second;
+		samples.erase(it);
+	}
+
 private:
 	VLWebServerSessionState state;
 	std::map<int, IModelSample*> samples;
 	int currentSampleIndex;
+};
+
+class DeleteSampleCommand : public VLWebServerCommand {
+public:
+	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
+		picojson::object data = command.get<picojson::object>();
+		double sampleId = command.get<picojson::object>()["sampleId"].get<double>();
+
+		session->deleteSample(sampleId);
+
+		picojson::value ret(data);
+		session->sendJSON(ret);
+
+	}
 };
 
 class UpdateSampleCommand : public VLWebServerCommand {
@@ -151,6 +171,7 @@ int main(int argc, char**argv) {
 		state.commands["getParameters"] = new GetParametersCommand();
 		state.commands["createSample"] = new CreateSampleCommand();
 		state.commands["updateSample"] = new UpdateSampleCommand();
+		state.commands["deleteSample"] = new DeleteSampleCommand();
 		state.api = &api;
 		state.models = api.getModels();
 		WebServerWithState<VLWebServerSession, VLWebServerSessionState> server(state,port, webDir);

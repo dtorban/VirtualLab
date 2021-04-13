@@ -10,8 +10,15 @@ VLModelSample.prototype.update = function() {
     let self = this;
     return this.api.sendCommand({command: "updateSample", sampleId: this.id, nav: this.nav}, function(data) {
         self.nav = data.nav;
-        self.data = data;
+        self.data = data.data;
         return data;
+    });
+};
+
+VLModelSample.prototype.delete = function() {
+    let self = this;
+    return this.api.sendCommand({command: "deleteSample", sampleId: this.id}, function(data) {
+        return null;
     });
 };
 
@@ -48,16 +55,13 @@ function VLApi() {
     this.modelsPromise = new Promise(function(resolve, reject) {
         self.callbacks[0] = function(data) { 
             resolve(self.models); 
-            console.log(self.callbacks);
             delete self.callbacks[0];
-            console.log(self.callbacks);
         }
     });
     this.requestId++;
 
     this.socket.onmessage =function (msg) {
         var data = JSON.parse(msg.data);
-        console.log(data);
         if (data.command == "init") {
             for (var i = 0; i < data.models.length; i++) {
                 self.models.push(new VLModel(self, data.models[i], i));
@@ -88,7 +92,6 @@ VLApi.prototype.getModels = function() {
 VLApi.prototype.sendCommand = function(cmd, calcVal) {
     let self = this;
     cmd.id = this.requestId;
-    console.log(cmd);
     this.socket.send(JSON.stringify(cmd));
     let promise = new Promise(function(resolve, reject) {
         self.callbacks[self.requestId] = function(data) { 

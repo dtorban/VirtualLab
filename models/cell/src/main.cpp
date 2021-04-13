@@ -69,6 +69,7 @@ public:
         data["aflow"] = DoubleDataValue();
         data["m"] = DataArray();
         data["ev"] = DataObject();
+        data["motors"] = DoubleDataValue();
 
         posx = &data["x"].get<double>();
         posy = &data["y"].get<double>();
@@ -81,6 +82,7 @@ public:
         aflow = &data["aflow"].get<double>();
         modules = &data["m"].get<vl::Array>();
         events = &data["ev"].get<Object>();
+        motors = &data["motors"].get<double>();
 
         nav["t"] = DoubleDataValue();
         nav["m"] = DoubleDataValue(1);
@@ -124,6 +126,7 @@ public:
             mod["fy"] = DoubleDataValue(s->GetCell().GetModule(i).GetForce().y);
             mod["x"] = DoubleDataValue(s->GetCell().GetModule(i).GetRef().x);
             mod["y"] = DoubleDataValue(s->GetCell().GetModule(i).GetRef().y);
+            mod["nm"] = DoubleDataValue(s->GetCell().GetModule(i).GetNumMotors());
             if (nav["m"].get<double>()) {
                 mods.push_back(mod);
             }
@@ -141,6 +144,7 @@ public:
         *actin = s->GetCell().GetFActin();
         *free_actin = s->GetCell().GetFreeActin();
         *aflow = s->GetCell().GetAFlow();
+        *motors = s->GetCell().GetActiveMotors();
 
         /*if (30.0 == nav["t"].get<double>()) {
             //ByteBufferWriter writer;
@@ -181,6 +185,7 @@ private:
     double* actin;
     double* free_actin; 
     double* aflow;
+    double* motors;
     vl::Array* modules;
     Object* events;
     ByteBufferWriter writer;
