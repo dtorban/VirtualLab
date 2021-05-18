@@ -86,6 +86,10 @@ public:
             double d = dataSet.get<double>();
             val = picojson::value(d);
         }
+        else if (dataSet.isType<std::string>()) {
+            std::string str = dataSet.get<std::string>();
+            val = picojson::value(str);
+        }
         else if (dataSet.isType<Object>()) {
             picojson::object obj;
             const Object& dataSetObj = dataSet.get<Object>();
@@ -113,6 +117,9 @@ public:
     void deserializeJSON(picojson::value& json, DataValue& dataSet) const {
         if (json.is<double>()) {
             dataSet.set<double>(json.get<double>());
+        }
+        else if (json.is<std::string>()) {
+            dataSet.set<std::string>(json.get<std::string>());
         }
         else if (json.is<picojson::object>()) {
             picojson::object obj = json.get<picojson::object>();
@@ -142,6 +149,9 @@ public:
     virtual DataValue createDataSet(const picojson::value& val) const {
         if (val.is<double>()) {
             return DoubleDataValue();
+        }
+        else if (val.is<std::string>()) {
+            return StringDataValue();
         }
         else if (val.is<picojson::object>()) {
             return DataObject();

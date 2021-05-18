@@ -194,25 +194,44 @@ private:
 class CellModel : public IModel {
 public:
     CellModel(const std::string& name = "CellModel") : name(name) {
-        params["substrate_k"] = DoubleDataValue(1.0);
-        params["length"] = DoubleDataValue(5000.0);
-        params["cell_k"] = DoubleDataValue(10000);
-        params["totact"] = DoubleDataValue(100000);
-        params["mpool"] = DoubleDataValue(1000);
-        params["cpool"] = DoubleDataValue(750);
-        params["cell_nclutch"] = DoubleDataValue(10);
-        params["kon"] = DoubleDataValue(1);
-        params["koff"] = DoubleDataValue(0.1);
-        params["fb"] = DoubleDataValue(2);
-        params["clutch_k"] = DoubleDataValue(0.8);
-        params["fm"] = DoubleDataValue(2);
-        params["vu"] = DoubleDataValue(120);
-        params["maxpoly"] = DoubleDataValue(200);
-        params["kbirth"] = DoubleDataValue(1);
-        params["cap_k"] = DoubleDataValue(0.001);
-        params["num"] = DoubleDataValue(0.0);
+        params["max"] = DataObject();
+        params["min"] = DataObject();
+        params["scale"] = DataObject();
+
+        addParameter("substrate_k", 1.0, 0.1, 300.0, "log");
+        addParameter("length", 5000.0, 100, 10000, "log");
+        addParameter("cell_k", 10000.0, 100, 100000, "log");
+        addParameter("totact", 100000.0, 100, 1000000, "log");
+        addParameter("mpool", 1000.0, 100, 10000, "log");
+        addParameter("cpool", 750, 75, 750, "log");
+        addParameter("cell_nclutch", 10, 1, 100, "log");
+        addParameter("kon", 1, 0.1, 10, "log");
+        addParameter("koff", 0.1, 0.01, 1, "log");
+        addParameter("fb", 2, 0.2, 20, "log");
+        addParameter("clutch_k", 0.8, 0.08, 8, "log");
+        addParameter("fm", 2, 0.2, 20, "log");
+        addParameter("vu", 120, 1.2, 1200, "log");
+        addParameter("maxpoly", 200, 100, 400, "log");
+        addParameter("kbirth", 1, 0.1, 10, "log");
+        addParameter("cap_k", 0.001, 0.0001, 0.01, "log");
+        addParameter("num", 0.0, 0, 100000, "linear");
+
+        //names = ['substrate_k', 'mpool', 'cpool', 'maxpoly','clutch_k', 'kon', 'koff', 'fb', 'fm', 'kbirth', 'cap_k']
+        //min = [0.1, 100, 75, 100, 0.08, 0.1, 0.01, 0.2, 0.2, 0.1, 0.0001]
+        //max = [300, 10000, 750, 400, 8, 10, 1, 20, 20, 10, 0.01]
     }
     virtual ~CellModel() {}
+
+    void addParameter(const std::string& key, double defaultValue) {
+        addParameter(key, defaultValue, defaultValue, defaultValue, "linear");
+    }
+
+    void addParameter(const std::string& key, double defaultValue, double min, double max, const std::string& scale) {
+        params[key] = DoubleDataValue(defaultValue);
+        params["min"].get<vl::Object>()[key] = DoubleDataValue(min);
+        params["max"].get<vl::Object>()[key] = DoubleDataValue(max);
+        params["scale"].get<vl::Object>()[key] = StringDataValue(scale);
+    }
 
     const std::string& getName() const { return name; }
 

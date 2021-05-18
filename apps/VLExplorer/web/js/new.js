@@ -40,6 +40,21 @@ function updateSample() {
   })
 }
 
+function createModel(params) {
+  let s = sample;
+  sample = null;
+  if (s) {
+    s.delete();
+  }
+
+  currentModel.create(params).then(function(s) {
+    sample = s;
+    sample.nav.m = 0;
+    $("#nav").append(JSON.stringify(sample.nav));
+    updateSample();
+  });
+}
+
 function changeModel() {
   let s = sample;
   sample = null;
@@ -61,13 +76,54 @@ function changeModel() {
     $("#params").html("");
     $("#nav").html("");
     $("#data").html("");
-    $("#params").append(JSON.stringify(params));
-    currentModel.create(params).then(function(s) {
-      sample = s;
-      sample.nav.m = 0;
-      $("#nav").append(JSON.stringify(sample.nav));
-      updateSample();
+    //$("#params").append(JSON.stringify(params));
+    for (var key in params) {
+      if (!(typeof params[key] === 'object')) {
+        $("#params").append('<div style="float:left;width:100px;">' + key + "</div>")
+        let scale = function(val) {
+          if (params.scale[key] == "log") {
+            return Math.log(val);
+          }
+          else {
+            return val;
+          }
+        };
+        let val = scale(params[key]);
+        let min = scale(params.min[key]);
+        let max = scale(params.max[key]);
+        val = 100.0*(val-min)/(max-min);
+        $("#params").append('<input  type="range" min="1" max="100" value="' + val + '" class="slider" name="' + key + '"></input>')
+        $("#params").append('<span id="val_' + key + '">' + params[key] +'</span>');  
+      }
+    }
+
+    $('.slider').on('change', function(e) {
+      let key = $(e.target).attr('name');
+      let val = parseFloat($(e.target).val());
+      let scale = function(val) {
+        if (params.scale[key] == "log") {
+          return Math.log(val);
+        }
+        else {
+          return val;
+        }
+      };
+
+      let inv_scale = function(val) {
+        if (params.scale[key] == "log") {
+          return Math.exp(val);
+        }
+        else {
+          return val;
+        }
+      };
+      val = inv_scale((1.0*val/100.0)*(scale(params.max[key]) - scale(params.min[key])) + scale(params.min[key]));
+      params[key] = val;
+      $("#val_" + key).html(params[key].toFixed(2));
+      createModel(params);
     });
+
+    createModel(params);
   });
 
 }
