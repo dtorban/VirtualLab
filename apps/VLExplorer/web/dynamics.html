@@ -1,0 +1,238 @@
+<html>
+	<head>
+		<title>Virtual Lab</title>
+		<style>
+			body { margin: 0; }
+			canvas { display: block; }
+			#info {
+				position: absolute;
+				top: 10px;
+				width: 100%;
+				text-align: center;
+				color: white;
+				z-index: 101;
+				display:block;
+			}
+
+			#menu {
+				background-color: black;
+				opacity: 0.8;
+				position: absolute;
+				top: 10px;
+				right: 10px;
+				text-align: left;
+				color: white;
+				z-index: 100;
+				display:block;
+				padding: 10px;
+			}
+
+			#scene-container {
+			  position: absolute;
+			  width: 100%;
+			  height: 90%;
+			}
+			#notification-bar {
+				position: absolute;
+				z-index: 2;
+				opacity: 0.5;
+				left: 0;
+				height: 90%;
+				background-color: black;
+				width: 300px;
+				color: white;
+				font-size: 1em;
+				white-space: pre-line;
+				padding-left: 15px;
+				padding-top: 15px;
+				padding-right: 15px;
+				padding-bottom: 15px;
+				word-wrap: break-word;
+				font-size: small;
+				vertical-align: middle;
+				visibility: visible;
+			}
+			.slider{
+				width: 100px;
+			}
+
+		</style>
+
+		<script src="https://d3js.org/d3.v4.js"></script>
+		<script src="js/jquery-3.5.1.min.js"></script>
+		<script src="js/three.js"></script>
+		<script src="js/OrbitControls.js"></script>
+		<script src="js/GLTFLoader.js"></script>
+		<script src="js/OBJLoader.js"></script>
+		<script src="js/LineSegmentsGeometry.js"></script>
+		<script src="js/LineGeometry.js"></script>
+		<script src="js/LineMaterial.js"></script>
+		<script src="js/LineSegments2.js"></script>
+		<script src="js/Line2.js"></script>
+		<script src="js/VLApi.js"></script>
+	</head>
+	<body>
+		<div id="notification-bar">
+			<div id="params"></div>
+			<br>
+			<div id="nav"></div>
+			<br>
+			<div id="data"></div>
+		</div>
+		<div id="menu">
+			<div>
+				<select id="modelSelect" onchange='changeModel()'>
+					<option value="-1">Select Model...</option>
+				</select>
+				<br>
+				<input id="sampleCreate" type="button" value="Create Sample" hidden onclick="createSample()">
+			</div>
+			<!--input type="button" value="Pause" onclick='running = !running;'-->
+		</div>
+		<div id="scene-container"></div>
+		<script src="js/dynamics.js"></script>
+
+		<script>
+
+			// set the dimensions and margins of the graph
+			var margin = {top: 10, right: 30, bottom: 30, left: 60},
+				width = $( "#scene-container" ).width() - margin.left - margin.right,
+				height = $( "#scene-container" ).height() - margin.top - margin.bottom;
+			
+			// append the SVG object to the body of the page
+			var SVG = d3.select("#scene-container")
+			  .append("svg")
+				.attr("width", width + margin.left + margin.right)
+				.attr("height", height + margin.top + margin.bottom)
+			  .append("g")
+				.attr("transform",
+					  "translate(" + margin.left + "," + margin.top + ")");
+		
+			function createScatter() {
+				var x = d3.scaleLinear()
+				.domain([0,1])
+				.range([ 0, width ]);
+			  var xAxis = SVG.append("g")
+				.attr("transform", "translate(0," + height + ")")
+				.call(d3.axisBottom(x));
+
+			  var y = d3.scaleLinear()
+				.domain([0,1])
+				.range([ height, 0]);
+			  var yAxis = SVG.append("g")
+				.call(d3.axisLeft(y));
+
+			  // Add a clipPath: everything out of this area won't be drawn.
+			  var clip = SVG.append("defs").append("SVG:clipPath")
+				  .attr("id", "clip")
+				  .append("SVG:rect")
+				  .attr("width", width )
+				  .attr("height", height )
+				  .attr("x", 0)
+				  .attr("y", 0);
+			
+			  // Create the scatter variable: where both the circles and the brush take place
+			  var scatter = SVG.append('g')
+				.attr("clip-path", "url(#clip)")
+
+			  // Set the zoom and Pan features: how much you can zoom, on which part, and what to do when there is a zoom
+			  var zoom = d3.zoom()
+				.scaleExtent([.5, 20])  // This control how much you can unzoom (x0.5) and zoom (x20)
+				.extent([[0, 0], [width, height]])
+
+			  // This add an invisible rect on top of the chart area. This rect can recover pointer events: necessary to understand when the user zoom
+			  var zoomElem = SVG.append("rect")
+				  .attr("width", width)
+				  .attr("height", height)
+				  .style("fill", "none")
+				  .style("pointer-events", "all")
+				  .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+				  .call(zoom);
+
+			  var zoomX = x;
+			  var zoomY = y;
+
+			  return {scatter: scatter, x:x, y:y, zoom:zoom, xAxis:xAxis, yAxis:yAxis, zoomElem:zoomElem, zoomX:null, zoomY:null, zooming:false};
+			}
+
+			function updateData(scatterPlot,data,a,b) {
+
+			  // Add Y axis
+			  scatterPlot.x.domain(d3.extent(data, function(d) { return a(d); }));
+			  scatterPlot.y.domain(d3.extent(data, function(d) { return b(d); }));
+
+			  if (!(scatterPlot.zoomX && scatterPlot.zoomY)) {
+				scatterPlot.zoomX = scatterPlot.x;
+			  	scatterPlot.zoomY = scatterPlot.y;
+			  }
+
+
+			  scatterPlot.xAxis.call(d3.axisBottom(scatterPlot.zoomX))
+			  scatterPlot.yAxis.call(d3.axisLeft(scatterPlot.zoomY))
+
+			  // Add circles
+			  scatterPlot.scatter
+				.selectAll("circle")
+				.data(data)
+				.enter()
+				.append("circle")
+				  .attr("cx", function (d) { return scatterPlot.zoomX(a(d)); } )
+				  .attr("cy", function (d) { return scatterPlot.zoomY(b(d)); } )
+				  //.attr("cy", function (d) { return y(d["Petal_Length"]); } )
+				  .attr("r", 3)
+				  .style("fill", "#61a3a9")
+				  .style("opacity", 1.0)
+
+			  scatterPlot.scatter
+				.selectAll("circle")
+				.attr('cx', function(d) {return scatterPlot.zoomX(a(d))})
+				.attr('cy', function(d) {return scatterPlot.zoomY(b(d))});
+
+			  /*scatterPlot.scatter
+				.selectAll("circle")
+				.data(data)
+				.transition()
+				.delay(0)
+				.attr("cx", function (d) { return scatterPlot.zoomX(a(d)); } )
+				.attr("cy", function (d) { return scatterPlot.zoomY(b(d)); } )*/
+
+			  scatterPlot.zoom.on("zoom", updateChart);
+			  /*scatterPlot.zoomElem.transition()
+				.duration(750)
+				.call(scatterPlot.zoom.transform, d3.zoomIdentity);*/
+
+			  // now the user can zoom and it will trigger the function called updateChart
+			
+			  // A function that updates the chart when the user zoom and thus new boundaries are available
+			  function updateChart() {
+				
+				// recover the new scale
+				var newX = d3.event.transform.rescaleX(scatterPlot.x);
+				var newY = d3.event.transform.rescaleY(scatterPlot.y);
+
+				scatterPlot.zoomX = newX;
+				scatterPlot.zoomY = newY;
+			
+				// update axes with these new boundaries
+				scatterPlot.xAxis.call(d3.axisBottom(newX))
+				scatterPlot.yAxis.call(d3.axisLeft(newY))
+			
+				// update circle position
+				scatterPlot.scatter
+				.selectAll("circle")
+				.attr('cx', function(d) {return newX(a(d))})
+				.attr('cy', function(d) {return newY(b(d))});
+			  }
+			}
+
+			var scatterPlot = createScatter(); 
+
+			//Read the data
+			/*d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv", function(data) {
+				//updateData(data, "Sepal_Length", "Petal_Length");
+				updateData(scatterPlot, data, "Sepal_Length", "Petal_Length");
+			
+			});*/
+			</script>
+	</body>
+</html>
