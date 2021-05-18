@@ -47,7 +47,7 @@ function updateSample(sample) {
       			//Read the data
             //d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv", function(data) {
               //updateData(data, "Sepal_Length", "Petal_Length");
-              updateData(scatterPlot, samples, function(d) {return d.data["x"];}, function(d){return d.data["y"];});
+              updateData(scatterPlot, samples, function(d) {return d.data["x"];}, function(d){return d.data["y"];}, function(d){return d.id;});
             
             //});
             

@@ -93,7 +93,7 @@ public:
 
 		IModelSample* sample = session->getSample(sampleId);
 		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["nav"], sample->getNavigation());
-		std::cout << sample->getNavigation()["t"].get<double>() << std::endl;
+		std::cout << sampleId << ": " << sample->getNavigation()["t"].get<double>() << std::endl;
 		sample->update();
 
 		data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));

@@ -93,6 +93,7 @@
 		<script src="js/dynamics.js"></script>
 
 		<script>
+			var colors = ['red','blue','green','yellow','orange','purple','black'];
 
 			// set the dimensions and margins of the graph
 			var margin = {top: 10, right: 30, bottom: 30, left: 60},
@@ -155,7 +156,7 @@
 			  return {scatter: scatter, x:x, y:y, zoom:zoom, xAxis:xAxis, yAxis:yAxis, zoomElem:zoomElem, zoomX:null, zoomY:null, zooming:false};
 			}
 
-			function updateData(scatterPlot,data,a,b) {
+			function updateData(scatterPlot,data,a,b,color) {
 
 			  // Add Y axis
 			  scatterPlot.x.domain(d3.extent(data, function(d) { return a(d); }));
@@ -180,7 +181,8 @@
 				  .attr("cy", function (d) { return scatterPlot.zoomY(b(d)); } )
 				  //.attr("cy", function (d) { return y(d["Petal_Length"]); } )
 				  .attr("r", 3)
-				  .style("fill", "#61a3a9")
+				  //.style("fill", "#61a3a9")
+				  .style("fill", function (d) { return colors[color(d)%colors.length];})
 				  .style("opacity", 1.0)
 
 			  scatterPlot.scatter
