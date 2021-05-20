@@ -406,7 +406,7 @@ void Server::service() {
                 delete[] buf;
             }
             else if (messageType == MSG_getModels) {
-                std::vector<IModel*> models = getModels();
+                //std::vector<IModel*> models = getModels();
                 int numModels = models.size();
                 sendData(sd, (unsigned char*)& numModels, sizeof(int));
                 for (int i = 0; i < numModels; i++) {
@@ -439,7 +439,7 @@ void Server::service() {
                 std::string json = receiveString(sd);
                 DataObject params;
                 JSONSerializer::instance().deserialize(json, params);
-                IModelSample* sample = getModels()[modelId]->create(params);
+                IModelSample* sample = models[modelId]->create(params);
                 static int modelSamplesCount = 0;
                 int modelSampleId = modelSamplesCount;
                 modelSamplesCount++;

@@ -94,12 +94,12 @@ public:
     
     virtual IModelSample* create(const DataObject& params) {
         lazyLoadApi();
-        return model->create(params);
+        return model.create(params);
     }
 
 private:
     void lazyLoadApi();
-    IModel* model;
+    ModelProxy model;
 
     IVirtualLabAPI* api;
     std::string name;
@@ -150,12 +150,7 @@ public:
         std::string name = model->getName();
         sendMessage(socketFD, MSG_deregisterModel, (const unsigned char*)name.c_str(), name.size());
     }
-    virtual const std::vector<IModel*>& getModels() { 
-        for (int i = 0; i < models.size(); i++) {
-            delete models[i];
-        }
-        models.clear();
-
+    virtual const std::vector<ModelProxy> getModels() { 
         sendMessage(socketFD, MSG_getModels, (const unsigned char*)0, 0);
         int numModels;
         receiveData(socketFD, (unsigned char*)& numModels, sizeof(int));
@@ -171,17 +166,31 @@ public:
             receiveData(socketFD, (unsigned char*)& modelId, sizeof(int));
             int modelType;
             receiveData(socketFD, (unsigned char*)& modelType, sizeof(int));
-            //std::cout << name << " " << modelId << std::endl;
+            std::cout << name << " " << modelId << std::endl;
 
+            IModel* tempModel = NULL;
             if (modelType == 1) {
-                models.push_back(new ExternalModel(this, socketFD, name, modelId));
+                tempModel = new ExternalModel(this, socketFD, name, modelId);
             }
             else {
-                models.push_back(new ClientModel(this, socketFD, name, modelId));
+                tempModel = new ClientModel(this, socketFD, name, modelId);
             }
+
+            if (models.find(modelId) == models.end()) {
+                models[modelId] = tempModel;
+            }
+            else {
+                delete tempModel;
+            }
+
+        }
+
+        std::vector<ModelProxy> modelProxies;
+        for (std::map<int,IModel*>::iterator it = models.begin(); it != models.end(); it++) {
+            modelProxies.push_back(ModelProxy(it->second));
         }
         
-        return models;
+        return modelProxies;
     }
 
     /*virtual void service() {
@@ -208,9 +217,9 @@ public:
 
     }*/
 
-    std::vector<IModel*> models;
+    std::map<int,IModel*> models;
     //std::vector<IModel*> localModels;
-    std::vector<IModelSample*> localModelSamples;
+    //std::vector<IModelSample*> localModelSamples;
 
 /*	virtual void createSharedTexture(const std::string& name, const TextureInfo& info, int deviceIndex) {
 	    sendMessage(socketFD, MSG_createSharedTexture, (const unsigned char*)name.c_str(), name.size());
@@ -304,11 +313,11 @@ private:
 inline void ExternalModel::lazyLoadApi() {
     if (!api) {
         api = new Client(ip, port);
-        std::vector<IModel*> models = api->getModels();
+        std::vector<ModelProxy> models = api->getModels();
         for (int i = 0; i < models.size(); i++) {
-            if (name == models[i]->getName()) {
+            if (name == models[i].getName()) {
                 model = models[i];
-                parameters = model->getParameters();
+                parameters = model.getParameters();
                 break;
             }
         }

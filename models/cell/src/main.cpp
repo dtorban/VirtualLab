@@ -248,10 +248,11 @@ private:
 class NSample : public IModelSample {
 public:
     NSample(DataObject params, const std::vector<IModelSample*>& samples) : params(params), samples(samples) {
-        data["data"] = DataArray();
-        d = &data["data"].get<vl::Array>();
+        //data["data"] = DataArray();
+        //d = &data["data"].get<vl::Array>();
 
         nav = samples[0]->getNavigation();
+        nav["sim"] = DoubleDataValue(0);
     }
 
     virtual ~NSample() {
@@ -274,11 +275,17 @@ public:
             //array.push_back(samples[i]->getData());
         }
 
+        int simIndex = nav["sim"].get<double>();
+        data.set<Object>(samples[simIndex]->getData().get<Object>());
+        
+        double meanRMC = 0.0;
         for (int i = 0; i < samples.size(); i++) {
             array.push_back(samples[i]->getData());
+            meanRMC += samples[i]->getData()["rmc"].get<double>();
         }
+        data["meanRMC"] = DoubleDataValue(meanRMC/samples.size());
 
-        *d = array;
+        //*d = array;
     }
 
 private:
@@ -286,7 +293,7 @@ private:
     DataObject params;
     DataObject nav;
     DataObject data;
-    vl::Array* d;
+    //vl::Array* d;
 };
 
 class NModel : public IModel {
@@ -311,7 +318,7 @@ public:
         for (int i = 0; i < numSamples; i++) {
             DataObject parameters = params;
             parameters["num"].set<double>(i);
-            parameters["substrate_k"].set<double>(std::exp(std::log(0.1) + ((1.0*i)/(numSamples-1))*(std::log(300)-std::log(0.1))));
+            //parameters["substrate_k"].set<double>(std::exp(std::log(0.1) + ((1.0*i)/(numSamples-1))*(std::log(300)-std::log(0.1))));
             //parameters["cpool"].set<double>(std::exp(std::log(75) + ((1.0*i)/(numSamples-1))*(std::log(750)-std::log(75))));
             //parameters["mpool"].set<double>(std::exp(std::log(100) + ((1.0*i)/(numSamples-1))*(std::log(10000)-std::log(100))));
             IModelSample* sample = model->create(parameters);
@@ -591,7 +598,7 @@ public:
         server->deregisterModel(model);
         client->deregisterModel(model);
     }
-    const std::vector<IModel*>& getModels() {
+    const std::vector<ModelProxy> getModels() {
         return client->getModels();
     }
 
@@ -613,7 +620,7 @@ int main(int argc, char* argv[]) {
         //api.registerModel(new MovingAverageModel("Cell", new CellModel("Cell")));
         api.registerModel(new NModel("N-Cell", new CellModel("Cell")));
         //api.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
-        //api.registerModel(new PCAModel("N-PCA-Cell", new NModel("N-Cell", new MovingAverageModel("Moving-Average", new CellModel("Cell")))));
+        api.registerModel(new NModel("N-Cell-2", new MovingAverageModel("Moving-Average", new CellModel("Cell"))));
         while(true) {
             server.service();
         }

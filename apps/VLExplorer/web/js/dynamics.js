@@ -39,7 +39,7 @@ function updateSample(sample) {
     $("#data").html("");
     $("#nav").append(JSON.stringify(sample.nav));
     $("#data").append(JSON.stringify(sample.data));
-    sample.nav.t = Math.floor(sample.nav.t)+100;
+    sample.nav.t = Math.floor(sample.nav.t)+1;
 
     samples.push({id:sample.id, data:sample.data});
     //console.log(samples);

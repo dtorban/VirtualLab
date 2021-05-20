@@ -12,41 +12,47 @@ public:
     VirtualLabAPI() {
     }
 	virtual ~VirtualLabAPI() {
-        for (int i = 0; i < models.size(); i++) {
-            delete models[i];
+        for (int i = 0; i < realModels.size(); i++) {
+            delete realModels[i];
         }
     }
     virtual void registerModel(IModel* model) {
-        models.push_back(model);
+        models.push_back(ModelProxy(model));
+        realModels.push_back(model);
     }
     virtual void deregisterModel(IModel* model) {
-        models.erase(std::remove(models.begin(), models.end(), model), models.end()); 
+        realModels.erase(std::remove(realModels.begin(), realModels.end(), model), realModels.end());
+        models.clear();
+        for (int i = 0; i < realModels.size(); i++) {
+            models.push_back(ModelProxy(realModels[i]));
+        }
         delete model;
     }
-    virtual const std::vector<IModel*>& getModels() { return models; }
+    virtual const std::vector<ModelProxy> getModels() { return models; }
 
 protected:
-    std::vector<IModel*> models;
+    std::vector<ModelProxy> models;
+    std::vector<IModel*> realModels;
 };
 
 
-class LoadBalancedModel : public IModel {
+/*class LoadBalancedModel : public IModel {
 public:
     LoadBalancedModel() : index(0) {}
     virtual ~LoadBalancedModel() {}
-    virtual const std::string& getName() const { return models[0]->getName(); }
-    virtual const DataObject& getParameters() { return models[0]->getParameters(); }
+    virtual const std::string& getName() const { return models[0].getName(); }
+    virtual const DataObject& getParameters() { return models[0].getParameters(); }
     virtual IModelSample* create(const DataObject& params) {
-        IModelSample* sample = models[index%models.size()]->create(params);
+        IModelSample* sample = models[index%models.size()].create(params);
         std::cout << models.size() << std::endl;
         index++;
         return sample;
     }
-    void addModel(IModel* model) {
+    void addModel(ModelProxy model) {
         models.push_back(model);
     }
 private:
-    std::vector<IModel*> models;
+    std::vector<ModelProxy> models;
     int index;
 };
 
@@ -60,16 +66,13 @@ public:
     virtual void deregisterModel(IModel* model) {
         api->deregisterModel(model);
     }
-    virtual const std::vector<IModel*>& getModels() {
-        for (int i = 0; i < models.size(); i++) {
-            delete models[i];
-        }
+    virtual const std::vector<ModelProxy> getModels() {
         models.clear();
 
         std::map<std::string, LoadBalancedModel*> loadBalancedModels;
-        const std::vector<IModel*>& apiModels = api->getModels();
+        std::vector<ModelProxy> apiModels = api->getModels();
         for (int i = 0; i < apiModels.size(); i++) {
-            std::string name = apiModels[i]->getName();
+            std::string name = apiModels[i].getName();
             std::map<std::string, LoadBalancedModel*>::iterator it = loadBalancedModels.find(name);
             if (it == loadBalancedModels.end()) {
                 LoadBalancedModel* model = new LoadBalancedModel();
@@ -83,8 +86,8 @@ public:
 
 protected:
     IVirtualLabAPI* api;
-    std::vector<IModel*> models;
-};
+    std::vector<ModelProxy> models;
+};*/
 
 
 }

@@ -14,16 +14,17 @@ using namespace vl;
 
 int main(int argc, char**argv) {
 
-	Client client;
-	LoadBalancedAPI api(&client);
+	//Client client;
+	//LoadBalancedAPI api(&client);
+	Client api;
 
-	std::vector<IModel*> models = api.getModels();
+	std::vector<ModelProxy> models = api.getModels();
 	for (int f = 0; f < models.size(); f++) {
-		std::cout << models[f]->getName() << std::endl;
+		std::cout << models[f].getName() << std::endl;
 	}
 
-			
-	IModel* model = api.getModels()[0];
+	ModelProxy proxy = 	api.getModels()[0];	
+	IModel* model = &proxy;
 	model = new PCAModel("Test", model);
 	std::cout << model->getName() << std::endl;
 		

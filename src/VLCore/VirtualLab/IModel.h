@@ -15,6 +15,21 @@ public:
     virtual IModelSample* create(const DataObject& params) = 0;
 };
 
+class ModelProxy : public IModel {
+public:
+    ModelProxy() : model(NULL) {}
+    ModelProxy(IModel* model) : model(model) {}
+    ModelProxy(const ModelProxy& proxy) : model(proxy.model) {}
+    void operator=(const ModelProxy& proxy) { model = proxy.model; }
+    virtual ~ModelProxy() {}
+    const std::string& getName() const { return model->getName(); }
+    const DataObject& getParameters() { return model->getParameters(); }
+    IModelSample* create(const DataObject& params) { return model->create(params); }
+
+private:
+    IModel* model;
+};
+
 }
 
 #endif

@@ -21,7 +21,7 @@ using namespace vl;
 struct VLWebServerSessionState {
 	std::map<std::string, VLWebServerCommand*> commands;
 	IVirtualLabAPI* api;
-	std::vector<IModel*> models;
+	std::vector<ModelProxy> models;
 };
 
 class VLWebServerCommand {
@@ -113,7 +113,7 @@ public:
 		DataObject obj;
 		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["params"], obj);
 
-		IModelSample* sample = state->models[modelIndex]->create(obj);
+		IModelSample* sample = state->models[modelIndex].create(obj);
 		int id = session->addSample(sample);
 
 		data["sampleId"] = picojson::value((double)id);
@@ -131,7 +131,7 @@ public:
 		picojson::object data = command.get<picojson::object>();
 		double modelIndex = command.get<picojson::object>()["index"].get<double>();
 
-		data["params"] = picojson::value(JSONSerializer::instance().serializeJSON(state->models[modelIndex]->getParameters()));
+		data["params"] = picojson::value(JSONSerializer::instance().serializeJSON(state->models[modelIndex].getParameters()));
 		
 		picojson::value ret(data);
 		session->sendJSON(ret);
@@ -145,7 +145,7 @@ public:
 		picojson::object data = command.get<picojson::object>();
 		picojson::array modelNames;
 		for (int i = 0; i < state->models.size(); i++) {
-			modelNames.push_back(picojson::value(state->models[i]->getName()));
+			modelNames.push_back(picojson::value(state->models[i].getName()));
 		}
 		data["models"] = picojson::value(modelNames);
 		
@@ -174,6 +174,7 @@ int main(int argc, char**argv) {
 		state.commands["deleteSample"] = new DeleteSampleCommand();
 		state.api = &api;
 		state.models = api.getModels();
+		api.getModels();
 		WebServerWithState<VLWebServerSession, VLWebServerSessionState> server(state,port, webDir);
 		while (running) {
 			server.service();
