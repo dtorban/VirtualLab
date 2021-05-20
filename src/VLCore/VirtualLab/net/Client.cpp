@@ -248,6 +248,14 @@ Client::Client(const std::string &serverIP, int serverPort)
 
 Client::~Client()
 {
+  for (std::map<int,IModel*>::iterator it = models.begin(); it != models.end(); it++) {
+    delete it->second;
+  }
+
+  for (int i = 0; i < localModels.size(); i++) {
+    delete localModels[i];
+  }
+
   std::cout <<"Client closing socket." << std::endl;
 #ifdef WIN32
   closesocket(socketFD);

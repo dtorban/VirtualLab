@@ -144,7 +144,7 @@ public:
             //std::cout << remoteModel->getIP() << ":" << remoteModel->getPort() << std::endl;
         }
 
-        //localModels.push_back(model);
+        localModels.push_back(model);
     }
     virtual void deregisterModel(IModel* model) {
         std::string name = model->getName();
@@ -189,6 +189,10 @@ public:
         for (std::map<int,IModel*>::iterator it = models.begin(); it != models.end(); it++) {
             modelProxies.push_back(ModelProxy(it->second));
         }
+
+        for (int i = 0; i < localModels.size(); i++) {
+            modelProxies.push_back(ModelProxy(localModels[i]));
+        }
         
         return modelProxies;
     }
@@ -218,7 +222,7 @@ public:
     }*/
 
     std::map<int,IModel*> models;
-    //std::vector<IModel*> localModels;
+    std::vector<IModel*> localModels;
     //std::vector<IModelSample*> localModelSamples;
 
 /*	virtual void createSharedTexture(const std::string& name, const TextureInfo& info, int deviceIndex) {

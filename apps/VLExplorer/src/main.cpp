@@ -159,6 +159,8 @@ int main(int argc, char**argv) {
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 
 	Client api;
+	api.registerModel(new TestModel());
+	api.registerModel(new ModelProxy(api.getModels()[2]));
 
 	if (argc > 2) {
 		int port = std::atoi(argv[1]);
@@ -174,7 +176,6 @@ int main(int argc, char**argv) {
 		state.commands["deleteSample"] = new DeleteSampleCommand();
 		state.api = &api;
 		state.models = api.getModels();
-		api.getModels();
 		WebServerWithState<VLWebServerSession, VLWebServerSessionState> server(state,port, webDir);
 		while (running) {
 			server.service();
