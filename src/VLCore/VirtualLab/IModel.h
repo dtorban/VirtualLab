@@ -30,6 +30,18 @@ private:
     IModel* model;
 };
 
+class ModelDecorator : public IModel {
+public:
+    ModelDecorator(IModel* model) : model(model) {}
+    virtual ~ModelDecorator() { delete model; }
+    virtual const std::string& getName() const { return model->getName(); }
+    virtual const DataObject& getParameters() { return model->getParameters(); }
+    virtual IModelSample* create(const DataObject& params) { return model->create(params); }
+
+protected:
+    IModel* model;
+};
+
 }
 
 #endif

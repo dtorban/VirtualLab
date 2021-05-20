@@ -18,6 +18,45 @@ class VLWebServerCommand;
 
 using namespace vl;
 
+class PCAModelSample : public IModelSample {
+public:
+	PCAModelSample(const DataObject& params) : params(params) {}
+
+	virtual const DataObject& getParameters() const { return params; }
+    virtual DataObject& getNavigation() { return nav; }
+    virtual const DataObject& getData() const { return data; }
+    virtual void update() {
+		std::cout << "update" << std::endl;
+	}
+
+
+private:
+    DataObject params;
+    DataObject nav;
+    DataObject data;
+};
+
+class PCAModel : public IModel, public IDataConsumer {
+public:
+	PCAModel(IDataProducer* producer) : name("PCA") {
+		producer->addConsumer(this);
+	}
+	const std::string& getName() const { return name; }
+    const DataObject& getParameters() { return params; }
+    IModelSample* create(const DataObject& params) {
+		return new PCAModelSample(params);
+	}
+
+    virtual void consume(IModel& model, IModelSample& sample) {
+		std::cout << sample.getData()["x"].get<double>() << " " << sample.getData()["y"].get<double>() << std::endl;
+		//std::cout << model.getName() << " " << &sample << std::endl;
+	}
+
+private:
+	std::string name;
+	DataObject params;
+};
+
 struct VLWebServerSessionState {
 	std::map<std::string, VLWebServerCommand*> commands;
 	IVirtualLabAPI* api;
@@ -32,7 +71,14 @@ public:
 
 class VLWebServerSession : public JSONSession {
 public:
-	VLWebServerSession(VLWebServerSessionState state) : state(state), currentSampleIndex(0) {
+	VLWebServerSession(VLWebServerSessionState state) : state(state), producerAPI(*state.api), currentSampleIndex(0) {
+		IVirtualLabAPI* api = this->state.api;
+		//producerAPI.registerModel(new TestModel());
+		//producerAPI.registerModel(new ModelProxy(api->getModels()[0]));
+		compositeApi.registerModel(new PCAModel(&producerAPI));
+		compositeApi.addApi(producerAPI);
+		this->state.api = &compositeApi;
+		this->state.models = this->state.api->getModels();
 	}
 	~VLWebServerSession() {
 		for (std::map<int, IModelSample*>::iterator it = samples.begin(); it != samples.end(); it++) {
@@ -69,6 +115,8 @@ private:
 	VLWebServerSessionState state;
 	std::map<int, IModelSample*> samples;
 	int currentSampleIndex;
+	ProducerAPI producerAPI;
+	CompositeAPI compositeApi;
 };
 
 class DeleteSampleCommand : public VLWebServerCommand {
@@ -155,12 +203,32 @@ public:
 	}
 };
 
+class MyDataConsumer : public IDataConsumer {
+public:
+    virtual void consume(IModel& model, IModelSample& sample) {
+		std::cout << sample.getData()["x"].get<double>() << " " << sample.getData()["y"].get<double>() << std::endl;
+		//std::cout << model.getName() << " " << &sample << std::endl;
+	}
+};
+
+
+
 int main(int argc, char**argv) {
 	std::cout << "Usage: ./bin/ExampleServer 8081 path/to/web" << std::endl;
 
-	Client api;
-	api.registerModel(new TestModel());
-	api.registerModel(new ModelProxy(api.getModels()[2]));
+	IVirtualLabAPI* api;
+
+	Client client;
+	api = &client;
+
+	/*ProducerAPI producerAPI(client);
+	producerAPI.registerModel(new TestModel());
+	producerAPI.registerModel(new ModelProxy(client.getModels()[0]));
+	CompositeAPI compositeApi;
+	compositeApi.registerModel(new PCAModel(&producerAPI));
+	compositeApi.addApi(producerAPI);
+	api = &compositeApi;*/
+
 
 	if (argc > 2) {
 		int port = std::atoi(argv[1]);
@@ -174,8 +242,8 @@ int main(int argc, char**argv) {
 		state.commands["createSample"] = new CreateSampleCommand();
 		state.commands["updateSample"] = new UpdateSampleCommand();
 		state.commands["deleteSample"] = new DeleteSampleCommand();
-		state.api = &api;
-		state.models = api.getModels();
+		state.api = api;
+		//state.models = api->getModels();
 		WebServerWithState<VLWebServerSession, VLWebServerSessionState> server(state,port, webDir);
 		while (running) {
 			server.service();
