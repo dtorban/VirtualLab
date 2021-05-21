@@ -135,6 +135,24 @@ public:
 
 class UpdateSampleCommand : public VLWebServerCommand {
 public:
+	class UpdateCallback : public IUpdateCallback {
+	public:
+		UpdateCallback(picojson::object data, VLWebServerSession* session, IModelSample* sample) : data(data), session(session), sample(sample) {}
+
+		void onComplete() {
+			data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
+			data["data"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getData()));
+
+			picojson::value ret(data);
+			session->sendJSON(ret);
+		}
+
+	private:
+		picojson::object data;
+		VLWebServerSession* session;
+		IModelSample* sample;
+	};
+
 	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
 		picojson::object data = command.get<picojson::object>();
 		double sampleId = command.get<picojson::object>()["sampleId"].get<double>();
@@ -142,15 +160,18 @@ public:
 		IModelSample* sample = session->getSample(sampleId);
 		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["nav"], sample->getNavigation());
 		std::cout << sampleId << ": " << sample->getNavigation()["t"].get<double>() << std::endl;
-		sample->update();
+		//sample->update();
+		sample->update(new UpdateCallback(data, session, sample));
 
-		data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
-		data["data"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getData()));
+		//data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
+		//data["data"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getData()));
 
-		picojson::value ret(data);
-		session->sendJSON(ret);
+		//picojson::value ret(data);
+		//session->sendJSON(ret);
 
 	}
+
+
 };
 
 class CreateSampleCommand : public VLWebServerCommand {

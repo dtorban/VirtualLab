@@ -11,6 +11,8 @@
 
 namespace vl {
 
+class Client;
+
 /*class ClientQuery : public IQuery {
 public:
     ClientQuery(NetInterface* api, SOCKET sd) : api(api), sd(sd) {}
@@ -28,9 +30,11 @@ private:
     JSONSerializer serializer;
 };*/
 
+class ClientSampleUpdateQueue;
+
 class ClientModelSample : public IModelSample {
 public:
-    ClientModelSample(NetInterface* api, SOCKET sd, int modelSampleId);
+    ClientModelSample(NetInterface* api, SOCKET sd, SOCKET usd, int modelSampleId, ClientSampleUpdateQueue* updateQueue);
 
     ~ClientModelSample() {
         std::cout << "delete this craziness" << std::endl;
@@ -51,18 +55,40 @@ public:
 
     virtual void update();
 
+    void update(IUpdateCallback* callback);
+
+    void resolveUpdate(ByteBufferReader& reader, IUpdateCallback* callback);
+
 private:
     DataObject parameters;
     DataObject navigation;
     DataObject data;
     NetInterface* api;
     SOCKET sd;
+    SOCKET usd;
     int modelSampleId;
+    ClientSampleUpdateQueue* updateQueue;
+};
+
+class ClientSampleUpdateQueue {
+public:
+    ClientSampleUpdateQueue(NetInterface* api, SOCKET usd) : api(api), usd(usd) {}
+    virtual ~ClientSampleUpdateQueue() {}
+
+    void scheduleForUpdate(int modelSampleId, ClientModelSample* sample, IUpdateCallback* callback);
+    void resolveUpdate();
+
+private:
+    int waiting;
+    std::map<int, ClientModelSample*> samples;
+    std::map<int, IUpdateCallback*> callbacks;
+    NetInterface* api;
+    SOCKET usd;
 };
 
 class ClientModel : public IModel {
 public:
-    ClientModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId);
+    ClientModel(NetInterface* api, SOCKET sd, SOCKET usd, const std::string& name, int modelId, ClientSampleUpdateQueue* updateQueue);
 
     const std::string& getName() const { return name; }
     virtual const DataObject& getParameters() { return parameters; }
@@ -72,8 +98,10 @@ private:
     NetInterface* api;
     std::string name;
     SOCKET sd;
+    SOCKET usd;
     int modelId;
     DataObject parameters;
+    ClientSampleUpdateQueue* updateQueue;
 };
 
 class ExternalModel : public IModel {
@@ -173,7 +201,7 @@ public:
                 tempModel = new ExternalModel(this, socketFD, name, modelId);
             }
             else {
-                tempModel = new ClientModel(this, socketFD, name, modelId);
+                tempModel = new ClientModel(this, socketFD, updateSocketFD, name, modelId, updateQueue);
             }
 
             if (models.find(modelId) == models.end()) {
@@ -223,6 +251,7 @@ public:
 
     std::map<int,IModel*> models;
     std::vector<IModel*> localModels;
+    ClientSampleUpdateQueue* updateQueue;
     //std::vector<IModelSample*> localModelSamples;
 
 /*	virtual void createSharedTexture(const std::string& name, const TextureInfo& info, int deviceIndex) {
@@ -310,8 +339,11 @@ public:
 	}*/
 
 private:
+    SOCKET createSocket(const std::string &serverIP, int serverPort);
+
 	//std::vector<MessageQueue*> messageQueues;
 	SOCKET socketFD;
+	SOCKET updateSocketFD;
 };
 
 inline void ExternalModel::lazyLoadApi() {

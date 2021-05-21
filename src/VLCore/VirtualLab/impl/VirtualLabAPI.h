@@ -60,6 +60,11 @@ public:
         producer->produce(*model, *sample);
     }
 
+    void update(IUpdateCallback* callback) {
+        ModelSampleDecorator::update(callback);
+        producer->produce(*model, *sample);
+    }
+
 private:
     IModel* model;
     IDataProducer* producer;

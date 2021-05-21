@@ -449,7 +449,7 @@ void Server::service() {
                 sendString(sd, JSONSerializer::instance().serialize(sample->getNavigation()));
                 sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
             }
-            else if (messageType == MSG_updateModelSample) {
+            else if (messageType == MSG_updateModelSample || messageType == MSG_updateModelSampleAsync) {
                 JSONSerializer serializer;
                 
                 unsigned char* bytes = new unsigned char[dataLength];
@@ -470,8 +470,11 @@ void Server::service() {
 
                 nav = JSONSerializer::instance().serialize(sample->getNavigation());
                 std::string data = JSONSerializer::instance().serialize(sample->getData());
-                int dataSize = 2*sizeof(int) + nav.size() + data.size();
+                int dataSize = 3*sizeof(int) + nav.size() + data.size();
                 writer.addData(dataSize);
+                if (messageType == MSG_updateModelSampleAsync) {
+                    writer.addData(modelSampleId);
+                }
                 writer.addString(nav);
                 writer.addString(data);
                 sendData(sd, writer.getBytes(), writer.getSize());

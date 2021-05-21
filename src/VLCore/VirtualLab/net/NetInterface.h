@@ -56,7 +56,8 @@ enum NetMessageType {
 	MSG_getModels = 3,
     MSG_createModelSample = 4,
 	MSG_updateModelSample = 5,
-	MSG_deleteModelSample = 6
+	MSG_deleteModelSample = 6,
+	MSG_updateModelSampleAsync = 7
 };
 
 class NetInterface {

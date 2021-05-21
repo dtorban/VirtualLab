@@ -6,7 +6,7 @@
 
 namespace vl {
 
-ClientModelSample::ClientModelSample(NetInterface* api, SOCKET sd, int modelSampleId) : api(api), sd(sd), modelSampleId(modelSampleId) {
+ClientModelSample::ClientModelSample(NetInterface* api, SOCKET sd, SOCKET usd, int modelSampleId, ClientSampleUpdateQueue* updateQueue) : api(api), sd(sd), usd(usd), modelSampleId(modelSampleId), updateQueue(updateQueue) {
     std::string params = api->receiveString(sd);
     std::string nav = api->receiveString(sd);
     std::string ds = api->receiveString(sd);
@@ -37,7 +37,75 @@ void ClientModelSample::update() {
     delete[] bytes;
 }
 
-ClientModel::ClientModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(api), name(name), sd(sd), modelId(modelId) {
+void ClientModelSample::update(IUpdateCallback* callback) {
+    //unsigned char bytes[512];
+    std::string nav = JSONSerializer::instance().serialize(navigation);
+    ByteBufferWriter buf;
+    buf.addData(modelSampleId);
+    buf.addString(nav);
+    api->sendMessage(usd, MSG_updateModelSampleAsync, buf.getBytes(), buf.getSize());
+    //int dataLength;
+    //api->receiveData(usd, (unsigned char*)& dataLength, sizeof(int));
+
+    updateQueue->scheduleForUpdate(modelSampleId, this, callback);
+    updateQueue->resolveUpdate();
+    
+    /*unsigned char* bytes = new unsigned char[dataLength];
+    api->receiveData(usd, bytes, dataLength);
+    ByteBufferReader reader(bytes);
+    int sampleId;
+    reader.readData(sampleId);
+
+    resolveUpdate(reader, callback);
+
+    delete[] bytes;*/
+}
+
+void ClientModelSample::resolveUpdate(ByteBufferReader& reader, IUpdateCallback* callback) {
+    std::string ds;
+    std::string nav;
+    reader.readString(nav);
+    reader.readString(ds);
+    JSONSerializer::instance().deserialize(nav, navigation);
+    JSONSerializer::instance().deserialize(ds, data);
+
+    std::cout << "Update async" << std::endl;
+    callback->onComplete();
+    delete callback;
+}
+
+void ClientSampleUpdateQueue::scheduleForUpdate(int modelSampleId, ClientModelSample* sample, IUpdateCallback* callback) {
+  samples[modelSampleId] = sample;
+  callbacks[modelSampleId] = callback;
+  waiting++;
+
+  /*int dataLength;
+  api->receiveData(usd, (unsigned char*)& dataLength, sizeof(int));
+  unsigned char* bytes = new unsigned char[dataLength];
+  api->receiveData(usd, bytes, dataLength);
+  ByteBufferReader reader(bytes);
+  int sampleId;
+  reader.readData(sampleId);
+
+  samples[sampleId]->resolveUpdate(reader, callbacks[modelSampleId]);*/
+}
+
+void ClientSampleUpdateQueue::resolveUpdate() {
+  int dataLength;
+  api->receiveData(usd, (unsigned char*)& dataLength, sizeof(int));
+  unsigned char* bytes = new unsigned char[dataLength];
+  api->receiveData(usd, bytes, dataLength);
+  ByteBufferReader reader(bytes);
+  int sampleId;
+  reader.readData(sampleId);
+
+  samples[sampleId]->resolveUpdate(reader, callbacks[sampleId]);
+  waiting--;
+
+  delete[] bytes;
+}
+
+ClientModel::ClientModel(NetInterface* api, SOCKET sd, SOCKET usd, const std::string& name, int modelId, ClientSampleUpdateQueue* updateQueue) : api(api), name(name), sd(sd), usd(usd), modelId(modelId), updateQueue(updateQueue) {
     std::string json = api->receiveString(sd);
     JSONSerializer::instance().deserialize(json, parameters);
 }
@@ -52,7 +120,7 @@ IModelSample* ClientModel::create(const DataObject& params) {
     api->sendString(sd, json);
     int modelSampleId;
     api->receiveData(sd, (unsigned char*)&modelSampleId, sizeof(int));
-    return new ClientModelSample(api, sd, modelSampleId);
+    return new ClientModelSample(api, sd, usd, modelSampleId, updateQueue);
 }
 
 // get sockaddr, IPv4 or IPv6:
@@ -63,7 +131,13 @@ void *get_in_addr2(struct sockaddr *sa) {
   return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-Client::Client(const std::string &serverIP, int serverPort)
+Client::Client(const std::string &serverIP, int serverPort) {
+  socketFD = createSocket(serverIP, serverPort);
+  updateSocketFD = createSocket(serverIP, serverPort);
+  updateQueue = new ClientSampleUpdateQueue(this, updateSocketFD);
+}
+
+SOCKET Client::createSocket(const std::string &serverIP, int serverPort)
 {
   std::cout <<"connecting..." << std::endl;
 
@@ -239,7 +313,7 @@ Client::Client(const std::string &serverIP, int serverPort)
     setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &value, sizeof(value));
     setsockopt(sockfd, IPPROTO_TCP, TCP_QUICKACK, &value, sizeof(value));
 
-    socketFD = sockfd;
+    return sockfd;
 
 #endif
 
@@ -256,6 +330,8 @@ Client::~Client()
     delete localModels[i];
   }
 
+  delete updateQueue;
+
   std::cout <<"Client closing socket." << std::endl;
 #ifdef WIN32
   closesocket(socketFD);
@@ -263,6 +339,7 @@ Client::~Client()
 #else
   std::cout << "close socket" << std::endl;
   close(socketFD);
+  close(updateSocketFD);
 #endif
 
 /*  for (int f = 0; f < messageQueues.size(); f++) {
