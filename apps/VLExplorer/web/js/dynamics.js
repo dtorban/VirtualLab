@@ -13,13 +13,14 @@ $( document ).ready(function() {
     models.forEach(model => {
       $("#modelSelect").append($('<option value="' + model.index + '">' + model.name + '</option>'));
     });
-    /*models[0].getParameters().then(function(params) {
+
+    models[0].getParameters().then(function(params) {
       models[0].create(params).then(function(sample) { 
-        sample.update();
-        sample.nav.t = 10.0;
-        sample.update();
+        //sample.update();
+        //sample.nav.t = 10.0;
+        updateSample(sample);
       });
-    });*/
+    });
   });
   
 

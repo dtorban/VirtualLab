@@ -18,15 +18,30 @@ class VLWebServerCommand;
 
 using namespace vl;
 
-class PCAModelSample : public IModelSample {
+class PCAModelSample : public IModelSample, public IDataConsumer {
 public:
-	PCAModelSample(const DataObject& params) : params(params) {}
+	PCAModelSample(const DataObject& params) : params(params), callback(NULL) {}
 
 	virtual const DataObject& getParameters() const { return params; }
     virtual DataObject& getNavigation() { return nav; }
     virtual const DataObject& getData() const { return data; }
     virtual void update() {
-		std::cout << "update" << std::endl;
+		if (callback) {
+			std::cout << "update PCA" << std::endl;
+			callback->onComplete();
+		}
+		callback = NULL;
+	}
+	void update(IUpdateCallback* callback) {
+		this->callback = callback;
+		std::cout << "update PCA async" << std::endl;
+        //ModelSampleDecorator::update(callback);
+        //producer->produce(*model, *sample);
+    }
+	virtual void consume(IModel& model, IModelSample& sample) {
+		std::cout << sample.getData()["x"].get<double>() << " " << sample.getData()["y"].get<double>() << std::endl;
+		//std::cout << model.getName() << " " << &sample << std::endl;
+		update();
 	}
 
 
@@ -34,6 +49,7 @@ private:
     DataObject params;
     DataObject nav;
     DataObject data;
+	IUpdateCallback* callback;
 };
 
 class PCAModel : public IModel, public IDataConsumer {
@@ -44,17 +60,23 @@ public:
 	const std::string& getName() const { return name; }
     const DataObject& getParameters() { return params; }
     IModelSample* create(const DataObject& params) {
-		return new PCAModelSample(params);
+		PCAModelSample* sample = new PCAModelSample(params);
+		consumers.push_back(sample);
+		return sample;
 	}
 
     virtual void consume(IModel& model, IModelSample& sample) {
-		std::cout << sample.getData()["x"].get<double>() << " " << sample.getData()["y"].get<double>() << std::endl;
+		//std::cout << sample.getData()["x"].get<double>() << " " << sample.getData()["y"].get<double>() << std::endl;
 		//std::cout << model.getName() << " " << &sample << std::endl;
+		for (int i = 0; i < consumers.size(); i++) {
+			consumers[i]->consume(model, sample);
+		}
 	}
 
 private:
 	std::string name;
 	DataObject params;
+	std::vector<IDataConsumer*> consumers;
 };
 
 struct VLWebServerSessionState {
