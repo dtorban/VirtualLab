@@ -7,77 +7,17 @@ Copyright (c) 2019 Dan Orban
 #include <algorithm>
 #include <random>
 #include <chrono>
-#include "WebServer.h" 
+#include "WebServer.h"
 #include "VirtualLab/net/Server.h"
 #include "VirtualLab/net/Client.h"
 #include "VirtualLab/impl/TestModel.h"
 #include "VirtualLab/util/JSONSerializer.h"
+#include "VirtualLab/pca/PCAModel.h" 
 
 class VLWebServerSession;
 class VLWebServerCommand;
 
 using namespace vl;
-
-class PCAModelSample : public IModelSample, public IDataConsumer {
-public:
-	PCAModelSample(const DataObject& params) : params(params), callback(NULL) {}
-
-	virtual const DataObject& getParameters() const { return params; }
-    virtual DataObject& getNavigation() { return nav; }
-    virtual const DataObject& getData() const { return data; }
-    virtual void update() {
-		if (callback) {
-			std::cout << "update PCA" << std::endl;
-			callback->onComplete();
-		}
-		callback = NULL;
-	}
-	void update(IUpdateCallback* callback) {
-		this->callback = callback;
-		std::cout << "update PCA async" << std::endl;
-        //ModelSampleDecorator::update(callback);
-        //producer->produce(*model, *sample);
-    }
-	virtual void consume(IModel& model, IModelSample& sample) {
-		std::cout << sample.getData()["x"].get<double>() << " " << sample.getData()["y"].get<double>() << std::endl;
-		//std::cout << model.getName() << " " << &sample << std::endl;
-		update();
-	}
-
-
-private:
-    DataObject params;
-    DataObject nav;
-    DataObject data;
-	IUpdateCallback* callback;
-};
-
-class PCAModel : public IModel, public IDataConsumer {
-public:
-	PCAModel(IDataProducer* producer) : name("PCA") {
-		producer->addConsumer(this);
-	}
-	const std::string& getName() const { return name; }
-    const DataObject& getParameters() { return params; }
-    IModelSample* create(const DataObject& params) {
-		PCAModelSample* sample = new PCAModelSample(params);
-		consumers.push_back(sample);
-		return sample;
-	}
-
-    virtual void consume(IModel& model, IModelSample& sample) {
-		//std::cout << sample.getData()["x"].get<double>() << " " << sample.getData()["y"].get<double>() << std::endl;
-		//std::cout << model.getName() << " " << &sample << std::endl;
-		for (int i = 0; i < consumers.size(); i++) {
-			consumers[i]->consume(model, sample);
-		}
-	}
-
-private:
-	std::string name;
-	DataObject params;
-	std::vector<IDataConsumer*> consumers;
-};
 
 struct VLWebServerSessionState {
 	std::map<std::string, VLWebServerCommand*> commands;
@@ -165,8 +105,12 @@ public:
 			data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
 			data["data"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getData()));
 
+
+			double sampleId = data["sampleId"].get<double>();
+
 			picojson::value ret(data);
 			session->sendJSON(ret);
+			
 		}
 
 	private:
@@ -181,7 +125,6 @@ public:
 
 		IModelSample* sample = session->getSample(sampleId);
 		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["nav"], sample->getNavigation());
-		std::cout << sampleId << ": " << sample->getNavigation()["t"].get<double>() << std::endl;
 		//sample->update();
 		sample->update(new UpdateCallback(data, session, sample));
 

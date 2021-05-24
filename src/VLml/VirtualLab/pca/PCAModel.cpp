@@ -10,6 +10,27 @@ using namespace mlpack;
 using namespace mlpack::pca;
 using namespace mlpack::util;
 
+
+namespace vl {
+
+template<typename DecompositionPolicy>
+void RunPCA(arma::mat& dataset,
+            const size_t newDimension,
+            const bool scale,
+            const double varToRetain)
+{
+  PCA<DecompositionPolicy> p(scale);
+  double varRetained;
+
+    varRetained = p.Apply(dataset, newDimension);
+}
+
+}
+
+#endif
+
+#ifdef USE_MLPACK2
+
 namespace vl {
 
 template<typename DecompositionPolicy>
@@ -153,11 +174,114 @@ IModelSample* PCAModel::create(const DataObject& params) {
 }
 
 #else
+
+#endif
+
 namespace vl {
 
+class PCAModelSample : public IModelSample, public IDataConsumer {
+public:
+	PCAModelSample(const DataObject& params) : params(params), callback(NULL) {
+        data["pca"] = DataArray();
+        pca = &data["pca"].get<vl::Array>();
+    }
+
+	virtual const DataObject& getParameters() const { return params; }
+    virtual DataObject& getNavigation() { return nav; }
+    virtual const DataObject& getData() const { return data; }
+    virtual void update();
+	void update(IUpdateCallback* callback);
+	virtual void consume(IModel& model, IModelSample& sample);
+
+
+private:
+    DataObject params;
+    DataObject nav;
+    DataObject data;
+    vl::Array* pca;
+	IUpdateCallback* callback;
+#ifdef USE_MLPACK
+	std::vector<arma::rowvec> rows;
+#endif
+};
+
+
 IModelSample* PCAModel::create(const DataObject& params) {
-    return model->create(params);
+		PCAModelSample* sample = new PCAModelSample(params);
+		consumers.push_back(sample);
+		return sample;
 }
 
-}
+void PCAModelSample::update() {
+    if (callback) {
+        //std::cout << "update PCA" << std::endl;
+
+#ifdef USE_MLPACK
+        if (rows.size() > 2) {
+                arma::mat A(rows.size(), rows[0].n_cols);
+            
+                //B << sample->getNavigation()["t"].get<double>() << arma::endr << sample->getNavigation()["t"].get<double>() << arma::endr;
+                for (int i = 0; i < rows.size(); i++) {
+                    A.row(i) = rows[i];
+                }
+                A = A.t();
+                RunPCA<ExactSVDPolicy>(A, 2, true, 1.0);
+                A = A.t();
+
+                pca->clear();
+
+                for (int f = 0; f < rows.size(); f++) {
+                        vl::DataObject obj;
+                        //std::cout << A.row(f);
+                        obj["x"] = DoubleDataValue(A(f,0));
+                        obj["y"] = DoubleDataValue(A(f,1));
+                        //obj["id"] = DoubleDataValue(i);
+                        //obj["t"] = DoubleDataValue(f/prev.size());
+                        pca->push_back(obj);
+                }
+        }
 #endif
+
+        callback->onComplete();
+    }
+    callback = NULL;
+}
+
+void PCAModelSample::update(IUpdateCallback* callback) {
+    this->callback = callback;
+    //ModelSampleDecorator::update(callback);
+    //producer->produce(*model, *sample);
+}
+
+void PCAModelSample::consume(IModel& model, IModelSample& sample) {
+	//std::cout << sample.getData()["x"].get<double>() << " " << sample.getData()["y"].get<double>() << std::endl;
+	//std::cout << model.getName() << " " << &sample << std::endl;
+
+    const DataObject& obj = sample.getData();
+    const DataObject& nav = sample.getNavigation();
+
+#ifdef USE_MLPACK
+    //std::cout << " time: " << nav["t"].get<double>() << " " << rows.size() << std::endl;
+    arma::rowvec r;
+    if (nav["t"].get<double>() > 0.0) {
+        r << obj["actin"].get<double>()
+        << obj["aflow"].get<double>() 
+        << obj["en"].get<double>() 
+        << obj["free_actin"].get<double>() 
+        << obj["nm"].get<double>()
+        << std::sqrt(std::pow(obj["fx"].get<double>(),2.0)+std::pow(obj["fy"].get<double>(),2.0)) 
+        //<< dist
+        << obj["rmc"].get<double>()
+        << arma::endr;
+        rows.push_back(r);
+    }
+#endif
+
+	update();
+}
+
+/*IModelSample* PCAModel::create(const DataObject& params) {
+    return model->create(params);
+}*/
+
+}

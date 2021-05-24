@@ -2,9 +2,9 @@
 var api = new VLApi();
 var modelList = [];
 let currentModel = null;
-let sample = null;
 let currentParams = null;
 let samples = [];
+let pca = [];
 
 // This is the function that is called once the document is started.
 $( document ).ready(function() {
@@ -18,7 +18,7 @@ $( document ).ready(function() {
       models[0].create(params).then(function(sample) { 
         //sample.update();
         //sample.nav.t = 10.0;
-        updateSample(sample);
+        updatePCA(sample);
       });
     });
   });
@@ -27,7 +27,34 @@ $( document ).ready(function() {
   
 });
 
-function updateSample(sample) {
+function updatePCA(sample) {
+  if (!sample) {
+    return;
+  }
+
+  sample.update().then(function() {  
+    if (!sample) {
+      return;
+    }
+    //sample.nav.t = Math.floor(sample.nav.t)+1;
+    //console.log(sample.data);
+    //000samples.push({id:sample.id, data:sample.data});
+    //console.log(samples);
+
+    samples.push({id:sample.id, data:sample.data});
+      			//Read the data
+            //d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv", function(data) {
+              //updateData(data, "Sepal_Length", "Petal_Length");
+              updateData(scatterPlot, sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return 0;});
+              //updateData(scatterPlot, samples, function(d) {return d.data.x;}, function(d){return d.data.y;}, function(d){return 0;});
+            
+            //});
+            
+    updatePCA(sample);
+  })
+}
+
+function updateSample(sample, isPCA) {
   if (!sample) {
     return;
   }
@@ -48,7 +75,7 @@ function updateSample(sample) {
       			//Read the data
             //d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv", function(data) {
               //updateData(data, "Sepal_Length", "Petal_Length");
-              updateData(scatterPlot, samples, function(d) {return d.data[Object.keys(d.data)[0]];}, function(d){return d.data[Object.keys(d.data)[1]];}, function(d){return d.id;});
+              //updateData(scatterPlot, samples, function(d) {return d.data[Object.keys(d.data)[0]];}, function(d){return d.data[Object.keys(d.data)[1]];}, function(d){return d.id;});
             
             //});
             
@@ -58,20 +85,19 @@ function updateSample(sample) {
 
 function createSample() {
   if (currentParams) {
-    createModel(currentParams);
+    createModelSample(currentParams);
   }
 
 }
 
-function createModel(params) {
-  let s = sample;
+function createModelSample(params) {
   /*sample = null;
   if (s) {
     s.delete();
   }*/
 
   currentModel.create(params).then(function(s) {
-    sample = s;
+    let sample = s;
     sample.nav.m = 0;
     sample.nav.t = 10;
     $("#nav").append(JSON.stringify(sample.nav));
@@ -82,11 +108,6 @@ function createModel(params) {
 }
 
 function changeModel() {
-  let s = sample;
-  sample = null;
-  if (s) {
-    s.delete();
-  }
   time = 0;
   let selection = $("#modelSelect").val();
   if (selection >= 0) {

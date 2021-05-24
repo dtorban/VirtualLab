@@ -8,11 +8,11 @@ Copyright (c) 2019 Dan Orban
 #include "VirtualLab/net/Client.h"
 #include "VirtualLab/DataValue.h"
 #include "VirtualLab/util/JSONSerializer.h"
-#include "VirtualLab/pca/PCAModel.h"
+//#include "VirtualLab/pca/PCAModel.h"
 
 using namespace vl;
 
-int main(int argc, char**argv) {
+int main(int argc, char**argv) { 
 
 	//Client client;
 	//LoadBalancedAPI api(&client);
@@ -25,7 +25,7 @@ int main(int argc, char**argv) {
 
 	ModelProxy proxy = 	api.getModels()[0];	
 	IModel* model = &proxy;
-	model = new PCAModel("Test", model);
+	//model = new PCAModel("Test", model);
 	std::cout << model->getName() << std::endl;
 		
 	DataObject params = model->getParameters();

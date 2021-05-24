@@ -75,7 +75,11 @@ function VLApi() {
             resolve(self.socket);
         };
         self.socket.onerror = function(err) {
+            console.log(err);
             reject(err);
+        }
+        self.socket.onclose = function (event) {
+            console.log(event);
         }
     });
 
@@ -93,8 +97,10 @@ VLApi.prototype.sendCommand = function(cmd, calcVal) {
     let self = this;
     cmd.id = this.requestId;
     this.socket.send(JSON.stringify(cmd));
+    //console.log("send", cmd.id, cmd.command, cmd.nav, cmd.sampleId);
     let promise = new Promise(function(resolve, reject) {
-        self.callbacks[self.requestId] = function(data) { 
+        self.callbacks[self.requestId] = function(data) {
+            //console.log("resolve", data.id, data.command, data.sampleId, data, JSON.stringify(data).length); 
             resolve(calcVal(data)); 
             delete self.callbacks[data.id];
         }

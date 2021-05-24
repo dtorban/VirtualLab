@@ -69,7 +69,6 @@ void ClientModelSample::resolveUpdate(ByteBufferReader& reader, IUpdateCallback*
     JSONSerializer::instance().deserialize(nav, navigation);
     JSONSerializer::instance().deserialize(ds, data);
 
-    std::cout << "Update async" << std::endl;
     callback->onComplete();
     delete callback;
 }
