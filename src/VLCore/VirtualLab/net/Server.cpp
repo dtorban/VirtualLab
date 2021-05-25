@@ -1,9 +1,11 @@
 #include "VirtualLab/net/Server.h"
 #include "VirtualLab/util/JSONSerializer.h"
 #include "VirtualLab/util/ByteBuffer.h"
+#include "VirtualLab/impl/AsyncSample.h"
 
 #include <sstream>
 #include <iostream>
+#include <mutex>
 
 #define BACKLOG 100
 
@@ -240,6 +242,33 @@ private:
     JSONSerializer serializer;
 };*/
 
+class ServerUpdateCallback : public IUpdateCallback {
+public:
+    ServerUpdateCallback(NetInterface* api, SOCKET sd, IModelSample* sample, int modelSampleId, std::mutex& mutex) : api(api), sd(sd), sample(sample), modelSampleId(modelSampleId), mutex(mutex) {}
+
+    void onComplete() {
+        //std::cout << "ServerUpdateCallback "  << modelSampleId << std::endl;
+        std::unique_lock<std::mutex> lock(mutex);
+        ByteBufferWriter writer;
+
+        std::string nav = JSONSerializer::instance().serialize(sample->getNavigation());
+        std::string data = JSONSerializer::instance().serialize(sample->getData());
+        int dataSize = 3*sizeof(int) + nav.size() + data.size();
+        writer.addData(dataSize);
+        writer.addData(modelSampleId);
+        writer.addString(nav);
+        writer.addString(data);
+        api->sendData(sd, writer.getBytes(), writer.getSize());
+    }
+
+private:
+    NetInterface* api;
+    SOCKET sd;
+    IModelSample* sample;
+    int modelSampleId;
+    std::mutex& mutex;
+};
+
 class ServerRemoteModel : public IModel {
 public:
     ServerRemoteModel(const std::string &serverIP, int serverPort, const std::string& name) : serverIP(serverIP), serverPort(serverPort), name(name) {}
@@ -439,7 +468,7 @@ void Server::service() {
                 std::string json = receiveString(sd);
                 DataObject params;
                 JSONSerializer::instance().deserialize(json, params);
-                IModelSample* sample = models[modelId]->create(params);
+                IModelSample* sample = new AsyncSample(models[modelId]->create(params));
                 static int modelSamplesCount = 0;
                 int modelSampleId = modelSamplesCount;
                 modelSamplesCount++;
@@ -449,7 +478,7 @@ void Server::service() {
                 sendString(sd, JSONSerializer::instance().serialize(sample->getNavigation()));
                 sendString(sd, JSONSerializer::instance().serialize(sample->getData()));
             }
-            else if (messageType == MSG_updateModelSample || messageType == MSG_updateModelSampleAsync) {
+            else if (messageType == MSG_updateModelSample) {
                 JSONSerializer serializer;
                 
                 unsigned char* bytes = new unsigned char[dataLength];
@@ -478,6 +507,38 @@ void Server::service() {
                 writer.addString(nav);
                 writer.addString(data);
                 sendData(sd, writer.getBytes(), writer.getSize());
+            }
+            else if (messageType == MSG_updateModelSampleAsync) {
+                JSONSerializer serializer;
+                
+                unsigned char* bytes = new unsigned char[dataLength];
+                receiveData(sd, bytes, dataLength);
+                ByteBufferReader reader(bytes);
+
+                int modelSampleId;
+                reader.readData(modelSampleId);
+                std::string nav;
+                reader.readString(nav);
+                IModelSample* sample = serverModelSamples[modelSampleId];
+                serializer.deserialize(nav, sample->getNavigation());
+                delete[] bytes;
+
+                sample->update(new ServerUpdateCallback(this, sd, sample, modelSampleId, asyncMutex));
+
+                /*sample->update();
+
+                ByteBufferWriter writer;
+
+                nav = JSONSerializer::instance().serialize(sample->getNavigation());
+                std::string data = JSONSerializer::instance().serialize(sample->getData());
+                int dataSize = 3*sizeof(int) + nav.size() + data.size();
+                writer.addData(dataSize);
+                if (messageType == MSG_updateModelSampleAsync) {
+                    writer.addData(modelSampleId);
+                }
+                writer.addString(nav);
+                writer.addString(data);
+                sendData(sd, writer.getBytes(), writer.getSize());*/
             }
             else if (messageType == MSG_deleteModelSample) {
                 int modelSampleId;

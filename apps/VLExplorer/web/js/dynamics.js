@@ -67,7 +67,7 @@ function updateSample(sample, isPCA) {
     $("#data").html("");
     $("#nav").append(JSON.stringify(sample.nav));
     $("#data").append(JSON.stringify(sample.data));
-    sample.nav.t = Math.floor(sample.nav.t)+1;
+    sample.nav.t = Math.floor(sample.nav.t)+10;
 
     samples.push({id:sample.id, data:sample.data});
     //console.log(samples);

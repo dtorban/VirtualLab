@@ -5,6 +5,7 @@ include(${CMAKE_FRAMEWORK_DIR}/project/project.cmake)
 # --------------------- Source -----------------------
 
 set (SOURCEFILES
+  VirtualLab/impl/AsyncSample.cpp
   VirtualLab/impl/TestModel.cpp
   VirtualLab/net/NetInterface.cpp
   VirtualLab/net/Server.cpp
@@ -28,7 +29,7 @@ set(DEP_INCLUDES ${DEP_INCLUDES}
   /dependencies/include
 )
 
-set(DEP_LIBS ${DEP_LIBS})
+set(DEP_LIBS ${DEP_LIBS} pthread)
 
 # --------------------- Executable -----------------------
 

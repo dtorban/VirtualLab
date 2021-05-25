@@ -45,15 +45,18 @@ void ClientModelSample::update() {
 
 void ClientModelSample::update(IUpdateCallback* callback) {
     //unsigned char bytes[512];
-    std::string nav = JSONSerializer::instance().serialize(navigation);
+
+    /*std::string nav = JSONSerializer::instance().serialize(navigation);
     ByteBufferWriter buf;
     buf.addData(modelSampleId);
     buf.addString(nav);
-    api->sendMessage(usd, MSG_updateModelSampleAsync, buf.getBytes(), buf.getSize());
+    api->sendMessage(usd, MSG_updateModelSampleAsync, buf.getBytes(), buf.getSize());*/
+
     //int dataLength;
     //api->receiveData(usd, (unsigned char*)& dataLength, sizeof(int));
 
     updateQueue->scheduleForUpdate(modelSampleId, this, callback);
+
     //updateQueue->resolveUpdate();
     
     /*unsigned char* bytes = new unsigned char[dataLength];
@@ -87,9 +90,16 @@ void ClientSampleUpdateQueue::removeSample(int modelSampleId) {
 
 void ClientSampleUpdateQueue::scheduleForUpdate(int modelSampleId, ClientModelSample* sample, IUpdateCallback* callback) {
   std::unique_lock<std::mutex> lock(updateMutex);
+  std::string nav = JSONSerializer::instance().serialize(sample->getNavigation());
+  ByteBufferWriter buf;
+  buf.addData(modelSampleId);
+  buf.addString(nav);
+  api->sendMessage(usd, MSG_updateModelSampleAsync, buf.getBytes(), buf.getSize());
+
   samples[modelSampleId] = sample;
   callbacks[modelSampleId] = callback;
   waiting++;
+  //std::cout << "Notify " << modelSampleId << " " << callbacks[modelSampleId] << std::endl;
   cond.notify_all();
 
   /*int dataLength;
@@ -109,6 +119,7 @@ void ClientSampleUpdateQueue::update() {
     if (waiting == 0) {
       cond.wait(lock);
     }
+    lock.unlock();
     resolveUpdate();
   }
 }
@@ -125,10 +136,13 @@ void ClientSampleUpdateQueue::resolveUpdate() {
   reader.readData(sampleId);
 
   if (samples[sampleId] != NULL) {
+    //std::cout << "Resolve " << sampleId << " " << callbacks[sampleId] << std::endl;
     samples[sampleId]->resolveUpdate(reader, callbacks[sampleId]);
   }
 
+  std::unique_lock<std::mutex> lock(updateMutex);
   waiting--;
+  lock.unlock();
 
   delete[] bytes;
 }

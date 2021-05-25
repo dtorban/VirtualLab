@@ -5,6 +5,7 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <mutex>
 
 #include "VirtualLab/net/NetInterface.h"
 #include "VirtualLab/impl/VirtualLabAPI.h"
@@ -42,6 +43,7 @@ private:
 	fd_set readfds;
     std::vector<IModel*> models;
     std::map<int, IModelSample*> serverModelSamples;
+    std::mutex asyncMutex;
 };
 
 }
