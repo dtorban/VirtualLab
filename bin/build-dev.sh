@@ -3,8 +3,8 @@
 ROOTDIR=`git rev-parse --show-toplevel`
 CONTAINER=virtual-lab-dev-container
 
+#         --no-cache \
 docker build $1 \
-         --no-cache \
 	--target dev \
 	--build-arg USER_ID=$(id -u) \
 	--build-arg GROUP_ID=$(id -g) \

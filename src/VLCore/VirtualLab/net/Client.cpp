@@ -15,6 +15,12 @@ ClientModelSample::ClientModelSample(NetInterface* api, SOCKET sd, SOCKET usd, i
     JSONSerializer::instance().deserialize(ds, data);
 }
 
+ClientModelSample::~ClientModelSample() {
+    std::cout << "delete this craziness" << std::endl;
+    updateQueue->removeSample(modelSampleId);
+    api->sendMessage(sd, MSG_deleteModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
+}
+
 void ClientModelSample::update() {
     //unsigned char bytes[512];
     std::string nav = JSONSerializer::instance().serialize(navigation);
@@ -73,14 +79,18 @@ void ClientModelSample::resolveUpdate(ByteBufferReader& reader, IUpdateCallback*
     delete callback;
 }
 
+void ClientSampleUpdateQueue::removeSample(int modelSampleId) {
+  std::unique_lock<std::mutex> lock(updateMutex);
+  samples[modelSampleId] = NULL;
+  callbacks[modelSampleId] = NULL;
+}
+
 void ClientSampleUpdateQueue::scheduleForUpdate(int modelSampleId, ClientModelSample* sample, IUpdateCallback* callback) {
-  std::cout << "start scheduleForUpdate " << waiting << std::endl;
   std::unique_lock<std::mutex> lock(updateMutex);
   samples[modelSampleId] = sample;
   callbacks[modelSampleId] = callback;
   waiting++;
   cond.notify_all();
-  std::cout << "Notify cond " << waiting << std::endl;
 
   /*int dataLength;
   api->receiveData(usd, (unsigned char*)& dataLength, sizeof(int));
@@ -97,10 +107,8 @@ void ClientSampleUpdateQueue::update() {
   while(true) {
     std::unique_lock<std::mutex> lock(updateMutex);
     if (waiting == 0) {
-      std::cout << "lock cond " << waiting << std::endl;
       cond.wait(lock);
     }
-    std::cout << "Update " << waiting << std::endl;
     resolveUpdate();
   }
 }
@@ -108,22 +116,21 @@ void ClientSampleUpdateQueue::update() {
 void ClientSampleUpdateQueue::resolveUpdate() {
   //std::unique_lock<std::mutex> lock(updateMutex);
   //cond.wait(lock);
-  std::cout << "receive data" << std::endl;
   int dataLength;
   api->receiveData(usd, (unsigned char*)& dataLength, sizeof(int));
-  std::cout << "received data" << std::endl;
   unsigned char* bytes = new unsigned char[dataLength];
   api->receiveData(usd, bytes, dataLength);
   ByteBufferReader reader(bytes);
   int sampleId;
   reader.readData(sampleId);
 
-  samples[sampleId]->resolveUpdate(reader, callbacks[sampleId]);
+  if (samples[sampleId] != NULL) {
+    samples[sampleId]->resolveUpdate(reader, callbacks[sampleId]);
+  }
+
   waiting--;
 
   delete[] bytes;
-
-  std::cout << "received data data" << std::endl;
 }
 
 ClientModel::ClientModel(NetInterface* api, SOCKET sd, SOCKET usd, const std::string& name, int modelId, ClientSampleUpdateQueue* updateQueue) : api(api), name(name), sd(sd), usd(usd), modelId(modelId), updateQueue(updateQueue) {

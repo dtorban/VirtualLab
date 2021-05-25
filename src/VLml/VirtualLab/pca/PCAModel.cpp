@@ -243,6 +243,7 @@ void PCAModelSample::update() {
 #endif
 
         callback->onComplete();
+        delete callback;
     }
     callback = NULL;
 }

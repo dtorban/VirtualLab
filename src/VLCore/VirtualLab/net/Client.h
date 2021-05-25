@@ -40,10 +40,7 @@ class ClientModelSample : public IModelSample {
 public:
     ClientModelSample(NetInterface* api, SOCKET sd, SOCKET usd, int modelSampleId, ClientSampleUpdateQueue* updateQueue);
 
-    ~ClientModelSample() {
-        std::cout << "delete this craziness" << std::endl;
-        api->sendMessage(sd, MSG_deleteModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
-    }
+    ~ClientModelSample();
 
     virtual const DataObject& getParameters() const {
         return parameters;
@@ -84,6 +81,7 @@ public:
     }
 
     void scheduleForUpdate(int modelSampleId, ClientModelSample* sample, IUpdateCallback* callback);
+    void removeSample(int modelSampleId);
     void resolveUpdate();
     void update();
 
