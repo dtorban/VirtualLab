@@ -48,7 +48,7 @@ void ClientModelSample::update(IUpdateCallback* callback) {
     //api->receiveData(usd, (unsigned char*)& dataLength, sizeof(int));
 
     updateQueue->scheduleForUpdate(modelSampleId, this, callback);
-    updateQueue->resolveUpdate();
+    //updateQueue->resolveUpdate();
     
     /*unsigned char* bytes = new unsigned char[dataLength];
     api->receiveData(usd, bytes, dataLength);
@@ -74,9 +74,13 @@ void ClientModelSample::resolveUpdate(ByteBufferReader& reader, IUpdateCallback*
 }
 
 void ClientSampleUpdateQueue::scheduleForUpdate(int modelSampleId, ClientModelSample* sample, IUpdateCallback* callback) {
+  std::cout << "start scheduleForUpdate " << waiting << std::endl;
+  std::unique_lock<std::mutex> lock(updateMutex);
   samples[modelSampleId] = sample;
   callbacks[modelSampleId] = callback;
   waiting++;
+  cond.notify_all();
+  std::cout << "Notify cond " << waiting << std::endl;
 
   /*int dataLength;
   api->receiveData(usd, (unsigned char*)& dataLength, sizeof(int));
@@ -89,9 +93,25 @@ void ClientSampleUpdateQueue::scheduleForUpdate(int modelSampleId, ClientModelSa
   samples[sampleId]->resolveUpdate(reader, callbacks[modelSampleId]);*/
 }
 
+void ClientSampleUpdateQueue::update() {
+  while(true) {
+    std::unique_lock<std::mutex> lock(updateMutex);
+    if (waiting == 0) {
+      std::cout << "lock cond " << waiting << std::endl;
+      cond.wait(lock);
+    }
+    std::cout << "Update " << waiting << std::endl;
+    resolveUpdate();
+  }
+}
+
 void ClientSampleUpdateQueue::resolveUpdate() {
+  //std::unique_lock<std::mutex> lock(updateMutex);
+  //cond.wait(lock);
+  std::cout << "receive data" << std::endl;
   int dataLength;
   api->receiveData(usd, (unsigned char*)& dataLength, sizeof(int));
+  std::cout << "received data" << std::endl;
   unsigned char* bytes = new unsigned char[dataLength];
   api->receiveData(usd, bytes, dataLength);
   ByteBufferReader reader(bytes);
@@ -102,6 +122,8 @@ void ClientSampleUpdateQueue::resolveUpdate() {
   waiting--;
 
   delete[] bytes;
+
+  std::cout << "received data data" << std::endl;
 }
 
 ClientModel::ClientModel(NetInterface* api, SOCKET sd, SOCKET usd, const std::string& name, int modelId, ClientSampleUpdateQueue* updateQueue) : api(api), name(name), sd(sd), usd(usd), modelId(modelId), updateQueue(updateQueue) {

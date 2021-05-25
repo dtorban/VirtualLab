@@ -8,6 +8,10 @@
 #include "VirtualLab/IVirtualLabAPI.h"
 #include "VirtualLab/util/ByteBuffer.h"
 
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
 
 namespace vl {
 
@@ -72,11 +76,16 @@ private:
 
 class ClientSampleUpdateQueue {
 public:
-    ClientSampleUpdateQueue(NetInterface* api, SOCKET usd) : api(api), usd(usd) {}
-    virtual ~ClientSampleUpdateQueue() {}
+    ClientSampleUpdateQueue(NetInterface* api, SOCKET usd) : api(api), usd(usd), waiting(0) {
+        thread = new std::thread(&ClientSampleUpdateQueue::update, this);
+    }
+    virtual ~ClientSampleUpdateQueue() { 
+        delete thread; 
+    }
 
     void scheduleForUpdate(int modelSampleId, ClientModelSample* sample, IUpdateCallback* callback);
     void resolveUpdate();
+    void update();
 
 private:
     int waiting;
@@ -84,6 +93,9 @@ private:
     std::map<int, IUpdateCallback*> callbacks;
     NetInterface* api;
     SOCKET usd;
+    std::thread* thread;
+    std::mutex updateMutex;
+    std::condition_variable cond;
 };
 
 class ClientModel : public IModel {

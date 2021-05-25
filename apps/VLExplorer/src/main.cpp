@@ -13,6 +13,7 @@ Copyright (c) 2019 Dan Orban
 #include "VirtualLab/impl/TestModel.h"
 #include "VirtualLab/util/JSONSerializer.h"
 #include "VirtualLab/pca/PCAModel.h" 
+#include <mutex>
 
 class VLWebServerSession;
 class VLWebServerCommand;
@@ -55,7 +56,26 @@ public:
 		}
 	}
 
-	void update() {}
+	void update() {
+		std::cout << "start update" << std::endl;
+		std::unique_lock<std::mutex> lock(messageMutex);
+		std::cout << "enter update" << std::endl;
+		for (int i = 0; i < messages.size(); i++) {
+		//	JSONSession::sendMessage(messages[i]);
+		}
+
+		messages.clear();
+	}
+
+	void sendMessage(const std::string& msg) {
+		std::cout << "start send message" << std::endl;
+		std::unique_lock<std::mutex> lock(messageMutex);
+		std::cout << "enter send message" << std::endl;
+		messages.push_back(msg);
+		JSONSession::sendMessage(msg);
+		//lws_cancel_service();
+		//lws_callback_on_writable(sessionState.wsi);
+	}
 
 	IModelSample* getSample(int id) {
 		return samples[id];
@@ -79,6 +99,8 @@ private:
 	int currentSampleIndex;
 	ProducerAPI producerAPI;
 	CompositeAPI compositeApi;
+	std::vector<std::string> messages;
+	std::mutex messageMutex;
 };
 
 class DeleteSampleCommand : public VLWebServerCommand {
@@ -233,6 +255,7 @@ int main(int argc, char**argv) {
 		WebServerWithState<VLWebServerSession, VLWebServerSessionState> server(state,port, webDir);
 		while (running) {
 			server.service();
+			std::cout << "service" << std::endl;
 		}
 	}
 
