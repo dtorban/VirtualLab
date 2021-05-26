@@ -135,12 +135,12 @@ void ClientSampleUpdateQueue::resolveUpdate() {
   int sampleId;
   reader.readData(sampleId);
 
+  std::unique_lock<std::mutex> lock(updateMutex);
   if (samples[sampleId] != NULL) {
     //std::cout << "Resolve " << sampleId << " " << callbacks[sampleId] << std::endl;
     samples[sampleId]->resolveUpdate(reader, callbacks[sampleId]);
   }
 
-  std::unique_lock<std::mutex> lock(updateMutex);
   waiting--;
   lock.unlock();
 

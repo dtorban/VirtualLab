@@ -84,7 +84,13 @@ public:
 
         if (dataSet.isType<double>()) {
             double d = dataSet.get<double>();
-            val = picojson::value(d);
+            if (!std::isnan(d) || std::isinf(d)) {
+                val = picojson::value(d);
+            }
+            else {
+                // TODO: handle nan or inf value
+                val = picojson::value((double)0);
+            }
         }
         else if (dataSet.isType<std::string>()) {
             std::string str = dataSet.get<std::string>();

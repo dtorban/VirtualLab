@@ -10,6 +10,8 @@ using namespace mlpack;
 using namespace mlpack::pca;
 using namespace mlpack::util;
 
+#include <mlpack/methods/kmeans/kmeans.hpp>
+using namespace mlpack::kmeans;
 
 namespace vl {
 
@@ -181,7 +183,7 @@ namespace vl {
 
 class PCAModelSample : public IModelSample, public IDataConsumer {
 public:
-	PCAModelSample(const DataObject& params) : params(params), callback(NULL) {
+	PCAModelSample(const DataObject& params) : params(params), callback(NULL), kmeans_calc(-1) {
         data["pca"] = DataArray();
         pca = &data["pca"].get<vl::Array>();
     }
@@ -200,8 +202,12 @@ private:
     DataObject data;
     vl::Array* pca;
 	IUpdateCallback* callback;
+    int kmeans_calc;
 #ifdef USE_MLPACK
 	std::vector<arma::rowvec> rows;
+    //arma::mat prevCentroids;
+    arma::Row<size_t> assignments;
+    arma::mat centroids;
 #endif
 };
 
@@ -224,21 +230,99 @@ void PCAModelSample::update() {
                 for (int i = 0; i < rows.size(); i++) {
                     A.row(i) = rows[i];
                 }
+
                 A = A.t();
+                
+                
                 RunPCA<ExactSVDPolicy>(A, 2, true, 1.0);
-                A = A.t();
+
+                int clusterNum = 10;
+
+                std::cout << kmeans_calc << " " << rows.size()/100 << std::endl;
+                int blah = rows.size()/100;
+                if (kmeans_calc < blah) {
+                    //std::cout << "Calc KMeans" << std::endl;
+                    kmeans_calc++;
+                    // The dataset we are clustering.
+                    //extern arma::mat data;
+                    // The number of clusters we are getting.
+                    //extern size_t clusters = 5;
+                    // The assignments will be stored in this vector.
+                    //arma::Row<size_t> assignments;
+                    // The centroids will be stored in this matrix.
+                    //arma::mat centroids;
+                    // Initialize with the default arguments.
+                    KMeans<> k;
+                    k.Cluster(A, clusterNum, assignments, centroids);
+                }
+                
+
+                /*std::vector<int> oldIndices;
+                if (prevCentroids.size() == centroids.size()) {
+                    // Figure out reordering
+                    //std::cout << prevCentroids << " " << prevCentroids.size() << std::endl;
+                    //std::cout << centroids << " " << centroids.size() << std::endl;
+                    
+
+                    for (int i = 0; i < 5; i++)  {
+                        double min;
+                        int oldIndex = 0;
+                        for (int f = 0; f < 5; f++)  {
+                            double val = std::pow(prevCentroids(0,i)-centroids(0,f),2) + std::pow(prevCentroids(1,i)-centroids(1,f),2);
+                            if (f == 0 || val < min) {
+                                min = val;
+                                oldIndex = f;
+                            }
+                        }
+                        oldIndices.push_back(oldIndex);
+                    }
+                }
+                else {
+                    for (int i = 0; i < 5; i++)  {
+                        oldIndices.push_back(i);
+                    }
+                }
+                prevCentroids = centroids;*/
+
+                //A = A.t();
 
                 pca->clear();
 
                 for (int f = 0; f < rows.size(); f++) {
                         vl::DataObject obj;
                         //std::cout << A.row(f);
-                        obj["x"] = DoubleDataValue(A(f,0));
-                        obj["y"] = DoubleDataValue(A(f,1));
+                        obj["x"] = DoubleDataValue(A(0,f));
+                        obj["y"] = DoubleDataValue(A(1,f));
                         //obj["id"] = DoubleDataValue(i);
+                        //obj["cluster"] = DoubleDataValue(oldIndices[assignments[f]]+1);
+                        if (assignments.size() <= f) {
+                            obj["cluster"] = DoubleDataValue(1);
+                        }
+                        else {
+                            obj["cluster"] = DoubleDataValue(1);//assignments[f]+1);
+                            //obj["cluster"] = DoubleDataValue(oldIndices[assignments[f]]+1);
+                        }
+                        //obj["cluster"] = DoubleDataValue(1);
                         //obj["t"] = DoubleDataValue(f/prev.size());
                         pca->push_back(obj);
                 }
+
+                if (centroids.size() == clusterNum*2) {
+                    //std::cout << centroids << std::endl;
+                    
+                    for (int f = 0; f < clusterNum; f++) {
+                            vl::DataObject obj;
+                            //std::cout << A.row(f);
+                            obj["x"] = DoubleDataValue(centroids(0,f));
+                            obj["y"] = DoubleDataValue(centroids(1,f));
+                            //obj["id"] = DoubleDataValue(i);
+                            obj["cluster"] = DoubleDataValue(0);
+                            //obj["t"] = DoubleDataValue(f/prev.size());
+                            pca->push_back(obj);
+                    }
+                }
+
+                
         }
 #endif
 

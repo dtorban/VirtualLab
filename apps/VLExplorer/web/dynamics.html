@@ -190,7 +190,8 @@
 			  scatterPlot.scatter
 				.selectAll("circle")
 				.attr('cx', function(d) {return scatterPlot.zoomX(a(d))})
-				.attr('cy', function(d) {return scatterPlot.zoomY(b(d))});
+				.attr('cy', function(d) {return scatterPlot.zoomY(b(d))})
+				.style("fill", function (d) { return colors[color(d)%colors.length];});
 
 			  /*scatterPlot.scatter
 				.selectAll("circle")
@@ -225,7 +226,8 @@
 				scatterPlot.scatter
 				.selectAll("circle")
 				.attr('cx', function(d) {return newX(a(d))})
-				.attr('cy', function(d) {return newY(b(d))});
+				.attr('cy', function(d) {return newY(b(d))})
+				.style("fill", function (d) { return colors[color(d)%colors.length];});
 			  }
 			}
 

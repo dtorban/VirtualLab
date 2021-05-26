@@ -45,7 +45,7 @@ function updatePCA(sample) {
       			//Read the data
             //d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv", function(data) {
               //updateData(data, "Sepal_Length", "Petal_Length");
-              updateData(scatterPlot, sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return 0;});
+              updateData(scatterPlot, sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return d.cluster;});
               //updateData(scatterPlot, samples, function(d) {return d.data.x;}, function(d){return d.data.y;}, function(d){return 0;});
             
             //});
