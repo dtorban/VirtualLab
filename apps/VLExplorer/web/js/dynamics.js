@@ -18,7 +18,15 @@ $( document ).ready(function() {
       models[0].create(params).then(function(sample) { 
         //sample.update();
         //sample.nav.t = 10.0;
-        updatePCA(sample);
+        updatePCA(sample, scatterPlot);
+      });
+    });
+
+    models[0].getParameters().then(function(params) {
+      models[0].create(params).then(function(sample) { 
+        //sample.update();
+        //sample.nav.t = 10.0;
+        updatePCA(sample, scatterPlot3);
       });
     });
   });
@@ -27,7 +35,7 @@ $( document ).ready(function() {
   
 });
 
-function updatePCA(sample) {
+function updatePCA(sample, plot) {
   if (!sample) {
     return;
   }
@@ -45,12 +53,12 @@ function updatePCA(sample) {
       			//Read the data
             //d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv", function(data) {
               //updateData(data, "Sepal_Length", "Petal_Length");
-              updateData(scatterPlot, sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return d.cluster;});
+              plot.updateData(sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return d.cluster;});
               //updateData(scatterPlot, samples, function(d) {return d.data.x;}, function(d){return d.data.y;}, function(d){return 0;});
             
             //});
             
-    updatePCA(sample);
+    updatePCA(sample, plot);
   })
 }
 
@@ -86,6 +94,7 @@ function updateSample(sample, isPCA) {
 function createSample() {
   if (currentParams) {
     createModelSample(currentParams);
+    $("#runs").append($('<div class="run">' + JSON.stringify(currentParams) + '</div>'));
   }
 
 }

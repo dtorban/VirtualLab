@@ -5,7 +5,6 @@ namespace vl {
 void AsyncSample::update(IUpdateCallback* callback) {
     std::unique_lock<std::mutex> lock(updateMutex);
     this->callback = callback;
-    //std::cout << "notify" << std::endl;
     ready = true;
     cond.notify_all();
 }

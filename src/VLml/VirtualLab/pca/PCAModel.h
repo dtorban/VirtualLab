@@ -8,7 +8,7 @@ namespace vl {
 
 class PCAModel : public IModel, public IDataConsumer {
 public:
-	PCAModel(IDataProducer* producer) : name("PCA") {
+	PCAModel(const std::string& name, IDataProducer* producer) : name(name) {
 		producer->addConsumer(this);
 	}
 	const std::string& getName() const { return name; }

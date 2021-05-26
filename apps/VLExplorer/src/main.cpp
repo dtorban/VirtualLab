@@ -38,7 +38,7 @@ public:
 		IVirtualLabAPI* api = this->state.api;
 		//producerAPI.registerModel(new TestModel());
 		//producerAPI.registerModel(new ModelProxy(api->getModels()[0]));
-		compositeApi.registerModel(new PCAModel(&producerAPI));
+		compositeApi.registerModel(new PCAModel("PCA", &producerAPI));
 		compositeApi.addApi(producerAPI);
 		this->state.api = &compositeApi;
 		this->state.models = this->state.api->getModels();
