@@ -31,9 +31,11 @@ public:
     TestModelSample(const DataObject& object) {
         data["y"] = DoubleDataValue(0.0);
         yData = &(data["y"].get<double>());
+        data["y2"] = DoubleDataValue(0.0);
+        y2Data = &(data["y2"].get<double>());
 
-        nav["time"] = DoubleDataValue(0.0);
-        timeParam = &(nav["time"].get<double>());
+        nav["t"] = DoubleDataValue(0.0);
+        timeParam = &(nav["t"].get<double>());
 
         parameters = object;
         w = parameters["w"].get<double>();
@@ -54,6 +56,7 @@ public:
     virtual void update() {
         // calculate a*cos(wt + b) + c
         (*yData) = (a * std::cos(w*(*timeParam) + b) + c);
+        (*y2Data) = (*yData)*(*yData);
     }
 
 private:
@@ -62,6 +65,7 @@ private:
     DataObject data;
     double* timeParam;
     double* yData;
+    double* y2Data;
     double w;
     double a;
     double b;
