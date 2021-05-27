@@ -25,7 +25,7 @@ $( document ).ready(function() {
       models[0].create(params).then(function(sample) { 
         //sample.update();
         //sample.nav.t = 10.0;
-        updatePCA(sample, scatterPlot3);
+        updatePCA(sample, scatterPlot2);
       });
     });
   });
@@ -45,7 +45,6 @@ function updatePCA(sample, plot) {
     }
 
     if (sample.nav.keys) {
-      console.log(Object.entries(sample.nav.keys).length);
       if (!sample.keys || Object.entries(sample.keys).length != Object.entries(sample.nav.keys).length) {
         sample.keys = sample.nav.keys;
       }
@@ -74,6 +73,7 @@ function updatePCA(sample, plot) {
         })
         .on("change", (d,e) => {
           sample.keys[d[0]] = d3.event.target.checked ? 1 : 0;
+          plot.reset();
         });
         
         /*.attr("cy", function (d) { return self.zoomY(b(d)); } )
@@ -92,6 +92,7 @@ function updatePCA(sample, plot) {
             //d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv", function(data) {
               //updateData(data, "Sepal_Length", "Petal_Length");
               plot.updateData(sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return d.cluster;});
+              
               //updateData(scatterPlot, samples, function(d) {return d.data.x;}, function(d){return d.data.y;}, function(d){return 0;});
             
             //});

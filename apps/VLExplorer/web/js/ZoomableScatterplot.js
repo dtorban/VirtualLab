@@ -50,7 +50,7 @@ function ZoomableScatterplot(container, margin = {top: 10, right: 30, bottom: 30
         .extent([[0, 0], [this.width, this.height]])
 
     // This add an invisible rect on top of the chart area. This rect can recover pointer events: necessary to understand when the user zoom
-    var zoomElem = this.SVG.append("rect")
+    this.zoomElem = this.SVG.append("rect")
         .attr("width", this.width)
         .attr("height", this.height)
         .style("fill", "none")
@@ -62,6 +62,12 @@ function ZoomableScatterplot(container, margin = {top: 10, right: 30, bottom: 30
     this.zoomY = this.y;
 
     //return {scatter: scatter, x:x, y:y, zoom:zoom, xAxis:xAxis, yAxis:yAxis, zoomElem:zoomElem, zoomX:null, zoomY:null, zooming:false};
+}
+
+ZoomableScatterplot.prototype.reset = function() {
+    this.zoomElem.transition()
+        .duration(750)
+        .call(this.zoom.transform, d3.zoomIdentity);
 }
 
 ZoomableScatterplot.prototype.updateData = function(data,a,b,color) {

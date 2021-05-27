@@ -9,7 +9,7 @@ namespace vl {
 
 class IUpdateCallback {
 public:
-    ~IUpdateCallback() {}
+    virtual ~IUpdateCallback() {}
     virtual void onComplete() = 0;
 };
 

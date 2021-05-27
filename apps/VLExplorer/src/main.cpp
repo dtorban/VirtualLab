@@ -110,6 +110,9 @@ public:
 	class UpdateCallback : public IUpdateCallback {
 	public:
 		UpdateCallback(picojson::object data, VLWebServerSession* session, IModelSample* sample) : data(data), session(session), sample(sample) {}
+		virtual ~UpdateCallback() {
+			//std::cout << "delete updatecallback" << std::endl;
+		}
 
 		void onComplete() {
 			data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
@@ -117,7 +120,7 @@ public:
 
 
 			double sampleId = data["sampleId"].get<double>();
-
+			
 			picojson::value ret(data);
 			session->sendJSON(ret);
 			
@@ -135,14 +138,19 @@ public:
 
 		IModelSample* sample = session->getSample(sampleId);
 		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["nav"], sample->getNavigation());
+		//std::cout << JSONSerializer::instance().serializeJSON(sample->getNavigation()) << std::endl;
+		// TODO: fix synchrounous update
 		//sample->update();
+		//UpdateCallback cb(data, session, sample);
+		//cb.onComplete();
 		sample->update(new UpdateCallback(data, session, sample));
 
-		//data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
-		//data["data"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getData()));
+		/*data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
+		data["data"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getData()));
+		std::cout << JSONSerializer::instance().serializeJSON(sample->getData()) << std::endl;
 
-		//picojson::value ret(data);
-		//session->sendJSON(ret);
+		picojson::value ret(data);
+		session->sendJSON(ret);*/
 
 	}
 
@@ -220,6 +228,7 @@ int main(int argc, char**argv) {
 	ModelProxy smothedCell = api->getModels()[1];
 	api->registerModel(new TypedModelDecorator<ModifiedSample>("Modified Cell", &cell));
 	api->registerModel(new TypedModelDecorator<ModifiedSample>("Modified Smooth Cell", &smothedCell));
+	api->registerModel(new TestModel("Test"));
 
 	/*ProducerAPI producerAPI(client);
 	producerAPI.registerModel(new TestModel());

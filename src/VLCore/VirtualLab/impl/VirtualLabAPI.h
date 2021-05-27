@@ -13,6 +13,7 @@ public:
     }
 	virtual ~VirtualLabAPI() {
         for (int i = 0; i < realModels.size(); i++) {
+            std::cout << realModels[i]->getName() << ": delete" << std::endl;
             delete realModels[i];
         }
     }

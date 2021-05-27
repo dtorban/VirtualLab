@@ -183,7 +183,7 @@ namespace vl {
 
 class PCAModelSample : public IModelSample, public IDataConsumer {
 public:
-	PCAModelSample(const DataObject& params) : params(params), callback(NULL), kmeans_calc(-1) {
+	PCAModelSample(const DataObject& params) : params(params), callback(NULL), kmeans_calc(-1), prevColumnSize(0) {
         data["pca"] = DataArray();
         pca = &data["pca"].get<vl::Array>();
     }
@@ -206,8 +206,9 @@ private:
     std::vector<std::string> columns;
     std::vector<DataObject> dataRows;
     DataObject keys;
+    int prevColumnSize;
 #ifdef USE_MLPACK
-	std::vector<arma::rowvec> rows;
+	//std::vector<arma::rowvec> rows;
     //arma::mat prevCentroids;
     arma::Row<size_t> assignments;
     arma::mat centroids;
@@ -227,34 +228,42 @@ void PCAModelSample::update() {
 
         nav["keys"] = keys;
 
-        int numCols = 0;
+        std::vector<std::string> cols;
         for (DataObject::const_iterator it = keys.begin(); it != keys.end(); it++) {
             if (it->second.get<double>() > 0.0001) {
-                numCols++;
+                cols.push_back(it->first);
             }
         }
         //std::cout << numCols << std::endl;
 
+        if (prevColumnSize != cols.size()) {
+            kmeans_calc = -1;
+        }
+        prevColumnSize = cols.size();
+
         pca->clear();
 
 #ifdef USE_MLPACK
-        if (numCols > 1 && rows.size() > 2) {
-                arma::mat A(rows.size(), rows[0].n_cols);
+        if (cols.size() > 1 && dataRows.size() > 2) {
+                arma::mat A(dataRows.size(), cols.size());
             
                 //B << sample->getNavigation()["t"].get<double>() << arma::endr << sample->getNavigation()["t"].get<double>() << arma::endr;
-                for (int i = 0; i < rows.size(); i++) {
-                    A.row(i) = rows[i];
+                for (int i = 0; i < dataRows.size(); i++) {
+                    for (int f = 0; f < cols.size(); f++) {
+                        A(i,f) = dataRows[i][cols[f]].get<double>();
+                    }
                 }
 
                 A = A.t();
                 
-                
-                RunPCA<ExactSVDPolicy>(A, 2, true, 1.0);
+                if (cols.size() != 2) { 
+                    RunPCA<ExactSVDPolicy>(A, 2, true, 1.0);
+                }
 
                 int clusterNum = 10;
 
                 //std::cout << kmeans_calc << " " << rows.size()/100 << std::endl;
-                int blah = rows.size()/100;
+                int blah = dataRows.size()/100;
                 if (kmeans_calc < blah) {
                     //std::cout << "Calc KMeans" << std::endl;
                     kmeans_calc++;
@@ -303,7 +312,7 @@ void PCAModelSample::update() {
 
                 //pca->clear();
 
-                for (int f = 0; f < rows.size(); f++) {
+                for (int f = 0; f < dataRows.size(); f++) {
                         vl::DataObject obj;
                         //std::cout << A.row(f);
                         obj["x"] = DoubleDataValue(A(0,f));
@@ -355,6 +364,7 @@ void PCAModelSample::update(IUpdateCallback* callback) {
 }
 
 void PCAModelSample::consume(IModel& model, IModelSample& sample) {
+    //return 0;
 	//std::cout << sample.getData()["x"].get<double>() << " " << sample.getData()["y"].get<double>() << std::endl;
 	//std::cout << model.getName() << " " << &sample << std::endl;
 
@@ -384,7 +394,7 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
         }
     }
 
-    if (columns.size() > 0) {
+    /*if (columns.size() > 0) {
         arma::rowvec r(columns.size());
         if (nav["t"].get<double>() > 0.0) {
             for (int i = 0; i < columns.size(); i++) {
@@ -392,7 +402,7 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
             }
             rows.push_back(r);
         }
-    }
+    }*/
     
 
     /*arma::rowvec r;
