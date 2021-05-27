@@ -78,6 +78,12 @@ ZoomableScatterplot.prototype.updateData = function(data,a,b,color) {
     this.xAxis.call(d3.axisBottom(this.zoomX))
     this.yAxis.call(d3.axisLeft(this.zoomY))
 
+    this.scatter
+        .selectAll("circle")
+        .data(data)
+        .exit()
+        .remove();
+
     // Add circles
     this.scatter
         .selectAll("circle")

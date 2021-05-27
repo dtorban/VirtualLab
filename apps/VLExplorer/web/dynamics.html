@@ -56,6 +56,22 @@
 			  background-color: white;
 			  float: left;
 			}
+			.pca-config {
+			  position:absolute;
+			  text-align: right;
+			  right:-200px;
+			  top  :0px;
+			  width: 200px;
+			  height: 70%;
+			  overflow-y: auto;
+			  overflow-x: auto;
+			  border: black;
+			  border-width: 1px;
+			  border-style: solid;
+			  background-color: gray;
+			  visibility: visible;
+			  white-space: nowrap;
+			}
 			#runs {
 				position: relative;
 				width: 100%;
@@ -178,23 +194,25 @@
 				</div>
 			</div>
 			<div id="nav"></div>
-			<div id="nav"></div>
-			<div id="data"></div>
 			<div id="params"></div>
 		</div>
 		<div id="notification-bar">
 			<!--div id="params"></div>
 			<br>
-			<div id="nav"></div>
+			<div id="nav"></div>-->
 			<br>
-			<div id="data"></div-->
+			<div id="data"></div>
 		</div>
 		<div id="menu">
 			<!--input type="button" value="Pause" onclick='running = !running;'-->
 		</div>
 		<div id="scene-container">
-			<div id="pca-chart1"></div>
-			<div id="pca-chart2"></div>
+			<div id="pca-chart1">
+				<div class="pca-config"></div>
+			</div>
+			<div id="pca-chart2">
+				<div class="pca-config"></div>
+			</div>
 		</div>
 		<script src="js/dynamics.js"></script>
 		<script>

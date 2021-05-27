@@ -204,6 +204,8 @@ private:
 	IUpdateCallback* callback;
     int kmeans_calc;
     std::vector<std::string> columns;
+    std::vector<DataObject> dataRows;
+    DataObject keys;
 #ifdef USE_MLPACK
 	std::vector<arma::rowvec> rows;
     //arma::mat prevCentroids;
@@ -223,8 +225,20 @@ void PCAModelSample::update() {
     if (callback) {
         //std::cout << "update PCA" << std::endl;
 
+        nav["keys"] = keys;
+
+        int numCols = 0;
+        for (DataObject::const_iterator it = keys.begin(); it != keys.end(); it++) {
+            if (it->second.get<double>() > 0.0001) {
+                numCols++;
+            }
+        }
+        //std::cout << numCols << std::endl;
+
+        pca->clear();
+
 #ifdef USE_MLPACK
-        if (rows.size() > 2) {
+        if (numCols > 1 && rows.size() > 2) {
                 arma::mat A(rows.size(), rows[0].n_cols);
             
                 //B << sample->getNavigation()["t"].get<double>() << arma::endr << sample->getNavigation()["t"].get<double>() << arma::endr;
@@ -287,7 +301,7 @@ void PCAModelSample::update() {
 
                 //A = A.t();
 
-                pca->clear();
+                //pca->clear();
 
                 for (int f = 0; f < rows.size(); f++) {
                         vl::DataObject obj;
@@ -334,6 +348,7 @@ void PCAModelSample::update() {
 }
 
 void PCAModelSample::update(IUpdateCallback* callback) {
+    keys = this->nav["keys"];
     this->callback = callback;
     //ModelSampleDecorator::update(callback);
     //producer->produce(*model, *sample);
@@ -345,6 +360,16 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
 
     const DataObject& obj = sample.getData();
     const DataObject& nav = sample.getNavigation();
+
+    dataRows.push_back(obj);
+    for (DataObject::const_iterator it = obj.begin(); it != obj.end(); it++) {
+        if (keys.find(it->first) == keys.end()) {
+            std::cout << it->first << std::endl;
+            keys[it->first] = DoubleDataValue(0);
+        }
+    }
+
+    this->nav["keys"] = keys;
 
 #ifdef USE_MLPACK
     //std::cout << " time: " << nav["t"].get<double>() << " " << rows.size() << std::endl;
