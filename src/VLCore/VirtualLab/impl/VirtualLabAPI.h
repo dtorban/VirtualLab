@@ -227,6 +227,121 @@ protected:
     std::vector<IVirtualLabAPI*> apis;
 };
 
+class ICalculatedField {
+public:
+    ICalculatedField() {}
+    virtual ~ICalculatedField() {}
+
+    virtual DataValue calculate(const DataObject& data) = 0;
+};
+
+class ForceMagnitude : public ICalculatedField {
+public:
+    virtual DataValue calculate(const DataObject& data) {
+        return DoubleDataValue(std::sqrt(std::pow(data["fx"].get<double>(),2) + std::pow(data["fy"].get<double>(),2)));
+    }
+};
+
+class ModifiedSample : public ModelSampleDecorator {
+private:
+    class UpdateCallback : public IUpdateCallback {
+	public:
+		UpdateCallback(ModifiedSample* sample, IUpdateCallback* callback) : sample(sample), callback(callback) {}
+        virtual ~UpdateCallback() {
+            delete callback;
+        }
+
+		void onComplete() {
+			sample->internalUpdate();
+            callback->onComplete();
+		}
+
+	private:
+		ModifiedSample* sample;
+        IUpdateCallback* callback;
+	};
+
+public:
+    ModifiedSample(IModelSample* sample) : ModelSampleDecorator(sample) {
+        enableKey("x",false);
+        enableKey("y",false);
+        enableKey("fx",false);
+        enableKey("fy",false);
+        enableKey("free_actin",false);
+        enableKey("ev",false);
+        enableKey("m",false);
+        addCalculatedField("f_mag", new ForceMagnitude());
+        nav = sample->getNavigation();
+        nav["keys"] = keys;
+        data = sample->getData();
+    }
+
+    virtual ~ModifiedSample() {
+        for (std::map<std::string,ICalculatedField*>::iterator it = calculatedFields.begin(); it != calculatedFields.end(); it++) {
+            delete it->second;
+        }
+    }
+
+    DataObject& getNavigation() { return nav; }
+
+    const DataObject& getData() const { return data; }
+
+    void update() {
+        sample->getNavigation() = nav;
+        keys = nav["keys"];
+        ModelSampleDecorator::update();
+        internalUpdate();
+    }
+
+    void update(IUpdateCallback* callback) {
+        sample->getNavigation() = nav;
+        keys = nav["keys"];
+        return ModelSampleDecorator::update(new UpdateCallback(this, callback));
+    }
+
+    void addCalculatedField(const std::string& key, ICalculatedField* field) {
+        calculatedFields[key] = field;
+        keys[key] = DoubleDataValue(1);
+    }
+
+    void enableKey(const std::string& key, bool enabled) {
+        keys[key] = DoubleDataValue(enabled);
+    }
+
+private:
+    void internalUpdate() {
+        sample->getData();
+        for (DataObject::const_iterator it = sample->getData().begin(); it != sample->getData().end(); it++) {
+            if (keys.find(it->first) == keys.end()) {
+                keys[it->first] = DoubleDataValue(1);
+            }
+        }
+        nav = sample->getNavigation();
+        nav["keys"] = keys;
+        //std::cout << "Modified" << std::endl;
+
+        data = DataObject();
+
+        for (DataObject::const_iterator it = keys.begin(); it != keys.end(); it++) {
+            if (std::abs(it->second.get<double>()) > 0.00001) {
+                std::map<std::string,ICalculatedField*>::iterator field = calculatedFields.find(it->first);
+                if (field != calculatedFields.end()) {
+                    data[it->first] = field->second->calculate(sample->getData());
+                }
+                else {
+                    data[it->first] = sample->getData()[it->first];
+                }
+            }
+        }
+
+    }
+
+    DataObject nav;
+    DataObject data;
+    DataObject keys;
+    std::map<std::string,ICalculatedField*> calculatedFields;
+};
+
 }
 
 

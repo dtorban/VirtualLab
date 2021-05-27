@@ -180,6 +180,29 @@ public:
 
         return val;
     }
+
+    void operator=(const Object& obj) {
+        set<Object>(obj);
+    }
+
+    void operator=(const DataValue& val) {
+        set<Object>(val.get<Object>());
+    }
+
+    typedef vl::Object::const_iterator const_iterator;
+
+    const_iterator begin() const {
+        return get<Object>().begin();
+    }
+
+    const_iterator end() const {
+        return get<Object>().end();
+    }
+
+    const_iterator find(const std::string& key) const {
+        return get<Object>().find(key);
+    }
+
 };
 
 class DataArray : public TypedDataValue<Array> {

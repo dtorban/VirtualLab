@@ -216,6 +216,10 @@ int main(int argc, char**argv) {
 
 	Client client;
 	api = &client;
+	ModelProxy cell = api->getModels()[0];
+	ModelProxy smothedCell = api->getModels()[1];
+	api->registerModel(new TypedModelDecorator<ModifiedSample>("Modified Cell", &cell));
+	api->registerModel(new TypedModelDecorator<ModifiedSample>("Modified Smooth Cell", &smothedCell));
 
 	/*ProducerAPI producerAPI(client);
 	producerAPI.registerModel(new TestModel());

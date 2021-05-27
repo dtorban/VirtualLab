@@ -203,6 +203,7 @@ private:
     vl::Array* pca;
 	IUpdateCallback* callback;
     int kmeans_calc;
+    std::vector<std::string> columns;
 #ifdef USE_MLPACK
 	std::vector<arma::rowvec> rows;
     //arma::mat prevCentroids;
@@ -238,7 +239,7 @@ void PCAModelSample::update() {
 
                 int clusterNum = 10;
 
-                std::cout << kmeans_calc << " " << rows.size()/100 << std::endl;
+                //std::cout << kmeans_calc << " " << rows.size()/100 << std::endl;
                 int blah = rows.size()/100;
                 if (kmeans_calc < blah) {
                     //std::cout << "Calc KMeans" << std::endl;
@@ -347,7 +348,29 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
 
 #ifdef USE_MLPACK
     //std::cout << " time: " << nav["t"].get<double>() << " " << rows.size() << std::endl;
-    arma::rowvec r;
+
+    const Object& dataSetObj = obj.get<Object>();
+
+    if (columns.size() == 0) {
+        for (Object::const_iterator it = dataSetObj.begin(); it != dataSetObj.end(); it++) {
+            if(it->second.isType<double>()) {
+                columns.push_back(it->first);
+            }
+        }
+    }
+
+    if (columns.size() > 0) {
+        arma::rowvec r(columns.size());
+        if (nav["t"].get<double>() > 0.0) {
+            for (int i = 0; i < columns.size(); i++) {
+                r(i) = obj[columns[i]].get<double>();
+            }
+            rows.push_back(r);
+        }
+    }
+    
+
+    /*arma::rowvec r;
     if (nav["t"].get<double>() > 0.0) {
         r << obj["actin"].get<double>()
         << obj["aflow"].get<double>() 
@@ -359,7 +382,7 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
         << obj["rmc"].get<double>()
         << arma::endr;
         rows.push_back(r);
-    }
+    }*/
 #endif
 
 	update();

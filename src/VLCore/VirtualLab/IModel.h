@@ -42,6 +42,18 @@ protected:
     IModel* model;
 };
 
+template<typename T>
+class TypedModelDecorator : public ModelDecorator {
+public:
+    TypedModelDecorator(const std::string& name, IModel* model) : ModelDecorator(model), name(name) {}
+    const std::string& getName() const { return name; }
+    virtual IModelSample* create(const DataObject& params) { return new T(model->create(params)); }
+
+private:
+    std::string name;
+};
+
+
 }
 
 #endif

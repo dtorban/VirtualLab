@@ -73,7 +73,16 @@ function updateSample(sample, isPCA) {
     }
     $("#nav").html("");
     $("#data").html("");
+    
+    if (sample.nav.keys) {
+      for (const [key, value] of Object.entries(sample.nav.keys)) {
+        //console.log(`${key}: ${value}`);
+        var checked = value > 0 ? 'checked' : '';
+        $("#nav").append('<input type="checkbox" id="nav-'+key+'" name="'+key+'" value="1" '+checked+'><label for="nav-'+key+'">'+key+'</label><br>')
+      }
+    }
     $("#nav").append(JSON.stringify(sample.nav));
+
     $("#data").append(JSON.stringify(sample.data));
     sample.nav.t = Math.floor(sample.nav.t)+10;
 
