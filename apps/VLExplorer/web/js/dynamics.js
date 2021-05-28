@@ -47,7 +47,30 @@ function updatePCA(sample, plot) {
     if (sample.nav.keys) {
       if (!sample.keys || Object.entries(sample.keys).length != Object.entries(sample.nav.keys).length) {
         sample.keys = sample.nav.keys;
+
+        $(plot.containerId+" .pca-config").html("");
+
+        d3.select(plot.containerId+" .pca-config")
+          .selectAll("div")
+          .data(Object.entries(sample.nav.keys))
+          .enter()
+          .append("div")
+          .append("div")
+          .text((d) => {return d[0];})
+          .append("input")
+          .attr("type", "checkbox")
+          .text((d) => {
+            return d[0];
+          })
+          .property("checked", (d) => {
+              return d[1] > 0;
+          })
+          .on("change", (d,e) => {
+            sample.keys[d[0]] = d3.event.target.checked ? 1 : 0;
+            plot.reset();
+          });
       }
+
       sample.nav.keys = sample.keys;
       //console.log(plot.SVG.node());
       //plot.SVG.node().append('<div class="pca-config">'+JSON.stringify(sample.nav)+'</div>');
@@ -56,25 +79,7 @@ function updatePCA(sample, plot) {
 
       //console.log(Object.entries(sample.nav.keys));
 
-      d3.select(plot.containerId+" .pca-config")
-        .selectAll("div")
-        .data(Object.entries(sample.nav.keys))
-        .enter()
-        .append("div")
-        .append("div")
-        .text((d) => {return d[0];})
-        .append("input")
-        .attr("type", "checkbox")
-        .text((d) => {
-          return d[0];
-        })
-        .property("checked", (d) => {
-            return d[1] > 0;
-        })
-        .on("change", (d,e) => {
-          sample.keys[d[0]] = d3.event.target.checked ? 1 : 0;
-          plot.reset();
-        });
+      
         
         /*.attr("cy", function (d) { return self.zoomY(b(d)); } )
         //.attr("cy", function (d) { return y(d["Petal_Length"]); } )
