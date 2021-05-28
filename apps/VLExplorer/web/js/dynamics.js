@@ -22,15 +22,27 @@ $( document ).ready(function() {
     });
 
     models[0].getParameters().then(function(params) {
+      params.params = 1;
+      params.clusters = 0;
       models[0].create(params).then(function(sample) { 
         //sample.update();
         //sample.nav.t = 10.0;
         updatePCA(sample, scatterPlot2);
       });
     });
+
+      
+    models[0].getParameters().then(function(params) {
+      params.params = 1;
+      params.clusters = 0;
+      models[0].create(params).then(function(sample) { 
+        //sample.update();
+        //sample.nav.t = 10.0;
+        updatePCA(sample, scatterPlot3);
+      });
+    });
   });
   
-
   
 });
 

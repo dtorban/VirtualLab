@@ -35,7 +35,7 @@ namespace vl {
 
 class PCAModelSample : public IModelSample, public IDataConsumer {
 public:
-	PCAModelSample(const DataObject& params) : params(params), callback(NULL), kmeans_calc(-1), prevColumnSize(0) {
+	PCAModelSample(const DataObject& params, PCAModel::SampleInfo& info) : params(params), callback(NULL), kmeans_calc(-1), prevColumnSize(0), info(info) {
         data["pca"] = DataArray();
         pca = &data["pca"].get<vl::Array>();
     }
@@ -54,14 +54,10 @@ private:
     vl::Array* pca;
 	IUpdateCallback* callback;
     int kmeans_calc;
-    std::vector<std::string> columns;
-    std::vector<DataObject> dataRows;
-    std::vector<DataObject> navRows;
-    std::vector<IModelSample*> samplePtr;
-    std::map<IModelSample*, DataObject> paramRows;
     DataObject keys;
     std::map<std::string, int> keyType;
     int prevColumnSize;
+    PCAModel::SampleInfo& info;
 #ifdef USE_MLPACK
     arma::Row<size_t> assignments;
     arma::mat centroids;
@@ -70,7 +66,7 @@ private:
 
 
 IModelSample* PCAModel::create(const DataObject& params) {
-		PCAModelSample* sample = new PCAModelSample(params);
+		PCAModelSample* sample = new PCAModelSample(params, info);
 		consumers.push_back(sample);
 		return sample;
 }
@@ -106,17 +102,17 @@ void PCAModelSample::update() {
         pca->clear();
 
 #ifdef USE_MLPACK
-        if (cols.size() > 1 && (dataRows.size() > 2 || samplePtr.size() > 2)) {
-                int numRows = dataRows.size();
+        if (cols.size() > 1 && (info.dataRows.size() > 2 || info.samplePtr.size() > 2)) {
+                int numRows = info.dataRows.size();
                 if (params > 0 && other == 0) {
-                    numRows = paramRows.size();
+                    numRows = info.paramRows.size();
                 }
 
                 arma::mat A(numRows, cols.size());
                 
                 if (params > 0 && other ==0) {
                     int i = 0;
-                    for (std::map<IModelSample*, DataObject>::iterator it = paramRows.begin(); it != paramRows.end(); it++) {
+                    for (std::map<IModelSample*, DataObject>::iterator it = info.paramRows.begin(); it != info.paramRows.end(); it++) {
                         for (int f = 0; f < cols.size(); f++) {
                             A(i,f) = it->second[cols[f]].get<double>();
                         }
@@ -125,7 +121,7 @@ void PCAModelSample::update() {
                 }
                 else {
                     //B << sample->getNavigation()["t"].get<double>() << arma::endr << sample->getNavigation()["t"].get<double>() << arma::endr;
-                    for (int i = 0; i < dataRows.size(); i++) {
+                    for (int i = 0; i < info.dataRows.size(); i++) {
                         for (int f = 0; f < cols.size(); f++) {
                             double val;
                             const std::string& key = cols[f];
@@ -133,13 +129,13 @@ void PCAModelSample::update() {
                             switch (type)
                             {
                             case 0:
-                                val = paramRows[samplePtr[i]][key].get<double>();
+                                val = info.paramRows[info.samplePtr[i]][key].get<double>();
                                 break;
                             case 1:
-                                val = navRows[i][key].get<double>();
+                                val = info.navRows[i][key].get<double>();
                                 break;
                             case 2:
-                                val = dataRows[i][key].get<double>();
+                                val = info.dataRows[i][key].get<double>();
                                 break;
                             }
                             A(i,f) = val;
@@ -153,23 +149,25 @@ void PCAModelSample::update() {
                     RunPCA<ExactSVDPolicy>(A, 2, true, 1.0);
                 }
 
-                int clusterNum = 10;
+                int clusterNum = this->params["clusters"].get<double>();
 
-                int blah = dataRows.size()/100;
-                if (kmeans_calc < blah) {
-                    //std::cout << "Calc KMeans" << std::endl;
-                    kmeans_calc++;
-                    // The dataset we are clustering.
-                    //extern arma::mat data;
-                    // The number of clusters we are getting.
-                    //extern size_t clusters = 5;
-                    // The assignments will be stored in this vector.
-                    //arma::Row<size_t> assignments;
-                    // The centroids will be stored in this matrix.
-                    //arma::mat centroids;
-                    // Initialize with the default arguments.
-                    KMeans<> k;
-                    k.Cluster(A, clusterNum, assignments, centroids);
+                if (clusterNum > 0) {
+                    int blah = info.dataRows.size()/100;
+                    if (kmeans_calc < blah) {
+                        //std::cout << "Calc KMeans" << std::endl;
+                        kmeans_calc++;
+                        // The dataset we are clustering.
+                        //extern arma::mat data;
+                        // The number of clusters we are getting.
+                        //extern size_t clusters = 5;
+                        // The assignments will be stored in this vector.
+                        //arma::Row<size_t> assignments;
+                        // The centroids will be stored in this matrix.
+                        //arma::mat centroids;
+                        // Initialize with the default arguments.
+                        KMeans<> k;
+                        k.Cluster(A, clusterNum, assignments, centroids);
+                    }
                 }
                 
 
@@ -217,17 +215,19 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
     const DataObject& nav = sample.getNavigation();
     const DataObject& params = sample.getParameters();
 
-    navRows.push_back(nav);
+    /*navRows.push_back(nav);
     dataRows.push_back(obj);
     samplePtr.push_back(&sample);
     if (paramRows.find(&sample) == paramRows.end()) {
         paramRows[&sample] = sample.getParameters();
-    }
+    }*/
 
+    bool paramsEnabled = this->params["params"].get<double>() > 0.0001 ? 1 : 0;
+ 
     for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
         if (keys.find(it->first) == keys.end()) {
-            std::cout << it->first << std::endl;
-            keys[it->first] = DoubleDataValue(0);
+            std::cout << it->first << " " << paramsEnabled << std::endl;
+            keys[it->first] = DoubleDataValue(paramsEnabled);
             keyType[it->first] = 0;
         }
     }
@@ -250,20 +250,7 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
 
     const Object& dataSetObj = obj.get<Object>();
 
-    if (columns.size() == 0) {
-        for (Object::const_iterator it = dataSetObj.begin(); it != dataSetObj.end(); it++) {
-            if(it->second.isType<double>()) {
-                columns.push_back(it->first);
-            }
-        }
-    }
-
-
 	update();
 }
-
-/*IModelSample* PCAModel::create(const DataObject& params) {
-    return model->create(params);
-}*/
 
 }
