@@ -1,4 +1,5 @@
 function ZoomableScatterplot(container, margin = {top: 10, right: 30, bottom: 30, left: 60}) {
+    this.bounds = [0,0,1,1];
     this.colors = ['red','blue','green','yellow','orange','purple','black'];
     this.containerId = "#" + container;
     this.container = container;
@@ -61,6 +62,8 @@ function ZoomableScatterplot(container, margin = {top: 10, right: 30, bottom: 30
     this.zoomX = this.x;
     this.zoomY = this.y;
 
+    this.zoomTransform = {k:1, x:0, y:0};
+
     //return {scatter: scatter, x:x, y:y, zoom:zoom, xAxis:xAxis, yAxis:yAxis, zoomElem:zoomElem, zoomX:null, zoomY:null, zooming:false};
 }
 
@@ -70,16 +73,21 @@ ZoomableScatterplot.prototype.reset = function() {
         .call(this.zoom.transform, d3.zoomIdentity);
 }
 
-ZoomableScatterplot.prototype.updateData = function(data,a,b,color) {
+ZoomableScatterplot.prototype.updateData = function(bounds, data, a, b, color) {
     var self = this;
-    // Add Y axis
-    this.x.domain(d3.extent(data, function(d) { return a(d); }));
-    this.y.domain(d3.extent(data, function(d) { return b(d); }));
 
-    if (!(this.zoomX && this.zoomY)) {
-    this.zoomX = this.x;
-    this.zoomY = this.y;
+    for (var i = 0; i < 4; i++) {
+        if (this.bounds[i] != bounds[i]) {
+            this.bounds = bounds;
+            this.x.domain([bounds[0], bounds[2]]);
+            this.y.domain([bounds[1], bounds[3]]);
+            //this.reset();
+            break;
+        }
     }
+    // Add Y axis
+    //this.x.domain(d3.extent(data, function(d) { return a(d); }));
+    //this.y.domain(d3.extent(data, function(d) { return b(d); }));
 
     this.xAxis.call(d3.axisBottom(this.zoomX))
     this.yAxis.call(d3.axisLeft(this.zoomY))
@@ -128,16 +136,22 @@ ZoomableScatterplot.prototype.updateData = function(data,a,b,color) {
     // A function that updates the chart when the user zoom and thus new boundaries are available
     function updateChart() {
     
+        self.zoomTransform = {k:d3.event.transform.k, x: d3.event.transform.x, y: d3.event.transform.y};
+        self.zoomTransform.x = self.zoomTransform.x/(self.width*self.zoomTransform.k);
+        self.zoomTransform.y = self.zoomTransform.y/(self.height*self.zoomTransform.k);
+        //console.log(self.zoomTransform, self.width, self.height);
+
         // recover the new scale
         var newX = d3.event.transform.rescaleX(self.x);
         var newY = d3.event.transform.rescaleY(self.y);
+        //console.log(d3.event.transform.k, d3.event.transform);
 
         self.zoomX = newX;
         self.zoomY = newY;
 
         // update axes with these new boundaries
-        self.xAxis.call(d3.axisBottom(newX))
-        self.yAxis.call(d3.axisLeft(newY))
+        self.xAxis.call(d3.axisBottom(newX));
+        self.yAxis.call(d3.axisLeft(newY));
 
         // update circle position
         self.scatter
@@ -146,6 +160,7 @@ ZoomableScatterplot.prototype.updateData = function(data,a,b,color) {
             .attr('cy', function(d) {return newY(b(d))})
             .style("fill", function (d) { return self.colors[color(d)%self.colors.length];});
         }
+
 }
  
 //Read the data

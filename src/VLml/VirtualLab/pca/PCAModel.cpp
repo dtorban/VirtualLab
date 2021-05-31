@@ -37,7 +37,9 @@ class PCAModelSample : public IModelSample, public IDataConsumer {
 public:
 	PCAModelSample(const DataObject& params, PCAModel::SampleInfo& info) : params(params), callback(NULL), kmeans_calc(-1), prevColumnSize(0), info(info) {
         data["pca"] = DataArray();
+        data["bounds"] = DataArray();
         pca = &data["pca"].get<vl::Array>();
+        bound = &data["bounds"].get<vl::Array>();
     }
 
 	virtual const DataObject& getParameters() const { return params; }
@@ -52,6 +54,7 @@ private:
     DataObject nav;
     DataObject data;
     vl::Array* pca;
+    vl::Array* bound;
 	IUpdateCallback* callback;
     int kmeans_calc;
     DataObject keys;
@@ -76,6 +79,11 @@ void PCAModelSample::update() {
         //std::cout << "update PCA" << std::endl;
 
         nav["keys"] = keys;
+        DataObject zoom = nav["zoom"].get<vl::Object>();
+        double zoomK = zoom["k"].get<double>();
+        double zoomX = zoom["x"].get<double>();
+        double zoomY = zoom["y"].get<double>();
+        //std::cout << zoom["k"].get<double>() << std::endl;
         int params = 0;
         int other = 0;
 
@@ -100,6 +108,7 @@ void PCAModelSample::update() {
         prevColumnSize = cols.size();
 
         pca->clear();
+        bound->clear();
 
 #ifdef USE_MLPACK
         if (cols.size() > 1 && (info.dataRows.size() > 2 || info.samplePtr.size() > 2)) {
@@ -156,7 +165,7 @@ void PCAModelSample::update() {
                 int clusterNum = this->params["clusters"].get<double>();
 
                 if (clusterNum > 0) {
-                    int blah = info.dataRows.size()/100;
+                    int blah = numRows/100;
                     if (kmeans_calc < blah) {
                         //std::cout << "Calc KMeans" << std::endl;
                         kmeans_calc++;
@@ -174,21 +183,49 @@ void PCAModelSample::update() {
                     }
                 }
                 
+                double bounds[4];
 
                 for (int f = 0; f < numRows; f++) {
+                    if (f == 0) {
+                        // x,y min
+                        bounds[0] = A(0,f);
+                        bounds[1] = A(1,f);
+                        // x,y max
+                        bounds[2] = A(0,f);
+                        bounds[3] = A(1,f);
+                    }
+                    else {
+                        if (bounds[0] > A(0,f)) { bounds[0] = A(0,f); }
+                        if (bounds[1] > A(1,f)) { bounds[1] = A(1,f); }
+                        if (bounds[2] < A(0,f)) { bounds[2] = A(0,f); }
+                        if (bounds[3] < A(1,f)) { bounds[3] = A(1,f); } 
+                    }
+                }
+
+                for (int f = 0; f < numRows; f++) {
+                    if (f % 1 == 0) {
+                        
                         vl::DataObject obj;
-                        obj["x"] = DoubleDataValue(A(0,f));
-                        obj["y"] = DoubleDataValue(A(1,f));
+                        double x = A(0,f);
+                        double y = A(1,f);
+                        obj["x"] = DoubleDataValue(x);
+                        obj["y"] = DoubleDataValue(y);
                         if (assignments.size() <= f) {
                             obj["cluster"] = DoubleDataValue(1);
                         }
                         else {
                             obj["cluster"] = DoubleDataValue(1);//assignments[f]+1);
                         }
+                        double radius = std::sqrt(std::pow(x - (bounds[2]+bounds[0])/2.0 + zoomX*(bounds[2]-bounds[0])/zoomK ,2) + std::pow(y - (bounds[3]+bounds[1])/2.0 - zoomY*(bounds[3]-bounds[1])/zoomK,2));
+                        std::cout << radius << std::endl;
+                        if (false) {//radius < 1000.0) {
+                            obj["cluster"] = DoubleDataValue(0);
+                        }
                         pca->push_back(obj);
+                    }
                 }
 
-                if (centroids.size() == clusterNum*2) {                   
+                /*if (centroids.size() == clusterNum*2) {                   
                     for (int f = 0; f < clusterNum; f++) {
                             vl::DataObject obj;
                             obj["x"] = DoubleDataValue(centroids(0,f));
@@ -196,9 +233,11 @@ void PCAModelSample::update() {
                             obj["cluster"] = DoubleDataValue(0);
                             pca->push_back(obj);
                     }
-                }
+                }*/
 
-                
+                for (int i = 0; i < 4; i++) {
+                    bound->push_back(DoubleDataValue(bounds[i]));
+                }
         }
 #endif
 

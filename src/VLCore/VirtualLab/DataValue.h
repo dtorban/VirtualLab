@@ -167,6 +167,7 @@ class DataObject : public TypedDataValue<Object> {
 public:
     DataObject() : TypedDataValue<Object>() {}
     DataObject(const DataObject& obj) : TypedDataValue<Object>(obj) {}
+    DataObject(const Object& obj) : TypedDataValue<Object>(obj) {}
 
     DataValue& operator[](const std::string& key) {
         return get<Object>()[key];
@@ -203,7 +204,7 @@ public:
     iterator find(const std::string& key) {
         return get<Object>().find(key);
     }
-    
+
     const_iterator begin() const {
         return get<Object>().begin();
     }

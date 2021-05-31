@@ -84,6 +84,7 @@ function updatePCA(sample, plot) {
       }
 
       sample.nav.keys = sample.keys;
+      sample.nav.zoom = plot.zoomTransform;
       //console.log(plot.SVG.node());
       //plot.SVG.node().append('<div class="pca-config">'+JSON.stringify(sample.nav)+'</div>');
       
@@ -108,7 +109,7 @@ function updatePCA(sample, plot) {
       			//Read the data
             //d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv", function(data) {
               //updateData(data, "Sepal_Length", "Petal_Length");
-              plot.updateData(sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return d.cluster;});
+              plot.updateData(sample.data.bounds, sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return d.cluster;});
               
               //updateData(scatterPlot, samples, function(d) {return d.data.x;}, function(d){return d.data.y;}, function(d){return 0;});
             
@@ -185,11 +186,9 @@ function getMetaData(params, param, key, defaultVal) {
   let metadata = params[".metadata"];
   if (metadata && metadata[param]) {
     metadata = metadata[param];
-    console.log(param, key, metadata[key]);
     return metadata[key];
   }
   else {
-    console.log("NOT FOUND",param, key, defaultVal);
     return defaultVal;
   }
 }
@@ -208,7 +207,6 @@ function changeModel() {
 
   currentModel.getParameters().then(function(params) {
     currentParams = params;
-    console.log(params);
     $("#params").html("");
     $("#nav").html("");
     $("#data").html("");
