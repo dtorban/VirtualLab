@@ -343,6 +343,87 @@ private:
     std::map<std::string,ICalculatedField*> calculatedFields;
 };
 
+class ParameterHelper {
+public:
+    ParameterHelper(DataObject* params) : params(params), const_params(params) {
+        vl::Object::iterator it = params->find(".metadata");
+        if (it == params->end()) {
+            (*params)[".metadata"] = DataObject();
+            metadata = &((*params)[".metadata"].get<vl::Object>());
+        }
+        else {
+            metadata = &(it->second.get<vl::Object>());
+        }
+        const_metadata = metadata;
+    }
+
+    ParameterHelper(const DataObject& params) : params(NULL), const_params(&params), metadata(NULL) {
+        vl::Object::const_iterator it = const_params->find(".metadata");
+        if (it != const_params->end()) {
+            const_metadata = &(it->second.get<vl::Object>());
+        }
+        else {
+            const_metadata = NULL;
+        }
+    }
+
+    void set(const std::string& param, double val, double min, double max, const std::string& scale) {
+        if (params && metadata) {
+            (*params)[param] = DoubleDataValue(val);
+            DataObject obj;
+            obj["min"] = DoubleDataValue(min);
+            obj["max"] = DoubleDataValue(max);
+            obj["scale"] = StringDataValue(scale);
+            (*metadata)[param] = obj;
+        }
+    }
+
+    void set(const std::string& param, double val, double min, double max) {
+        set(param, val, min, max, "linear");
+    }
+
+    void set(const std::string& param, double val) {
+        set(param, val, val, val);
+    }
+
+    double getMin(const std::string& param) const {
+        return getMetaData<double>(param, "min");
+    }
+
+    double getMax(const std::string& param) const {
+        return getMetaData<double>(param, "max");
+    }
+
+    std::string getScale(const std::string& param) const {
+        return getMetaData<std::string>(param, "scale");
+    }
+
+    double scale(const std::string&param, double val) {
+        if (getScale(param) == "log") {
+            return std::log(val);
+        }
+        return val;
+    }
+
+    template<typename T>
+    const T& getMetaData(const std::string& param, const std::string& key) const {
+        if (const_metadata) {
+            vl::Object::const_iterator it = const_metadata->find(param);
+            if (it != const_metadata->end()) {
+                return it->second.get<vl::Object>().find(key)->second.get<T>();
+            }
+        }
+        static T defaultVal;
+        return defaultVal;
+    }
+
+private:
+    DataObject* params;
+    vl::Object* metadata;
+    const DataObject* const_params;
+    const vl::Object* const_metadata;
+};
+
 }
 
 

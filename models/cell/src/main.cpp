@@ -193,7 +193,7 @@ private:
 
 class CellModel : public IModel {
 public:
-    CellModel(const std::string& name = "CellModel") : name(name) {
+    CellModel(const std::string& name = "CellModel") : name(name), paramHelper(&params) {
         params["max"] = DataObject();
         params["min"] = DataObject();
         params["scale"] = DataObject();
@@ -227,10 +227,11 @@ public:
     }
 
     void addParameter(const std::string& key, double defaultValue, double min, double max, const std::string& scale) {
-        params[key] = DoubleDataValue(defaultValue);
-        params["min"].get<vl::Object>()[key] = DoubleDataValue(min);
-        params["max"].get<vl::Object>()[key] = DoubleDataValue(max);
-        params["scale"].get<vl::Object>()[key] = StringDataValue(scale);
+        //params[key] = DoubleDataValue(defaultValue);
+        //params["min"].get<vl::Object>()[key] = DoubleDataValue(min);
+        //params["max"].get<vl::Object>()[key] = DoubleDataValue(max);
+        //params["scale"].get<vl::Object>()[key] = StringDataValue(scale);
+        paramHelper.set(key, defaultValue, min, max, scale);
     }
 
     const std::string& getName() const { return name; }
@@ -243,6 +244,7 @@ public:
 private:
     std::string name;
     DataObject params;
+    ParameterHelper paramHelper;
 };
 
 class NSample : public IModelSample {

@@ -189,8 +189,21 @@ public:
         set<Object>(val.get<Object>());
     }
 
+    typedef vl::Object::iterator iterator;
     typedef vl::Object::const_iterator const_iterator;
 
+    iterator begin() {
+        return get<Object>().begin();
+    }
+
+    iterator end() {
+        return get<Object>().end();
+    }
+
+    iterator find(const std::string& key) {
+        return get<Object>().find(key);
+    }
+    
     const_iterator begin() const {
         return get<Object>().begin();
     }

@@ -113,8 +113,9 @@ void PCAModelSample::update() {
                 if (params > 0 && other ==0) {
                     int i = 0;
                     for (std::map<IModelSample*, DataObject>::iterator it = info.paramRows.begin(); it != info.paramRows.end(); it++) {
+                        ParameterHelper helper(it->second);
                         for (int f = 0; f < cols.size(); f++) {
-                            A(i,f) = it->second[cols[f]].get<double>();
+                            A(i,f) = helper.scale(cols[f], it->second[cols[f]].get<double>());
                         }
                         i++;
                     }
@@ -122,6 +123,9 @@ void PCAModelSample::update() {
                 else {
                     //B << sample->getNavigation()["t"].get<double>() << arma::endr << sample->getNavigation()["t"].get<double>() << arma::endr;
                     for (int i = 0; i < info.dataRows.size(); i++) {
+
+                        DataObject& ps = info.paramRows[info.samplePtr[i]];
+                        ParameterHelper helper(ps);
                         for (int f = 0; f < cols.size(); f++) {
                             double val;
                             const std::string& key = cols[f];
@@ -129,7 +133,7 @@ void PCAModelSample::update() {
                             switch (type)
                             {
                             case 0:
-                                val = info.paramRows[info.samplePtr[i]][key].get<double>();
+                                val = helper.scale(key, ps[key].get<double>());
                                 break;
                             case 1:
                                 val = info.navRows[i][key].get<double>();
@@ -225,24 +229,30 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
     bool paramsEnabled = this->params["params"].get<double>() > 0.0001 ? 1 : 0;
  
     for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
-        if (keys.find(it->first) == keys.end()) {
-            std::cout << it->first << " " << paramsEnabled << std::endl;
-            keys[it->first] = DoubleDataValue(paramsEnabled);
-            keyType[it->first] = 0;
+        if (it->second.isType<double>()) {   
+            if (keys.find(it->first) == keys.end()) {
+                std::cout << it->first << " " << paramsEnabled << std::endl;
+                keys[it->first] = DoubleDataValue(paramsEnabled);
+                keyType[it->first] = 0;
+            }
         }
     }
     for (DataObject::const_iterator it = nav.begin(); it != nav.end(); it++) {
-        if (keys.find(it->first) == keys.end()) {
-            std::cout << it->first << std::endl;
-            keys[it->first] = DoubleDataValue(0);
-            keyType[it->first] = 1;
+        if (it->second.isType<double>()) { 
+            if (keys.find(it->first) == keys.end()) {
+                std::cout << it->first << std::endl;
+                keys[it->first] = DoubleDataValue(0);
+                keyType[it->first] = 1;
+            }
         }
     }
     for (DataObject::const_iterator it = obj.begin(); it != obj.end(); it++) {
-        if (keys.find(it->first) == keys.end()) {
-            std::cout << it->first << std::endl;
-            keys[it->first] = DoubleDataValue(0);
-            keyType[it->first] = 2;
+        if (it->second.isType<double>()) { 
+            if (keys.find(it->first) == keys.end()) {
+                std::cout << it->first << std::endl;
+                keys[it->first] = DoubleDataValue(0);
+                keyType[it->first] = 2;
+            }
         }
     }
 

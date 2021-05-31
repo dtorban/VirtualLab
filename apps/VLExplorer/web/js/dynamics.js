@@ -181,6 +181,19 @@ function createModelSample(params) {
   });
 }
 
+function getMetaData(params, param, key, defaultVal) {
+  let metadata = params[".metadata"];
+  if (metadata && metadata[param]) {
+    metadata = metadata[param];
+    console.log(param, key, metadata[key]);
+    return metadata[key];
+  }
+  else {
+    console.log("NOT FOUND",param, key, defaultVal);
+    return defaultVal;
+  }
+}
+
 function changeModel() {
   time = 0;
   let selection = $("#modelSelect").val();
@@ -195,6 +208,7 @@ function changeModel() {
 
   currentModel.getParameters().then(function(params) {
     currentParams = params;
+    console.log(params);
     $("#params").html("");
     $("#nav").html("");
     $("#data").html("");
@@ -203,7 +217,7 @@ function changeModel() {
       if (!(typeof params[key] === 'object')) {
         $("#params").append('<div style="float:left;width:100px;">' + key + "</div>")
         let scale = function(val) {
-          if (params.scale[key] == "log") {
+          if (getMetaData(params, key, "scale", "linear") == "log") {
             return Math.log(val);
           }
           else {
@@ -211,8 +225,8 @@ function changeModel() {
           }
         };
         let val = scale(params[key]);
-        let min = scale(params.min[key]);
-        let max = scale(params.max[key]);
+        let min = scale(getMetaData(params, key, "min", val));
+        let max = scale(getMetaData(params, key, "max", val));
         val = 100.0*(val-min)/(max-min);
         $("#params").append('<input  type="range" min="1" max="100" value="' + val + '" class="slider" name="' + key + '"></input>')
         $("#params").append('<span id="val_' + key + '">' + params[key] +'</span>');  
@@ -223,7 +237,7 @@ function changeModel() {
       let key = $(e.target).attr('name');
       let val = parseFloat($(e.target).val());
       let scale = function(val) {
-        if (params.scale[key] == "log") {
+        if (getMetaData(params, key, "scale", "linear") == "log") {
           return Math.log(val);
         }
         else {
@@ -232,14 +246,17 @@ function changeModel() {
       };
 
       let inv_scale = function(val) {
-        if (params.scale[key] == "log") {
+        if (getMetaData(params, key, "scale", "linear") == "log") {
           return Math.exp(val);
         }
         else {
           return val;
         }
       };
-      val = inv_scale((1.0*val/100.0)*(scale(params.max[key]) - scale(params.min[key])) + scale(params.min[key]));
+      
+      let min = getMetaData(params, key, "min", val);
+      let max = getMetaData(params, key, "max", val);
+      val = inv_scale((1.0*val/100.0)*(scale(max) - scale(min)) + scale(min));
       params[key] = val;
       $("#val_" + key).html(params[key].toFixed(2));
       //createModel(params);
