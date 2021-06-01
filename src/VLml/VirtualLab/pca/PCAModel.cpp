@@ -217,7 +217,7 @@ void PCAModelSample::update() {
                             obj["cluster"] = DoubleDataValue(1);//assignments[f]+1);
                         }
                         double radius = std::sqrt(std::pow(x - (bounds[2]+bounds[0])/2.0 + zoomX*(bounds[2]-bounds[0])/zoomK ,2) + std::pow(y - (bounds[3]+bounds[1])/2.0 - zoomY*(bounds[3]-bounds[1])/zoomK,2));
-                        std::cout << radius << std::endl;
+                        //std::cout << radius << std::endl;
                         if (false) {//radius < 1000.0) {
                             obj["cluster"] = DoubleDataValue(0);
                         }

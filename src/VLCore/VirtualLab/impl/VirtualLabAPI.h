@@ -424,7 +424,97 @@ private:
     const vl::Object* const_metadata;
 };
 
-}
+class SamplingModelSample : public IModelSample {
+public:
+    class UpdateCallback : public IUpdateCallback {
+	public:
+		UpdateCallback(SamplingModelSample* samplingSample, IModelSample* sample) : samplingSample(samplingSample), sample(sample) {}
+		virtual ~UpdateCallback() {}
+
+		void onComplete() {
+            /*int t = sample->getNavigation()["t"].get<double>() + samplingSample->getParameters()["dt"].get<double>();
+            sample->getNavigation()["t"].set<double>(t);
+            sample->update(new UpdateCallback(samplingSample, sample));*/
+            samplingSample->update();
+		}
+
+	private:
+		SamplingModelSample* samplingSample;
+        IModelSample* sample;
+	};
+
+public:
+    SamplingModelSample(ModelProxy model, const DataObject& params) : model(model), params(params), callback(NULL) {}
+    virtual ~SamplingModelSample() {
+        for (int i = 0; i < samples.size(); i++) {
+            delete samples[i];
+        }
+    }
+
+    virtual const DataObject& getParameters() const { return params; }
+    virtual DataObject& getNavigation() { return nav; }
+    virtual const DataObject& getData() const { return data; }
+    virtual void update() {
+        std::cout << "Update" << std::endl;
+        if (callback) {
+            callback->onComplete();
+            delete callback;
+            callback = NULL;
+        }
+    }
+    virtual void update(IUpdateCallback* callback) {
+        this->callback = callback;
+        if (samples.size() == 0) {
+            int numSamples = params["samples"].get<double>();
+            for (int i = 0; i < numSamples; i++) {
+                IModelSample* sample = model.create(params);
+                samples.push_back(sample);
+                sample->getNavigation()["t"].set<double>(params["start"].get<double>());
+                sample->update(new UpdateCallback(this, sample));
+            }
+        }
+        for (int i = 0; i < samples.size(); i++) {
+            IModelSample* sample = samples[i];
+            int t = sample->getNavigation()["t"].get<double>() + params["dt"].get<double>();
+            sample->getNavigation()["t"].set<double>(t);
+            sample->update(new UpdateCallback(this, sample));
+        }
+    }
+
+private:
+    ModelProxy model;
+    DataObject params;
+    DataObject nav;
+    DataObject data;
+    IUpdateCallback* callback;
+    std::vector<IModelSample*> samples;
+};
+
+class SamplingModel : public IModel {
+public:
+    SamplingModel(const std::string& name, ModelProxy model) : name(name), model(model) {
+        params = model.getParameters();
+        ParameterHelper helper(&params);
+        helper.set("start", 10, 0, 6*3600);
+        helper.set("end", 6*3600, 0, 10*3600);
+        helper.set("dt", 10*60, 1, 3600);
+        helper.set("samples", 1, 1, 20);
+    }
+
+    virtual ~SamplingModel() {}
+
+    const std::string& getName() const { return name; }
+    const DataObject& getParameters() { return params; }
+    IModelSample* create(const DataObject& params) {
+        return new SamplingModelSample(model, params);
+    }
+
+private:
+    DataObject params;
+    std::string name;
+    ModelProxy model;
+};
+};
 
 
 #endif
