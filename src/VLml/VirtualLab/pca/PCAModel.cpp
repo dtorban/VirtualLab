@@ -38,8 +38,10 @@ public:
 	PCAModelSample(const DataObject& params, PCAModel::SampleInfo& info) : params(params), callback(NULL), kmeans_calc(-1), prevColumnSize(0), info(info) {
         data["pca"] = DataArray();
         data["bounds"] = DataArray();
+        data["vdi"] = DataArray();
         pca = &data["pca"].get<vl::Array>();
         bound = &data["bounds"].get<vl::Array>();
+        vdi = &data["vdi"].get<vl::Array>();
     }
 
 	virtual const DataObject& getParameters() const { return params; }
@@ -55,6 +57,7 @@ private:
     DataObject data;
     vl::Array* pca;
     vl::Array* bound;
+    vl::Array* vdi;
 	IUpdateCallback* callback;
     int kmeans_calc;
     DataObject keys;
@@ -109,6 +112,7 @@ void PCAModelSample::update() {
 
         pca->clear();
         bound->clear();
+        vdi->clear();
 
 #ifdef USE_MLPACK
         if (cols.size() > 1 && (info.dataRows.size() > 2 || info.samplePtr.size() > 2)) {
@@ -202,6 +206,8 @@ void PCAModelSample::update() {
                     }
                 }
 
+                std::vector< std::pair<double, int> > closest;
+
                 for (int f = 0; f < numRows; f++) {
                     if (f % 1 == 0) {
                         
@@ -222,18 +228,36 @@ void PCAModelSample::update() {
                             obj["cluster"] = DoubleDataValue(0);
                         }
                         pca->push_back(obj);
+
+
+                        if (centroids.size() == clusterNum*2) {    
+                            for (int i = 0; i < clusterNum; i++) {
+                                double dist = std::sqrt(std::pow(centroids(0,i)-x,2) + std::pow(centroids(1,i)-y,2));
+                                if (closest.size() < clusterNum) {
+                                    closest.push_back(std::pair<double, int>(dist, f));
+                                }
+                                else if(dist < closest[i].first) {
+                                    closest[i] = std::pair<double, int>(dist, f);
+                                }
+                            }
+                        }
                     }
                 }
 
-                /*if (centroids.size() == clusterNum*2) {                   
+                if (centroids.size() == clusterNum*2) {                   
                     for (int f = 0; f < clusterNum; f++) {
                             vl::DataObject obj;
                             obj["x"] = DoubleDataValue(centroids(0,f));
                             obj["y"] = DoubleDataValue(centroids(1,f));
                             obj["cluster"] = DoubleDataValue(0);
                             pca->push_back(obj);
+
+                            vl::DataObject close;
+                            close["id"] = DoubleDataValue(closest[f].second);
+                            close["data"] = info.dataRows[closest[f].second];
+                            vdi->push_back(close);
                     }
-                }*/
+                }
 
                 for (int i = 0; i < 4; i++) {
                     bound->push_back(DoubleDataValue(bounds[i]));
@@ -270,7 +294,7 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
     for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
         if (it->second.isType<double>()) {   
             if (keys.find(it->first) == keys.end()) {
-                std::cout << it->first << " " << paramsEnabled << std::endl;
+                //std::cout << it->first << " " << paramsEnabled << std::endl;
                 keys[it->first] = DoubleDataValue(paramsEnabled);
                 keyType[it->first] = 0;
             }
@@ -279,17 +303,20 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
     for (DataObject::const_iterator it = nav.begin(); it != nav.end(); it++) {
         if (it->second.isType<double>()) { 
             if (keys.find(it->first) == keys.end()) {
-                std::cout << it->first << std::endl;
+                //std::cout << it->first << std::endl;
                 keys[it->first] = DoubleDataValue(0);
                 keyType[it->first] = 1;
             }
         }
     }
+
+    bool dataEnabled = this->params["data"].get<double>() > 0.0001 ? 1 : 0;
+
     for (DataObject::const_iterator it = obj.begin(); it != obj.end(); it++) {
         if (it->second.isType<double>()) { 
             if (keys.find(it->first) == keys.end()) {
-                std::cout << it->first << std::endl;
-                keys[it->first] = DoubleDataValue(0);
+                //std::cout << it->first << std::endl;
+                keys[it->first] = DoubleDataValue(dataEnabled);
                 keyType[it->first] = 2;
             }
         }

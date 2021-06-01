@@ -14,14 +14,17 @@ $( document ).ready(function() {
     });
 
     models[0].getParameters().then(function(params) {
+      params.data = 1;
+      params.clusters = 9;
       models[0].create(params).then(function(sample) { 
+        sample.nav.keys = {x:0, y:0};
         //sample.update();
         //sample.nav.t = 10.0;
         updatePCA(sample, scatterPlot);
       });
     });
 
-    models[0].getParameters().then(function(params) {
+    /*models[0].getParameters().then(function(params) {
       params.params = 1;
       params.clusters = 0;
       models[0].create(params).then(function(sample) { 
@@ -29,7 +32,7 @@ $( document ).ready(function() {
         //sample.nav.t = 10.0;
         updatePCA(sample, scatterPlot2);
       });
-    });
+    });*/
 
       
     models[0].getParameters().then(function(params) {
@@ -114,6 +117,94 @@ function updatePCA(sample, plot) {
               //updateData(scatterPlot, samples, function(d) {return d.data.x;}, function(d){return d.data.y;}, function(d){return 0;});
             
             //});
+
+    // Add VDI
+    var vdi = d3.select("#spatial").selectAll(".vdi")
+        .data(sample.data.vdi)
+
+    var div = vdi.enter()
+        .append("div")
+        .attr("class", "vdi" )
+        //.text((d) => {return d.id;})
+
+        //.text((d) => {return d.id;})
+    
+    if (sample.data.vdi.length > 0) {
+
+      var containerWidth = +d3.select('.vdi').style('width').slice(0, -2);
+      var containerHeight = +d3.select('.vdi').style('height').slice(0, -2);
+  
+      var svg = div
+        .append("svg")
+        .attr("width", containerWidth)
+        .attr("height", containerHeight)
+        //.style("background-color", "green")
+        .append("g");
+        //.attr("transform",
+                //"translate(" + this.margin.left + "," + this.margin.top + ")");
+
+      /*svg.append("circle")
+        .attr('cx', function(d) {console.log("test", d.data.x); return d.data.x/10.0 + 100.0;})
+        .attr('cy', function(d) {return d.data.y/10.0 + 100.0;})
+        .attr("r", "40")
+        .attr("stroke", "black")
+        .attr("stroke-width", "3")
+        .attr("fill", "red")*/
+      //<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" />
+
+      d3.select("#spatial").selectAll("g").each(function(a, i) {
+        var data = sample.data.vdi[i].data;
+        if (data.m) {
+          var circles = data.m;
+          //circles.push({x:data.x, y:data.y});
+          /*circles.push({x:0, y:0});
+          d3.select(this).selectAll("circle")
+            .data(circles)
+            .exit()
+            .remove()
+          d3.select(this).selectAll("circle")
+            .data(circles)
+            .enter()
+            .append("circle")
+            .attr('cx', function(d) {return (d.x-data.x)/100.0 + 100.0;})
+            .attr('cy', function(d) {return (d.y-data.y)/100.0 + 100.0;})
+            .attr("r", "5")
+            .attr("stroke", "black")
+            .attr("stroke-width", "5")
+            .attr("fill", "red")
+          d3.select(this).selectAll("circle")
+            .attr('cx', function(d) {return (d.x-data.x)/100.0 + 100.0;})
+            .attr('cy', function(d) {return (d.y-data.y)/100.0 + 100.0;})*/
+
+          var arms = data.m;
+          d3.select(this).selectAll("line")
+            .data(arms)
+            .exit()
+            .remove()
+          d3.select(this).selectAll("line")
+            .data(arms)
+            .enter()
+            .append("line")
+            .attr('x1', function(d) {return 100.0;})
+            .attr('y1', function(d) {return 100.0;})
+            .attr('x2', function(d) {return (d.x-data.x)/100.0 + 100.0;})
+            .attr('y2', function(d) {return (d.y-data.y)/100.0 + 100.0;})
+            .attr("stroke", "orange")
+            .attr("stroke-width", "10")
+
+          d3.select(this).selectAll("line")
+            .attr('x2', function(d) {return (d.x-data.x)/100.0 + 100.0;})
+            .attr('y2', function(d) {return (d.y-data.y)/100.0 + 100.0;})
+        }
+
+        /*<line x1="10" x2="50" y1="110" y2="150" stroke="orange" stroke-width="5"/>*/
+        /*<rect x="60" y="10" rx="10" ry="10" width="30" height="30" stroke="black" fill="transparent" stroke-width="5"/>*/
+
+      })
+        /*.attr('cx', function(d) {console.log("test2", d.data.x); return d.data.x/10.0 + 100.0;})
+        .attr('cy', function(d) {return d.data.y/10.0 + 100.0;})*/
+        //.style("fill", function (d) { return self.colors[color(d)%self.colors.length];});*/
+    }
             
     updatePCA(sample, plot);
   })
@@ -173,7 +264,7 @@ function createModelSample(params) {
 
   currentModel.create(params).then(function(s) {
     let sample = s;
-    sample.nav.m = 0;
+    //sample.nav.m = 0;
     sample.nav.t = 10;
     $("#nav").append(JSON.stringify(sample.nav));
     updateSample(sample);
