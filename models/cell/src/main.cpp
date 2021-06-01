@@ -546,6 +546,16 @@ public:
             data["fx"].set<double>(x/window.size());
             data["fy"].set<double>(y/window.size());
             data["rmc"] = DoubleDataValue(rmc/(window.size()-1));
+
+            vl::DataArray path;
+            for (int i = 0; i < window.size(); i++) {
+                DataObject obj;
+                obj["x"] = window[i].get<Object>().find("x")->second;
+                obj["y"] = window[i].get<Object>().find("y")->second;
+                path.get<vl::Array>().push_back(obj);
+                //path.push_back(Da)
+            }
+            data["path"] = path;
         }
         else {
             data["rmc"] = DoubleDataValue(0);

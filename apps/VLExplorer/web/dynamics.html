@@ -43,7 +43,7 @@
 			#spatial {
 			  position: relative;
 			  width: 60%;
-			  height: 90%;
+			  height: 100%;
 			  float: left;
 			  overflow: auto;
 			}
@@ -155,8 +155,8 @@
 			.vdi{
 				margin: 15px;
 				position: relative;
-				width: 200px;
-				height: 200px;
+				width: 100px;
+				height: 100px;
 				float: left;
 				border-width: 1px;
 				border-style: solid;
@@ -231,8 +231,10 @@
 		</div>
 		<div id="scene-container">
 			<div id="spatial">
+				<!--div><input type="range" min="1" max="100" value="0" oninput="d3.selectAll('div .vdi').attr('width','50');"></input></div-->
 			</div>
 			<div id="navigation">
+				<div><input type="range" min="1" max="100" value="0" oninput="numClusters=+$(this).val(); console.log(numClusters);"></input></div>
 				<div id="pca-chart1">
 					<div class="pca-config"></div>
 				</div>

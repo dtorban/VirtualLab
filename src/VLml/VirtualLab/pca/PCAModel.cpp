@@ -167,6 +167,9 @@ void PCAModelSample::update() {
                 }
 
                 int clusterNum = this->params["clusters"].get<double>();
+                if (clusterNum > 0) {
+                    clusterNum = this->nav["clusters"].get<double>();
+                }
 
                 if (clusterNum > 0) {
                     int blah = numRows/100;
@@ -255,6 +258,8 @@ void PCAModelSample::update() {
                             vl::DataObject close;
                             close["id"] = DoubleDataValue(closest[f].second);
                             close["data"] = info.dataRows[closest[f].second];
+                            close["x"] = DoubleDataValue(centroids(0,f));
+                            close["y"] = DoubleDataValue(centroids(1,f));
                             vdi->push_back(close);
                     }
                 }

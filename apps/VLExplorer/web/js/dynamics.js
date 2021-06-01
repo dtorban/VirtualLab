@@ -4,6 +4,7 @@ var modelList = [];
 let currentModel = null;
 let currentParams = null;
 let pca = [];
+let numClusters = 36;
 
 // This is the function that is called once the document is started.
 $( document ).ready(function() {
@@ -15,12 +16,12 @@ $( document ).ready(function() {
 
     models[0].getParameters().then(function(params) {
       params.data = 1;
-      params.clusters = 9;
+      params.clusters = numClusters;
       models[0].create(params).then(function(sample) { 
         sample.nav.keys = {x:0, y:0};
         //sample.update();
         //sample.nav.t = 10.0;
-        updatePCA(sample, scatterPlot);
+        updatePCA(sample, scatterPlot, true);
       });
     });
 
@@ -41,7 +42,7 @@ $( document ).ready(function() {
       models[0].create(params).then(function(sample) { 
         //sample.update();
         //sample.nav.t = 10.0;
-        updatePCA(sample, scatterPlot3);
+        updatePCA(sample, scatterPlot3, false);
       });
     });
   });
@@ -49,7 +50,7 @@ $( document ).ready(function() {
   
 });
 
-function updatePCA(sample, plot) {
+function updatePCA(sample, plot, calcSpatial) {
   if (!sample) {
     return;
   }
@@ -88,6 +89,7 @@ function updatePCA(sample, plot) {
 
       sample.nav.keys = sample.keys;
       sample.nav.zoom = plot.zoomTransform;
+      sample.nav.clusters = numClusters;
       //console.log(plot.SVG.node());
       //plot.SVG.node().append('<div class="pca-config">'+JSON.stringify(sample.nav)+'</div>');
       
@@ -118,95 +120,165 @@ function updatePCA(sample, plot) {
             
             //});
 
-    // Add VDI
-    var vdi = d3.select("#spatial").selectAll(".vdi")
-        .data(sample.data.vdi)
+    if (calcSpatial) {
+      // Add VDI
+      var vdi = d3.select("#spatial").selectAll(".vdi")
+          .data(sample.data.vdi.sort((a, b) => { return a.x < b.x;} ))
 
-    var div = vdi.enter()
-        .append("div")
-        .attr("class", "vdi" )
-        //.text((d) => {return d.id;})
+      //if (sample.data.vdi.length != numClusters) {
+        vdi.exit().remove();
+      //}
 
-        //.text((d) => {return d.id;})
+      var div = vdi.enter()
+          .append("div")
+          .attr("class", "vdi" )
+          //.text((d) => {return d.id;})
+
+          //.text((d) => {return d.id;})
+      
+      if (sample.data.vdi.length > 0) {
+
+        var containerWidth = +d3.select('.vdi').style('width').slice(0, -2);
+        var containerHeight = +d3.select('.vdi').style('height').slice(0, -2);
     
-    if (sample.data.vdi.length > 0) {
+        var svg = div
+          .append("svg")
+          //.attr("preserveAspectRatio", "xMinYMin meet")
+          .attr("width", containerWidth)
+          .attr("height", containerHeight)
+          .style("background-color", "#D8D8D8")
+          .append("g");
+          //.attr("transform",
+                  //"translate(" + this.margin.left + "," + this.margin.top + ")");
 
-      var containerWidth = +d3.select('.vdi').style('width').slice(0, -2);
-      var containerHeight = +d3.select('.vdi').style('height').slice(0, -2);
-  
-      var svg = div
-        .append("svg")
-        .attr("width", containerWidth)
-        .attr("height", containerHeight)
-        //.style("background-color", "green")
-        .append("g");
-        //.attr("transform",
-                //"translate(" + this.margin.left + "," + this.margin.top + ")");
+        /*svg.append("circle")
+          .attr('cx', function(d) {console.log("test", d.data.x); return d.data.x/10.0 + 100.0;})
+          .attr('cy', function(d) {return d.data.y/10.0 + 100.0;})
+          .attr("r", "40")
+          .attr("stroke", "black")
+          .attr("stroke-width", "3")
+          .attr("fill", "red")*/
+        //<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" />
 
-      /*svg.append("circle")
-        .attr('cx', function(d) {console.log("test", d.data.x); return d.data.x/10.0 + 100.0;})
-        .attr('cy', function(d) {return d.data.y/10.0 + 100.0;})
-        .attr("r", "40")
-        .attr("stroke", "black")
-        .attr("stroke-width", "3")
-        .attr("fill", "red")*/
-      //<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" />
+        svg.append("polyline")
+          .attr("points", "")
+          .attr("fill", "transparent")
+          .attr("stroke","orange")
+          .attr("stroke-width","2");
 
-      d3.select("#spatial").selectAll("g").each(function(a, i) {
-        var data = sample.data.vdi[i].data;
-        if (data.m) {
-          var circles = data.m;
-          //circles.push({x:data.x, y:data.y});
-          /*circles.push({x:0, y:0});
-          d3.select(this).selectAll("circle")
-            .data(circles)
-            .exit()
-            .remove()
-          d3.select(this).selectAll("circle")
-            .data(circles)
-            .enter()
-            .append("circle")
-            .attr('cx', function(d) {return (d.x-data.x)/100.0 + 100.0;})
-            .attr('cy', function(d) {return (d.y-data.y)/100.0 + 100.0;})
-            .attr("r", "5")
-            .attr("stroke", "black")
-            .attr("stroke-width", "5")
-            .attr("fill", "red")
-          d3.select(this).selectAll("circle")
-            .attr('cx', function(d) {return (d.x-data.x)/100.0 + 100.0;})
-            .attr('cy', function(d) {return (d.y-data.y)/100.0 + 100.0;})*/
+        svg.append("path")
+          //.attr("d","M 77.37731058932836 107.61176431474715, C 87.96090015905288 102.62191514688726, 99.19043000104266 100.64454096609593, 105.83112210354054 97.1569349587109, 110.27330060804007 93.8741870641478, 113.36429967827473 89.48077119046745, 103.1627423580935 92.5606056049644, 98.32838852259944 101.76081148527241, 94.33387126763085 109.07764749194875, 104.15876745058335 101.51363651264677, 106.01886726181364 103.69718526411118")
+          .attr("d", "M 10 10 h 80 v 80 h -80 Z")
+          .attr("fill", "transparent")
+          .attr("stroke","transparent")
+          .style("visiblity","hidden")
 
-          var arms = data.m;
-          d3.select(this).selectAll("line")
-            .data(arms)
-            .exit()
-            .remove()
-          d3.select(this).selectAll("line")
-            .data(arms)
-            .enter()
-            .append("line")
-            .attr('x1', function(d) {return 100.0;})
-            .attr('y1', function(d) {return 100.0;})
-            .attr('x2', function(d) {return (d.x-data.x)/100.0 + 100.0;})
-            .attr('y2', function(d) {return (d.y-data.y)/100.0 + 100.0;})
-            .attr("stroke", "orange")
-            .attr("stroke-width", "10")
+        d3.select("#spatial").selectAll("g").each(function(a, i) {
+          var data = sample.data.vdi[i].data;
+          if (data.m) {
+            var circles = data.m;
+            //circles.push({x:data.x, y:data.y});
+            /*circles.push({x:0, y:0});
+            d3.select(this).selectAll("circle")
+              .data(circles)
+              .exit()
+              .remove()
+            d3.select(this).selectAll("circle")
+              .data(circles)
+              .enter()
+              .append("circle")
+              .attr('cx', function(d) {return (d.x-data.x)/100.0 + 100.0;})
+              .attr('cy', function(d) {return (d.y-data.y)/100.0 + 100.0;})
+              .attr("r", "5")
+              .attr("stroke", "black")
+              .attr("stroke-width", "5")
+              .attr("fill", "red")
+            d3.select(this).selectAll("circle")
+              .attr('cx', function(d) {return (d.x-data.x)/100.0 + 100.0;})
+              .attr('cy', function(d) {return (d.y-data.y)/100.0 + 100.0;})*/
 
-          d3.select(this).selectAll("line")
-            .attr('x2', function(d) {return (d.x-data.x)/100.0 + 100.0;})
-            .attr('y2', function(d) {return (d.y-data.y)/100.0 + 100.0;})
-        }
+            var arms = data.m;
+            d3.select(this).selectAll("line")
+              .data(arms)
+              .exit()
+              .remove()
+            d3.select(this).selectAll("line")
+              .data(arms)
+              .enter()
+              .append("line")
+              .attr('x1', function(d) {return 50.0;})
+              .attr('y1', function(d) {return 50.0;})
+              .attr('x2', function(d) {return (d.x-data.x)/200.0 + 50.0;})
+              .attr('y2', function(d) {return (d.y-data.y)/200.0 + 50.0;})
+              .attr("fill", "#6495ED")
+              .attr("stroke", "#6495ED")
+              //.attr("stroke-opacity", "0.3")
+              .attr("stroke-width", "10")
 
-        /*<line x1="10" x2="50" y1="110" y2="150" stroke="orange" stroke-width="5"/>*/
-        /*<rect x="60" y="10" rx="10" ry="10" width="30" height="30" stroke="black" fill="transparent" stroke-width="5"/>*/
+            d3.select(this).selectAll("line")
+              .attr('x2', function(d) {return (d.x-data.x)/200.0 + 50.0;})
+              .attr('y2', function(d) {return (d.y-data.y)/200.0 + 50.0;})
 
-      })
-        /*.attr('cx', function(d) {console.log("test2", d.data.x); return d.data.x/10.0 + 100.0;})
-        .attr('cy', function(d) {return d.data.y/10.0 + 100.0;})*/
-        //.style("fill", function (d) { return self.colors[color(d)%self.colors.length];});*/
+            if (data.path) {
+              var pathStr = "";
+              for (var i = 0; i < data.path.length; i++) {
+                if (i > 0) {
+                  pathStr += ", ";
+                }
+                if (i == 1) {
+                  pathStr += "C ";
+                }
+                if (i == 0) {
+                  pathStr += "M ";
+                }
+
+                pathStr += ((data.path[i].x - data.x)/200.0 + 50.0) + " " + ((data.path[i].y - data.y)/200.0 + 50.0);
+                //M 77.37731058932836 107.61176431474715, C 87.96090015905288 102.62191514688726, 99.19043000104266 100.64454096609593, 105.83112210354054 97.1569349587109, 110.27330060804007 93.8741870641478, 113.36429967827473 89.48077119046745, 103.1627423580935 92.5606056049644, 98.32838852259944 101.76081148527241, 94.33387126763085 109.07764749194875, 104.15876745058335 101.51363651264677, 106.01886726181364 103.69718526411118
+              }
+              //console.log(pathStr);
+              d3.select(this).selectAll("path")
+                .attr("d", pathStr)
+                .attr("fill", "transparent")
+                .attr("stroke","orange")
+                .attr("stroke-width","2");
+            }
+
+            if (data.path) {
+              var pathStr = "";
+              for (var i = 0; i < data.path.length; i++) {
+                if (i != 0) {
+                  pathStr += " ";
+                }
+                pathStr += ((data.path[i].x - data.x)/200.0 + 50.0) + " " + ((data.path[i].y - data.y)/200.0 + 50.0);
+                //M 77.37731058932836 107.61176431474715, C 87.96090015905288 102.62191514688726, 99.19043000104266 100.64454096609593, 105.83112210354054 97.1569349587109, 110.27330060804007 93.8741870641478, 113.36429967827473 89.48077119046745, 103.1627423580935 92.5606056049644, 98.32838852259944 101.76081148527241, 94.33387126763085 109.07764749194875, 104.15876745058335 101.51363651264677, 106.01886726181364 103.69718526411118
+              }
+              //console.log(pathStr);
+              d3.select(this).selectAll("polyline")
+                .attr("points", pathStr)
+                //.attr("fill", "transparent")
+                //.attr("stroke","black");
+
+              d3.selection.prototype.moveToFront = function() {  
+                return this.each(function(){
+                  this.parentNode.appendChild(this);
+                });
+              };
+
+              d3.select(this).selectAll("polyline").moveToFront();
+            }
+          }
+
+          /*<line x1="10" x2="50" y1="110" y2="150" stroke="orange" stroke-width="5"/>*/
+          /*<rect x="60" y="10" rx="10" ry="10" width="30" height="30" stroke="black" fill="transparent" stroke-width="5"/>*/
+
+        });
+          /*.attr('cx', function(d) {console.log("test2", d.data.x); return d.data.x/10.0 + 100.0;})
+          .attr('cy', function(d) {return d.data.y/10.0 + 100.0;})*/
+          //.style("fill", function (d) { return self.colors[color(d)%self.colors.length];});*/
+      }
     }
             
-    updatePCA(sample, plot);
+    updatePCA(sample, plot, calcSpatial);
   })
 }
 
