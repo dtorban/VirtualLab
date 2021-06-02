@@ -4,7 +4,7 @@ var modelList = [];
 let currentModel = null;
 let currentParams = null;
 let pca = [];
-let numClusters = 36;
+let numClusters = 25;
 
 // This is the function that is called once the document is started.
 $( document ).ready(function() {

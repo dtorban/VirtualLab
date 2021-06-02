@@ -67,6 +67,7 @@ private:
 #ifdef USE_MLPACK
     arma::Row<size_t> assignments;
     arma::mat centroids;
+    std::vector< std::pair<double, int> > closest;
 #endif
 };
 
@@ -171,6 +172,8 @@ void PCAModelSample::update() {
                     clusterNum = this->nav["clusters"].get<double>();
                 }
 
+                
+
                 if (clusterNum > 0) {
                     int blah = numRows/100;
                     if (kmeans_calc < blah) {
@@ -187,6 +190,7 @@ void PCAModelSample::update() {
                         // Initialize with the default arguments.
                         KMeans<> k;
                         k.Cluster(A, clusterNum, assignments, centroids);
+                        closest.clear();
                     }
                 }
                 
@@ -209,7 +213,8 @@ void PCAModelSample::update() {
                     }
                 }
 
-                std::vector< std::pair<double, int> > closest;
+                bool calcClosest = closest.size() == 0;
+                
 
                 for (int f = 0; f < numRows; f++) {
                     if (f % 1 == 0) {
@@ -225,15 +230,25 @@ void PCAModelSample::update() {
                         else {
                             obj["cluster"] = DoubleDataValue(1);//assignments[f]+1);
                         }
-                        double radius = std::sqrt(std::pow(x - (bounds[2]+bounds[0])/2.0 + zoomX*(bounds[2]-bounds[0])/zoomK ,2) + std::pow(y - (bounds[3]+bounds[1])/2.0 - zoomY*(bounds[3]-bounds[1])/zoomK,2));
+                        //double radius = std::sqrt(std::pow(x - (bounds[2]+bounds[0])/2.0 + zoomX*(bounds[2]-bounds[0])/zoomK ,2) + std::pow(y - (bounds[3]+bounds[1])/2.0 - zoomY*(bounds[3]-bounds[1])/zoomK,2));
+                        //double radius = std::sqrt(std::pow(x + zoomX*(bounds[2]-bounds[0])/zoomK ,2) + std::pow(y - zoomY*(bounds[3]-bounds[1])/zoomK,2));
+                        //double radius = ;
                         //std::cout << radius << std::endl;
-                        if (false) {//radius < 1000.0) {
-                            obj["cluster"] = DoubleDataValue(0);
-                        }
+                        //if (std::abs(x-bounds[0] - (bounds[2]-bounds[0])/2.0/zoomK + zoomX*(bounds[2]-bounds[0])/zoomK) < (bounds[2]-bounds[0])/zoomK/4.0) {
+                            if (std::abs(y-bounds[1] - 0.0*(bounds[3]-bounds[1])/2.0/zoomK + zoomY*(bounds[3]-bounds[1])/zoomK) < (bounds[3]-bounds[1])/zoomK/4.0) {
+                            //if (std::abs(y-bounds[1] - (bounds[3]-bounds[1])/2.0/zoomK - zoomY*(bounds[3]-bounds[1])/zoomK) < (bounds[3]-bounds[1])/zoomK/4.0) {
+                            //if (std::abs(y-bounds[1] - (bounds[3]-bounds[1])/2.0) < (bounds[3]-bounds[1])/zoomK/4.0) {
+                                //obj["cluster"] = DoubleDataValue(2);
+                            }
+                        //}
+                        /*if (std::abs((x-bounds[0] - (bounds[2]-bounds[0])/2.0) + 0.25*(bounds[2]-bounds[0])) < (bounds[2]-bounds[0])/zoomK/16.0) {
+                            obj["cluster"] = DoubleDataValue(3);
+                        }*/
                         pca->push_back(obj);
+                        //(bounds[2]-bounds[0])/2.0
 
 
-                        if (centroids.size() == clusterNum*2) {    
+                        if (calcClosest && centroids.size() == clusterNum*2) {    
                             for (int i = 0; i < clusterNum; i++) {
                                 double dist = std::sqrt(std::pow(centroids(0,i)-x,2) + std::pow(centroids(1,i)-y,2));
                                 if (closest.size() < clusterNum) {
@@ -250,16 +265,20 @@ void PCAModelSample::update() {
                 if (centroids.size() == clusterNum*2) {                   
                     for (int f = 0; f < clusterNum; f++) {
                             vl::DataObject obj;
-                            obj["x"] = DoubleDataValue(centroids(0,f));
-                            obj["y"] = DoubleDataValue(centroids(1,f));
+                            //obj["x"] = DoubleDataValue(centroids(0,f));
+                            //obj["y"] = DoubleDataValue(centroids(1,f));
+                            obj["x"] = DoubleDataValue(A(0,closest[f].second));
+                            obj["y"] = DoubleDataValue(A(1,closest[f].second));
                             obj["cluster"] = DoubleDataValue(0);
                             pca->push_back(obj);
 
                             vl::DataObject close;
                             close["id"] = DoubleDataValue(closest[f].second);
                             close["data"] = info.dataRows[closest[f].second];
-                            close["x"] = DoubleDataValue(centroids(0,f));
-                            close["y"] = DoubleDataValue(centroids(1,f));
+                            //close["x"] = DoubleDataValue(centroids(0,f));
+                            //close["y"] = DoubleDataValue(centroids(1,f));
+                            close["x"] = DoubleDataValue(A(0,closest[f].second));
+                            close["y"] = DoubleDataValue(A(1,closest[f].second));
                             vdi->push_back(close);
                     }
                 }
