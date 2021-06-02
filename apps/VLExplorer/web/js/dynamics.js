@@ -121,9 +121,26 @@ function updatePCA(sample, plot, calcSpatial) {
             //});
 
     if (calcSpatial) {
+      var pcaY = sample.data.vdi.sort((a, b) => { return a.y > b.y;} );
+      var sorted = [];
+      var row = [];
+      for (var i = 0; i <pcaY.length; i++) {
+        row.push(pcaY[i]);
+        if ((i+1) % 5 == 0) {
+          row = row.sort((a, b) => { return a.x < b.x;});
+          for (var f = 0; f < row.length; f++) {
+            sorted.push(row[f]);
+          }
+          row = [];
+        }
+      }
+
+      sample.data.vdi = sorted;//sample.data.vdi.sort((a, b) => { return a.x < b.x;} );
+
       // Add VDI
       var vdi = d3.select("#spatial").selectAll(".vdi")
-          .data(sample.data.vdi.sort((a, b) => { return a.x < b.x;} ))
+        .data(sample.data.vdi)
+      //    .data(sorted);
 
       //if (sample.data.vdi.length != numClusters) {
         vdi.exit().remove();
