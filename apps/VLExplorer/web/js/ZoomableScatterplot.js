@@ -139,12 +139,15 @@ ZoomableScatterplot.prototype.updateData = function(bounds, data, a, b, color) {
         self.zoomTransform = {k:d3.event.transform.k, x: d3.event.transform.x, y: d3.event.transform.y};
         self.zoomTransform.x = self.zoomTransform.x/(self.width);
         self.zoomTransform.y = -self.zoomTransform.y/(self.height);
-        console.log(self.zoomTransform, d3.event.transform.x, d3.event.transform.y, self.width, self.height);
+        //console.log(self.zoomTransform, d3.event.transform.x, d3.event.transform.y, self.width, self.height);
 
         // recover the new scale
         var newX = d3.event.transform.rescaleX(self.x);
         var newY = d3.event.transform.rescaleY(self.y);
         //console.log(d3.event.transform.k, d3.event.transform);
+        self.zoomTransform.bounds = [newX.invert(0), newY.invert(self.height), newX.invert(self.width), newY.invert(0)];
+
+        //console.log(newX.invert(0), newX.invert(self.width), newY.invert(0), newY.invert(self.height));
 
         self.zoomX = newX;
         self.zoomY = newY;

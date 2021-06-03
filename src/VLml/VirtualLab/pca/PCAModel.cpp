@@ -87,6 +87,7 @@ void PCAModelSample::update() {
         double zoomK = zoom["k"].get<double>();
         double zoomX = zoom["x"].get<double>();
         double zoomY = zoom["y"].get<double>();
+        vl::Array zBounds = zoom["bounds"].get<vl::Array>();
         //std::cout << zoom["k"].get<double>() << std::endl;
         int params = 0;
         int other = 0;
@@ -136,7 +137,7 @@ void PCAModelSample::update() {
                 }
                 else {
                     //B << sample->getNavigation()["t"].get<double>() << arma::endr << sample->getNavigation()["t"].get<double>() << arma::endr;
-                    for (int i = 0; i < info.dataRows.size(); i++) {
+                    for (int i = 0; i < numRows; i++) {
 
                         DataObject& ps = info.paramRows[info.samplePtr[i]];
                         ParameterHelper helper(ps);
@@ -171,30 +172,9 @@ void PCAModelSample::update() {
                 if (clusterNum > 0) {
                     clusterNum = this->nav["clusters"].get<double>();
                 }
-
-                
-
-                if (clusterNum > 0) {
-                    int blah = numRows/100;
-                    if (kmeans_calc < blah) {
-                        //std::cout << "Calc KMeans" << std::endl;
-                        kmeans_calc++;
-                        // The dataset we are clustering.
-                        //extern arma::mat data;
-                        // The number of clusters we are getting.
-                        //extern size_t clusters = 5;
-                        // The assignments will be stored in this vector.
-                        //arma::Row<size_t> assignments;
-                        // The centroids will be stored in this matrix.
-                        //arma::mat centroids;
-                        // Initialize with the default arguments.
-                        KMeans<> k;
-                        k.Cluster(A, clusterNum, assignments, centroids);
-                        closest.clear();
-                    }
-                }
                 
                 double bounds[4];
+                double zoomBounds[4];
 
                 for (int f = 0; f < numRows; f++) {
                     if (f == 0) {
@@ -211,10 +191,59 @@ void PCAModelSample::update() {
                         if (bounds[2] < A(0,f)) { bounds[2] = A(0,f); }
                         if (bounds[3] < A(1,f)) { bounds[3] = A(1,f); } 
                     }
+
+                }
+                
+                for (int i = 0; i < 4; i++) {
+                    if (zBounds.size() > 0) {
+                        zoomBounds[i] = zBounds[i].get<double>();
+                    }
+                    else {
+                        zoomBounds[i] = bounds[i];
+                    }
+                }
+
+                if (clusterNum > 0) {
+                    int blah = numRows/100;
+                    if (kmeans_calc < blah) {
+                        std::vector<int> indices;
+                        for (int i = 0; i < numRows; i++) {
+                            double x = A(0,i);
+                            double y = A(1,i);
+                            if (x >= zoomBounds[0] && y >= zoomBounds[1] && x <= zoomBounds[2] && y <= zoomBounds[3]) {
+                                indices.push_back(i);
+                            }
+                        }
+
+                        if (indices.size() > 0) {
+                            arma::mat B(2, indices.size());
+                            
+                            for (int i = 0; i < indices.size(); i++) {
+                                B(0,i) = A(0,indices[i]);
+                                B(1,i) = A(1,indices[i]);
+                            }
+
+                            //std::cout << "Calc KMeans" << std::endl;
+                            kmeans_calc++;
+                            // The dataset we are clustering.
+                            //extern arma::mat data;
+                            // The number of clusters we are getting.
+                            //extern size_t clusters = 5;
+                            // The assignments will be stored in this vector.
+                            //arma::Row<size_t> assignments;
+                            // The centroids will be stored in this matrix.
+                            //arma::mat centroids;
+                            // Initialize with the default arguments.
+                            KMeans<> k;
+                            k.Cluster(B, clusterNum, assignments, centroids);
+                            closest.clear();
+                        }
+
+
+                    }
                 }
 
                 bool calcClosest = closest.size() == 0;
-                
 
                 for (int f = 0; f < numRows; f++) {
                     if (f % 1 == 0) {
@@ -235,16 +264,32 @@ void PCAModelSample::update() {
                         //double radius = ;
                         //std::cout << radius << std::endl;
                         //if (std::abs(x-bounds[0] - (bounds[2]-bounds[0])/2.0/zoomK + zoomX*(bounds[2]-bounds[0])/zoomK) < (bounds[2]-bounds[0])/zoomK/4.0) {
-                            if (std::abs(y-bounds[1] - 0.0*(bounds[3]-bounds[1])/2.0/zoomK + zoomY*(bounds[3]-bounds[1])/zoomK) < (bounds[3]-bounds[1])/zoomK/4.0) {
+                            //if (std::abs(y-bounds[1] - 0.0*(bounds[3]-bounds[1])/2.0/zoomK + zoomY*(bounds[3]-bounds[1])/zoomK) < (bounds[3]-bounds[1])/zoomK/4.0) {
                             //if (std::abs(y-bounds[1] - (bounds[3]-bounds[1])/2.0/zoomK - zoomY*(bounds[3]-bounds[1])/zoomK) < (bounds[3]-bounds[1])/zoomK/4.0) {
                             //if (std::abs(y-bounds[1] - (bounds[3]-bounds[1])/2.0) < (bounds[3]-bounds[1])/zoomK/4.0) {
                                 //obj["cluster"] = DoubleDataValue(2);
-                            }
+                            //}
                         //}
                         /*if (std::abs((x-bounds[0] - (bounds[2]-bounds[0])/2.0) + 0.25*(bounds[2]-bounds[0])) < (bounds[2]-bounds[0])/zoomK/16.0) {
                             obj["cluster"] = DoubleDataValue(3);
                         }*/
-                        pca->push_back(obj);
+
+                        /*if (zoomBounds.size() > 0) {
+                            std::cout << x << " " << y << " " <<  zoomBounds[0].get<double>()   << " " << zoomBounds[1].get<double>()  << " " << zoomBounds[2].get<double>()  << " " << zoomBounds[3].get<double>() << std::endl;
+                        }
+                        if (zoomBounds.size() > 0 
+                            && x >= zoomBounds[0].get<double>() 
+                            && y >= zoomBounds[1].get<double>() 
+                            && x <= zoomBounds[2].get<double>() 
+                            && y <= zoomBounds[3].get<double>())
+                        {
+                            std::cout << "bounds" << std::endl;
+                            obj["cluster"] = DoubleDataValue(3);
+                        }*/
+
+                        if (numRows - f <2000) {
+                            pca->push_back(obj);
+                        }
                         //(bounds[2]-bounds[0])/2.0
 
 
