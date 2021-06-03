@@ -473,11 +473,13 @@ public:
                 sample->update(new UpdateCallback(this, sample));
             }
         }
-        for (int i = 0; i < samples.size(); i++) {
-            IModelSample* sample = samples[i];
-            int t = sample->getNavigation()["t"].get<double>() + params["dt"].get<double>();
-            sample->getNavigation()["t"].set<double>(t);
-            sample->update(new UpdateCallback(this, sample));
+        else {
+            for (int i = 0; i < samples.size(); i++) {
+                IModelSample* sample = samples[i];
+                int t = sample->getNavigation()["t"].get<double>() + params["dt"].get<double>();
+                sample->getNavigation()["t"].set<double>(t);
+                sample->update(new UpdateCallback(this, sample));
+            }
         }
     }
 
@@ -497,7 +499,7 @@ public:
         ParameterHelper helper(&params);
         helper.set("start", 10, 0, 6*3600);
         helper.set("end", 6*3600, 0, 10*3600);
-        helper.set("dt", 10*60, 1, 3600);
+        helper.set("dt", 10, 1, 3600);
         helper.set("samples", 1, 1, 20);
     }
 

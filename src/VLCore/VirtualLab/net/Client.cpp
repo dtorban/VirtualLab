@@ -78,8 +78,11 @@ void ClientModelSample::resolveUpdate(ByteBufferReader& reader, IUpdateCallback*
     JSONSerializer::instance().deserialize(nav, navigation);
     JSONSerializer::instance().deserialize(ds, data);
 
+    //std::cout << callback << " about to be called" << std::endl;
     callback->onComplete();
+    //std::cout << callback << " called" << std::endl;
     delete callback;
+    //std::cout << callback << " deleted" << std::endl;
 }
 
 void ClientSampleUpdateQueue::removeSample(int modelSampleId) {
@@ -95,6 +98,7 @@ void ClientSampleUpdateQueue::scheduleForUpdate(int modelSampleId, ClientModelSa
   buf.addData(modelSampleId);
   buf.addString(nav);
   api->sendMessage(usd, MSG_updateModelSampleAsync, buf.getBytes(), buf.getSize());
+  //std::cout << callback << " Scheduled for update." << std::endl;
 
   samples[modelSampleId] = sample;
   callbacks[modelSampleId] = callback;
