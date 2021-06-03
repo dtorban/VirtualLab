@@ -33,9 +33,100 @@ void RunPCA(arma::mat& dataset,
 
 namespace vl {
 
+class DensityGrid {
+public:
+    DensityGrid(int width, int height) : width(width), height(height) {
+        totalSamples = 0;
+        grid = new int[width*height];
+        showGrid = new int[width*height];
+        clear();
+    }
+    ~DensityGrid() {
+        delete[] grid;
+        delete[] showGrid;
+    }
+
+    void clear() {
+        totalSamples = 0;
+        for (int f = 0; f < width*height; f++) {
+            grid[f] = 0;
+            showGrid[f] = 0;
+        }
+    }
+
+    void addSamplePoint(double x, double y, double* bounds) {
+        int xVal = 1.0*(x-bounds[0])*width/(bounds[2]-bounds[0]);
+        int yVal = 1.0*(y-bounds[1])*height/(bounds[3]-bounds[1]);
+        if (xVal < 0) {xVal = 0;}
+        if (yVal < 0) {yVal = 0;}
+        if (xVal >= width) {xVal = width-1;}
+        if (yVal >= height) {yVal = height-1;}
+        //std::cout << xVal << " " << yVal << std::endl;
+        grid[yVal*width + xVal]++;
+        totalSamples++;
+    }
+
+    void calculateShown(int totalShown) {
+        int leftToShow = totalShown;
+        for (int i = 0; i < width*height; i++) {
+            if (grid[i] > 0) {
+                showGrid[i]++;
+                leftToShow--;
+            }
+        }
+
+        for (int i = 0; i < width*height; i++) {
+            if (grid[i] > 0) {
+                showGrid[i] += std::round(1.0*leftToShow*grid[i]/totalSamples);
+            }
+        }
+        
+        /*for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                std::cout << grid[y*width + x] << " ";
+            }
+            std::cout << std::endl;
+        }
+        
+        std::cout << " totalSamples: " << totalSamples << std::endl;*/
+
+        /*int numShown = 0;
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                std::cout << showGrid[y*width + x] << " ";
+                numShown+=showGrid[y*width + x];
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << numShown << std::endl;*/
+    }
+
+    bool showSamplePoint(double x, double y, double* bounds) {
+        int xVal = 1.0*(x-bounds[0])*width/(bounds[2]-bounds[0]);
+        int yVal = 1.0*(y-bounds[1])*height/(bounds[3]-bounds[1]);
+        if (xVal < 0) {xVal = 0;}
+        if (yVal < 0) {yVal = 0;}
+        if (xVal >= width) {xVal = width-1;}
+        if (yVal >= height) {yVal = height-1;}
+        if (showGrid[yVal*width + xVal] > 0) {
+            showGrid[yVal*width + xVal]--;
+            return true;
+        }
+        return false;
+    }
+
+private:
+    int width;
+    int height;
+    int* grid;
+    int* showGrid;
+    int totalSamples;
+};
+
 class PCAModelSample : public IModelSample, public IDataConsumer {
 public:
-	PCAModelSample(const DataObject& params, PCAModel::SampleInfo& info) : params(params), callback(NULL), kmeans_calc(-1), prevColumnSize(0), info(info) {
+	PCAModelSample(const DataObject& params, PCAModel::SampleInfo& info) : params(params), callback(NULL), kmeans_calc(-1), prevColumnSize(0), info(info), densityGrid(30,30), zoomGrid(30,30) {
         data["pca"] = DataArray();
         data["bounds"] = DataArray();
         data["vdi"] = DataArray();
@@ -64,6 +155,8 @@ private:
     std::map<std::string, int> keyType;
     int prevColumnSize;
     PCAModel::SampleInfo& info;
+    DensityGrid densityGrid;
+    DensityGrid zoomGrid;
 #ifdef USE_MLPACK
     arma::Row<size_t> assignments;
     arma::mat centroids;
@@ -115,6 +208,8 @@ void PCAModelSample::update() {
         pca->clear();
         bound->clear();
         vdi->clear();
+        densityGrid.clear();
+        zoomGrid.clear();
 
 #ifdef USE_MLPACK
         if (cols.size() > 1 && (info.dataRows.size() > 2 || info.samplePtr.size() > 2)) {
@@ -219,8 +314,10 @@ void PCAModelSample::update() {
                             arma::mat B(2, indices.size());
                             
                             for (int i = 0; i < indices.size(); i++) {
-                                B(0,i) = A(0,indices[i]);
-                                B(1,i) = A(1,indices[i]);
+                                double x = A(0,indices[i]);
+                                double y = A(1,indices[i]);
+                                B(0,i) = x;
+                                B(1,i) = y;
                             }
 
                             //std::cout << "Calc KMeans" << std::endl;
@@ -246,6 +343,18 @@ void PCAModelSample::update() {
                 bool calcClosest = closest.size() == 0;
 
                 for (int f = 0; f < numRows; f++) {
+                    double x = A(0,f);
+                    double y = A(1,f);
+                    densityGrid.addSamplePoint(x,y,bounds);
+                    if (x >= zoomBounds[0] && y >= zoomBounds[1] && x <= zoomBounds[2] && y <= zoomBounds[3]) {
+                        zoomGrid.addSamplePoint(x,y,zoomBounds);
+                    }
+                }
+
+                densityGrid.calculateShown(2000);
+                zoomGrid.calculateShown(2000);
+
+                for (int f = numRows-1; f >= 0; f--) {
                     if (f % 1 == 0) {
                         
                         vl::DataObject obj;
@@ -287,7 +396,7 @@ void PCAModelSample::update() {
                             obj["cluster"] = DoubleDataValue(3);
                         }*/
 
-                        if (numRows - f <2000) {
+                        if (densityGrid.showSamplePoint(x, y, bounds) || zoomGrid.showSamplePoint(x, y, zoomBounds)) {
                             pca->push_back(obj);
                         }
                         //(bounds[2]-bounds[0])/2.0
