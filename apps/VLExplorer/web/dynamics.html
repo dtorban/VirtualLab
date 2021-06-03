@@ -59,7 +59,7 @@
 			}
 			#pca-chart2 {
 			  position: relative;
-			  width: 50%;
+			  width: 100%;
 			  height: 50%;
 			}
 			#pca-chart3 {
@@ -74,18 +74,27 @@
 			  text-align: right;
 			  /*right:-200px;*/
 		      z-index: 2;
-			  right: 0px;
-			  top  :0px;
+			  right: 15px;
+			  top  :40px;
 			  width: 200px;
 			  height: 70%;
 			  overflow-y: auto;
 			  overflow-x: auto;
-			  border: black;
-			  border-width: 0px;
+			  border: rgb(75, 74, 74);
+			  border-width: 1px;
 			  border-style: solid;
-			  background-color: rgba(128,128,128,0.9);
-			  visibility: hidden;
+			  background-color: rgba(200,200,200,0.9);
+			  visibility: visible;
 			  white-space: nowrap;
+			}
+			.settings-button {
+			  position:absolute;
+			  text-align: right;
+		      z-index: 3;
+			  right: 15px;
+			  top  :0px;
+			  width: 40px;
+			  height: 40px;
 			}
 			#runs {
 				position: relative;
@@ -236,20 +245,23 @@
 			<div id="navigation">
 				<div><input type="range" min="1" max="100" value="0" oninput="numClusters=+$(this).val(); console.log(numClusters);"></input></div>
 				<div id="pca-chart1">
-					<div class="pca-config"></div>
+					<input type="image" name="imgbtn" class="settings-button" src="images/applications-system.png" alt="Settings" onclick="$('#pca-config1').toggle();">
+					<div id="pca-config1" class="pca-config"></div>
 				</div>
 				<div id="pca-chart2">
-					<div class="pca-config"></div>
+					<input type="image" name="imgbtn" class="settings-button" src="images/applications-system.png" alt="Settings" onclick="$('#pca-config2').toggle();">
+					<div id="pca-config2" class="pca-config"></div>
 				</div>
 			</div>
 		</div>
 		<script src="js/dynamics.js"></script>
 		<script>
 			var scatterPlot = new ZoomableScatterplot("pca-chart1"); 
-			//var scatterPlot2 = new ZoomableScatterplot("pca-chart2"); 
+			var scatterPlot2 = new ZoomableScatterplot("pca-chart2"); 
 			var scatterPlot3 = new ZoomableScatterplot("pca-chart3", {top: 10, right: 10, bottom: 10, left: 10}); 
 			scatterPlot3.xAxis.style("visibility", "hidden")
 			scatterPlot3.yAxis.style("visibility", "hidden")
+			$('.pca-config').hide();
 		</script>
 	</body>
 </html>

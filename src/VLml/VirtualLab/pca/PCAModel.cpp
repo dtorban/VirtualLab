@@ -298,49 +298,7 @@ void PCAModelSample::update() {
                     }
                 }
 
-                if (clusterNum > 0) {
-                    int blah = numRows/100;
-                    if (kmeans_calc < blah) {
-                        std::vector<int> indices;
-                        for (int i = 0; i < numRows; i++) {
-                            double x = A(0,i);
-                            double y = A(1,i);
-                            if (x >= zoomBounds[0] && y >= zoomBounds[1] && x <= zoomBounds[2] && y <= zoomBounds[3]) {
-                                indices.push_back(i);
-                            }
-                        }
-
-                        if (indices.size() > 0) {
-                            arma::mat B(2, indices.size());
-                            
-                            for (int i = 0; i < indices.size(); i++) {
-                                double x = A(0,indices[i]);
-                                double y = A(1,indices[i]);
-                                B(0,i) = x;
-                                B(1,i) = y;
-                            }
-
-                            //std::cout << "Calc KMeans" << std::endl;
-                            kmeans_calc++;
-                            // The dataset we are clustering.
-                            //extern arma::mat data;
-                            // The number of clusters we are getting.
-                            //extern size_t clusters = 5;
-                            // The assignments will be stored in this vector.
-                            //arma::Row<size_t> assignments;
-                            // The centroids will be stored in this matrix.
-                            //arma::mat centroids;
-                            // Initialize with the default arguments.
-                            KMeans<> k;
-                            k.Cluster(B, clusterNum, assignments, centroids);
-                            closest.clear();
-                        }
-
-
-                    }
-                }
-
-                bool calcClosest = closest.size() == 0;
+                
 
                 for (int f = 0; f < numRows; f++) {
                     double x = A(0,f);
@@ -353,6 +311,9 @@ void PCAModelSample::update() {
 
                 densityGrid.calculateShown(2000);
                 zoomGrid.calculateShown(2000);
+
+
+                std::vector<int> zoomIndices;
 
                 for (int f = numRows-1; f >= 0; f--) {
                     if (f % 1 == 0) {
@@ -396,13 +357,17 @@ void PCAModelSample::update() {
                             obj["cluster"] = DoubleDataValue(3);
                         }*/
 
-                        if (densityGrid.showSamplePoint(x, y, bounds) || zoomGrid.showSamplePoint(x, y, zoomBounds)) {
+                        if (densityGrid.showSamplePoint(x, y, bounds)) {
                             pca->push_back(obj);
+                        }
+                        if (zoomGrid.showSamplePoint(x, y, zoomBounds)) {
+                            pca->push_back(obj);
+                            zoomIndices.push_back(f);
                         }
                         //(bounds[2]-bounds[0])/2.0
 
 
-                        if (calcClosest && centroids.size() == clusterNum*2) {    
+                        /*if (calcClosest && centroids.size() == clusterNum*2) {    
                             for (int i = 0; i < clusterNum; i++) {
                                 double dist = std::sqrt(std::pow(centroids(0,i)-x,2) + std::pow(centroids(1,i)-y,2));
                                 if (closest.size() < clusterNum) {
@@ -412,8 +377,75 @@ void PCAModelSample::update() {
                                     closest[i] = std::pair<double, int>(dist, f);
                                 }
                             }
+                        }*/
+                    }
+                }
+
+                if (clusterNum > 0) {
+                    int blah = numRows/100;
+                    if (kmeans_calc < blah) {
+                        for (int i = 0; i < numRows; i++) {
+                            double x = A(0,i);
+                            double y = A(1,i);
+                            /*if (x >= zoomBounds[0] && y >= zoomBounds[1] && x <= zoomBounds[2] && y <= zoomBounds[3]) {
+                                zoomIndices.push_back(i);
+                            }*/
+                        }
+
+                        if (zoomIndices.size() > 0) {
+                            arma::mat B(2, zoomIndices.size());
+                            
+                            for (int i = 0; i < zoomIndices.size(); i++) {
+                                double x = A(0,zoomIndices[i]);
+                                double y = A(1,zoomIndices[i]);
+                                B(0,i) = x;
+                                B(1,i) = y;
+                            }
+
+                            //std::cout << "Calc KMeans" << std::endl;
+                            kmeans_calc++;
+                            // The dataset we are clustering.
+                            //extern arma::mat data;
+                            // The number of clusters we are getting.
+                            //extern size_t clusters = 5;
+                            // The assignments will be stored in this vector.
+                            //arma::Row<size_t> assignments;
+                            // The centroids will be stored in this matrix.
+                            //arma::mat centroids;
+                            // Initialize with the default arguments.
+                            KMeans<> k;
+                            k.Cluster(B, clusterNum, assignments, centroids);
+                            closest.clear();
+                        }
+
+
+                    }
+                }
+
+                
+
+                bool calcClosest = closest.size() == 0;
+
+                for (int f = numRows-1; f >= 0; f--) {
+                //for (int f = 0; f < zoomIndices.size(); f++) {
+                       
+                    //double x = A(0,zoomIndices[f]);
+                    //double y = A(1,zoomIndices[f]);
+                    double x = A(0,f);
+                    double y = A(1,f);
+
+                    if (calcClosest && centroids.size() == clusterNum*2) {    
+                        for (int i = 0; i < clusterNum; i++) {
+                            double dist = std::sqrt(std::pow(centroids(0,i)-x,2) + std::pow(centroids(1,i)-y,2));
+                            if (closest.size() < clusterNum) {
+                                closest.push_back(std::pair<double, int>(dist, f));
+                            }
+                            else if(dist < closest[i].first) {
+                                closest[i] = std::pair<double, int>(dist, f);
+                            }
                         }
                     }
+                    
                 }
 
                 if (centroids.size() == clusterNum*2) {                   
