@@ -4,6 +4,7 @@
 #include "VirtualLab/IVirtualLabAPI.h"
 #include "VirtualLab/impl/TestModel.h"
 #include <algorithm>
+#include <mutex>
 
 namespace vl {
 
@@ -435,6 +436,11 @@ public:
             /*int t = sample->getNavigation()["t"].get<double>() + samplingSample->getParameters()["dt"].get<double>();
             sample->getNavigation()["t"].set<double>(t);
             sample->update(new UpdateCallback(samplingSample, sample));*/
+
+            std::unique_lock<std::mutex> lock(samplingSample->updateMutex);
+            std::cout << sample << " Update callbacks" << std::endl;
+            samplingSample->updateQueue.push_back(sample);
+            lock.unlock();
             samplingSample->update();
 		}
 
@@ -455,7 +461,6 @@ public:
     virtual DataObject& getNavigation() { return nav; }
     virtual const DataObject& getData() const { return data; }
     virtual void update() {
-        std::cout << "Update" << std::endl;
         if (callback) {
             callback->onComplete();
             delete callback;
@@ -470,16 +475,27 @@ public:
                 IModelSample* sample = model.create(params);
                 samples.push_back(sample);
                 sample->getNavigation()["t"].set<double>(params["start"].get<double>());
+                std::cout << sample << " Call update start" << std::endl;
                 sample->update(new UpdateCallback(this, sample));
             }
         }
         else {
-            for (int i = 0; i < samples.size(); i++) {
-                IModelSample* sample = samples[i];
+            std::unique_lock<std::mutex> lock(updateMutex);
+            std::vector<IModelSample*> currentQueue = updateQueue;
+            updateQueue.clear();
+            std::cout << "updateQueue cleared" << std::endl;
+            lock.unlock();
+
+            for (int i = 0; i < currentQueue.size(); i++) {
+                IModelSample* sample = currentQueue[i];
                 int t = sample->getNavigation()["t"].get<double>() + params["dt"].get<double>();
                 sample->getNavigation()["t"].set<double>(t);
+                std::cout << sample << " Call update" << std::endl;
                 sample->update(new UpdateCallback(this, sample));
+                std::cout << sample << " Update called" << std::endl;
             }
+
+            
         }
     }
 
@@ -490,6 +506,8 @@ private:
     DataObject data;
     IUpdateCallback* callback;
     std::vector<IModelSample*> samples;
+    std::vector<IModelSample*> updateQueue;
+    std::mutex updateMutex;
 };
 
 class SamplingModel : public IModel {
