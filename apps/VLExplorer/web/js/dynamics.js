@@ -322,6 +322,22 @@ function updateSample(sample, isPCA) {
     $("#nav").append(JSON.stringify(sample.nav));*/
 
     $("#data").append(JSON.stringify(sample.data));
+    if (sample.data.samples) {
+      for (var i = 0; i < sample.data.samples.length; i++) {
+        let s = sample.data.samples[i];
+        if (s.status == 0) {
+          $("#runs").append($('<div id="run-'+ i + '" class="run"><progress id="progress-'+i+'" value="0" max="100"> 0% </progress>' + JSON.stringify(s.details.params) + '</div>'));
+        }
+        if (s.status == 2) {
+          //$(".progress::-moz-progress-bar").style({background-color: blue;});
+          $("#progress-" + i+"::-moz-progress-bar").css("background-color", "red");
+          let prog = s.progress >= 1.0 ? 1 : s.progress;
+          //console.log($("#progress-" + i).val());
+          $("#progress-" + i).val(''+Math.floor(prog*100));
+          //$("#run-" + i).css("background-color",prog >= 1.0 ? "#27b35f" : "yellow");
+        }
+      }
+    }
     sample.nav.t = Math.floor(sample.nav.t)+10;
 
     //samples.push({id:sample.id, data:sample.data});
@@ -341,7 +357,7 @@ function updateSample(sample, isPCA) {
 function createSample() {
   if (currentParams) {
     createModelSample(currentParams);
-    $("#runs").append($('<div class="run">' + JSON.stringify(currentParams) + '</div>'));
+    //$("#runs").append($('<div class="run">' + JSON.stringify(currentParams) + '</div>'));
   }
 
 }

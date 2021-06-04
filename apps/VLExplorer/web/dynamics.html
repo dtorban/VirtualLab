@@ -171,26 +171,88 @@
 				border-style: solid;
 			  	overflow: auto;
 			}
+			#params {
+			  width: 300px;
+			}
 			progress {
 				background-color: #c0bdbd;
 				width: 30px;
 				margin-right: 10px;
 			}
-			progress::-webkit-progress-bar {
+			/*progress::-webkit-progress-bar {
 				background-color: #c0bdbd;
-			/* style rules */
 			}
 			progress::-webkit-progress-value {
 				background-color: #c0bdbd;
-			/* style rules */
 			}
 			progress::-moz-progress-bar {
-				background-color: #d1af15;
-			/* style rules */
+				background-color: #4fbd05;
 			}
-			#params {
-			  width: 300px;
+			*/
+
+			/*progress::-moz-progress-bar{
+				background-color: rgb(255, 153, 0);
 			}
+
+			progress::-webkit-progress-value{
+				background-color: rgb(255, 153, 0);
+			}
+
+			progress[value^="0"]::-webkit-progress-value,
+			progress[value^="1"]::-webkit-progress-value,
+			progress[value^="2"]::-webkit-progress-value,
+			progress[value^="3"]::-webkit-progress-value,
+			progress[value^="4"]::-webkit-progress-value{
+				background-color: rgb(255, 153, 0);
+			} 
+
+			progress[value^="0"]::-moz-progress-bar,
+			progress[value^="1"]::-moz-progress-bar,
+			progress[value^="2"]::-moz-progress-bar,
+			progress[value^="3"]::-moz-progress-bar,
+			progress[value^="4"]::-moz-progress-bar{
+				background-color: rgb(255, 153, 0);
+			} 
+
+			progress[value^="5"]::-webkit-progress-value
+			progress[value^="6"]::-webkit-progress-value,
+			progress[value^="7"]::-webkit-progress-value,
+			progress[value^="8"]::-webkit-progress-value,
+			progress[value^="9"]::-webkit-progress-value{
+				background-color: yellow;
+			} 
+
+			progress[value="100"]::-webkit-progress-value{
+				background-color: #4fbd05;
+			} 
+			
+			progress[value^="5"]::-moz-progress-bar,
+			progress[value^="6"]::-moz-progress-bar,
+			progress[value^="7"]::-moz-progress-bar,
+			progress[value^="8"]::-moz-progress-bar,
+			progress[value^="9"]::-moz-progress-bar{
+				background-color: yellow;
+			} 
+
+			progress[value="100"]::-webkit-progress-value{
+				background-color: #4fbd05;
+			} */
+			progress {
+				color: lightblue;
+			}
+
+			progress::-webkit-progress-value {
+				background: lightblue;
+			}
+
+			progress::-moz-progress-bar {
+				background: rgb(85, 150, 204);
+			}
+
+			progress::-webkit-progress-bar {
+				background: rgb(85, 150, 204);
+			}
+    </style>
 
 		</style>
 
@@ -227,6 +289,7 @@
 					<div class="run"><progress id="file" value="20" max="100"> 32% </progress>sdfdsf sdf dsfds fds f sdf ds fdss fds dsfsd fdsf ds</div-->
 				</div>
 			</div>
+			<div id="data"></div>
 			<div id="params"></div>
 		</div>
 		<div id="notification-bar">

@@ -429,7 +429,7 @@ class SamplingModelSample : public IModelSample {
 public:
     class UpdateCallback : public IUpdateCallback {
 	public:
-		UpdateCallback(SamplingModelSample* samplingSample, IModelSample* sample) : samplingSample(samplingSample), sample(sample) {}
+		UpdateCallback(SamplingModelSample* samplingSample, IModelSample* sample, int index) : samplingSample(samplingSample), sample(sample), index(index) {}
 		virtual ~UpdateCallback() {}
 
 		void onComplete() {
@@ -438,8 +438,17 @@ public:
             sample->update(new UpdateCallback(samplingSample, sample));*/
 
             std::unique_lock<std::mutex> lock(samplingSample->updateMutex);
-            std::cout << sample << " Update callbacks" << std::endl;
-            samplingSample->updateQueue.push_back(sample);
+            //std::cout << sample << " Update callbacks" << std::endl;
+            double t = sample->getNavigation()["t"].get<double>();
+            double progress = (t-samplingSample->start)/(samplingSample->end-samplingSample->start);
+            vl::Object& sampleData = (*samplingSample->sampleInfoArray)[index].get<vl::Object>();
+            sampleData["progress"].set<double>(progress);
+            int status = std::floor(sampleData["status"].get<double>());
+            if (status < 2) {
+                sampleData["status"].set<double>(2);
+            }
+
+            samplingSample->updateQueue.push_back(std::pair<IModelSample*, int>(sample, index));
             lock.unlock();
             samplingSample->update();
 		}
@@ -447,10 +456,18 @@ public:
 	private:
 		SamplingModelSample* samplingSample;
         IModelSample* sample;
+        int index;
 	};
 
 public:
-    SamplingModelSample(ModelProxy model, const DataObject& params) : model(model), params(params), callback(NULL) {}
+    SamplingModelSample(ModelProxy model, const DataObject& params) : model(model), params(params), callback(NULL) {
+        data["samples"] = DataArray();
+        sampleInfoArray = &(data["samples"].get<vl::Array>());
+        start = params["start"].get<double>();
+        end = params["end"].get<double>();
+        dt = params["dt"].get<double>();
+        nav["p"] = DoubleDataValue(0);
+    }
     virtual ~SamplingModelSample() {
         for (int i = 0; i < samples.size(); i++) {
             delete samples[i];
@@ -469,33 +486,58 @@ public:
     }
     virtual void update(IUpdateCallback* callback) {
         this->callback = callback;
+
         if (samples.size() == 0) {
             int numSamples = params["samples"].get<double>();
             for (int i = 0; i < numSamples; i++) {
                 IModelSample* sample = model.create(params);
+                DataObject obj;
+                obj["status"] = DoubleDataValue(0);
+                DataObject details;
+                details["params"] = sample->getParameters();
+                obj["details"] = details;
+                obj["progress"] = DoubleDataValue(0);
+                sampleInfoArray->push_back(obj);
                 samples.push_back(sample);
-                sample->getNavigation()["t"].set<double>(params["start"].get<double>());
-                std::cout << sample << " Call update start" << std::endl;
-                sample->update(new UpdateCallback(this, sample));
+                sample->getNavigation()["t"].set<double>(start-dt);
+                //std::cout << sample << " Call update start" << std::endl;
+                //sample->update(new UpdateCallback(this, sample, i));
+                updateQueue.push_back(std::pair<IModelSample*, int>(sample, i));
             }
+
+            callback->onComplete();
+            delete callback;
         }
         else {
             std::unique_lock<std::mutex> lock(updateMutex);
-            std::vector<IModelSample*> currentQueue = updateQueue;
+            for (int i = 0; i < samples.size(); i++) {
+                vl::Object& sampleData = (*sampleInfoArray)[i].get<vl::Object>();
+                int status = std::floor(sampleData["status"].get<double>());
+                if (status == 0) {
+                    sampleData["status"].set<double>(1);
+                    sampleData["details"] = DataObject();
+                }
+            }
+            std::vector< std::pair<IModelSample*, int> > currentQueue = updateQueue;
             updateQueue.clear();
-            std::cout << "updateQueue cleared" << std::endl;
+            //std::cout << "updateQueue cleared" << std::endl;
+
+            for (int i = 0; i < currentQueue.size(); i++) {
+                IModelSample* sample = currentQueue[i].first;
+                int index = currentQueue[i].second;
+                int t = sample->getNavigation()["t"].get<double>() + dt;
+                sample->getNavigation()["t"].set<double>(t);
+            }
+
             lock.unlock();
 
             for (int i = 0; i < currentQueue.size(); i++) {
-                IModelSample* sample = currentQueue[i];
-                int t = sample->getNavigation()["t"].get<double>() + params["dt"].get<double>();
-                sample->getNavigation()["t"].set<double>(t);
-                std::cout << sample << " Call update" << std::endl;
-                sample->update(new UpdateCallback(this, sample));
-                std::cout << sample << " Update called" << std::endl;
+                IModelSample* sample = currentQueue[i].first;
+                //std::cout << sample << " Call update" << std::endl;
+                sample->update(new UpdateCallback(this, sample, currentQueue[i].second));
+                //std::cout << sample << " Update called" << std::endl;
             }
 
-            
         }
     }
 
@@ -504,10 +546,14 @@ private:
     DataObject params;
     DataObject nav;
     DataObject data;
+    vl::Array* sampleInfoArray;
     IUpdateCallback* callback;
     std::vector<IModelSample*> samples;
-    std::vector<IModelSample*> updateQueue;
+    std::vector< std::pair<IModelSample*, int> > updateQueue;
     std::mutex updateMutex;
+    double start;
+    double end;
+    double dt;
 };
 
 class SamplingModel : public IModel {
@@ -518,7 +564,7 @@ public:
         helper.set("start", 10, 0, 6*3600);
         helper.set("end", 6*3600, 0, 10*3600);
         helper.set("dt", 10, 1, 3600);
-        helper.set("samples", 1, 1, 20);
+        helper.set("samples", 3, 1, 20);
     }
 
     virtual ~SamplingModel() {}
