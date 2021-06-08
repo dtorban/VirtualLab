@@ -330,7 +330,7 @@ function updateSample(sample, isPCA) {
         }
         if (s.status == 2) {
           //$(".progress::-moz-progress-bar").style({background-color: blue;});
-          $("#progress-" + i+"::-moz-progress-bar").css("background-color", "red");
+          //$("#progress-" + i+"::-moz-progress-bar").css("background-color", "red");
           let prog = s.progress >= 1.0 ? 1 : s.progress;
           //console.log($("#progress-" + i).val());
           $("#progress-" + i).val(''+Math.floor(prog*100));
