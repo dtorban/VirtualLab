@@ -326,7 +326,8 @@ function updateSample(sample, isPCA) {
       for (var i = 0; i < sample.data.samples.length; i++) {
         let s = sample.data.samples[i];
         if (s.status == 0) {
-          $("#runs").append($('<div id="run-'+ i + '" class="run"><progress id="progress-'+i+'" value="0" max="100"> 0% </progress>' + JSON.stringify(s.details.params) + '</div>'));
+          delete s.details.params[".metadata"];
+          $("#runs").append($('<div id="run-'+ i + '" class="run">run '+i+'<progress id="progress-'+i+'" value="0" max="100"> 0% </progress>' + JSON.stringify(s.details.params) + '</div>'));
         }
         if (s.status == 2) {
           //$(".progress::-moz-progress-bar").style({background-color: blue;});

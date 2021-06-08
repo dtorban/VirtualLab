@@ -399,9 +399,15 @@ public:
         return getMetaData<std::string>(param, "scale");
     }
 
-    double scale(const std::string&param, double val) {
+    double scale(const std::string& param, double val) {
         if (getScale(param) == "log") {
             return std::log(val);
+        }
+        return val;
+    }
+    double invScale(const std::string& param, double val) {
+        if (getScale(param) == "log") {
+            return std::exp(val);
         }
         return val;
     }
@@ -447,8 +453,15 @@ public:
             if (status < 2) {
                 sampleData["status"].set<double>(2);
             }
-
-            samplingSample->updateQueue.push_back(std::pair<IModelSample*, int>(sample, index));
+            if (progress >= 1.0) {
+                sampleData["status"].set<double>(3);
+                //TODO: delete sample
+                //delete samplingSample->samples[index];
+                samplingSample->createSample();
+            }
+            else {
+                samplingSample->updateQueue.push_back(std::pair<IModelSample*, int>(sample, index));
+            }
             lock.unlock();
             samplingSample->update();
 		}
@@ -484,25 +497,45 @@ public:
             callback = NULL;
         }
     }
+    virtual DataObject calculateParams(const DataObject& params) {
+        DataObject p = params;
+        ParameterHelper helper(&p);
+        for (vl::Object::iterator it = p.begin(); it != p.end(); it++) {
+            if (it->second.isType<double>()) {
+                std::string param = it->first;
+                double max = helper.scale(param, helper.getMax(param));
+                double min = helper.scale(param, helper.getMin(param));
+                double r = (double)std::rand() / (double)RAND_MAX;
+                double value = r*(max - min) + min;
+                value = helper.invScale(param, value);
+                p[param].set<double>(value);
+            }
+        }
+        return p;
+    }
+    virtual void createSample() {
+        int i = samples.size();
+        IModelSample* sample = model.create(calculateParams(model.getParameters()));
+        DataObject obj;
+        obj["status"] = DoubleDataValue(0);
+        DataObject details;
+        details["params"] = sample->getParameters();
+        obj["details"] = details;
+        obj["progress"] = DoubleDataValue(0);
+        sampleInfoArray->push_back(obj);
+        samples.push_back(sample);
+        sample->getNavigation()["t"].set<double>(start-dt);
+        //std::cout << sample << " Call update start" << std::endl;
+        //sample->update(new UpdateCallback(this, sample, i));
+        updateQueue.push_back(std::pair<IModelSample*, int>(sample, i));
+    }
     virtual void update(IUpdateCallback* callback) {
         this->callback = callback;
 
         if (samples.size() == 0) {
             int numSamples = params["samples"].get<double>();
             for (int i = 0; i < numSamples; i++) {
-                IModelSample* sample = model.create(params);
-                DataObject obj;
-                obj["status"] = DoubleDataValue(0);
-                DataObject details;
-                details["params"] = sample->getParameters();
-                obj["details"] = details;
-                obj["progress"] = DoubleDataValue(0);
-                sampleInfoArray->push_back(obj);
-                samples.push_back(sample);
-                sample->getNavigation()["t"].set<double>(start-dt);
-                //std::cout << sample << " Call update start" << std::endl;
-                //sample->update(new UpdateCallback(this, sample, i));
-                updateQueue.push_back(std::pair<IModelSample*, int>(sample, i));
+                createSample();
             }
 
             callback->onComplete();
@@ -562,9 +595,10 @@ public:
         params = model.getParameters();
         ParameterHelper helper(&params);
         helper.set("start", 10, 0, 6*3600);
-        helper.set("end", 6*3600, 0, 10*3600);
+        helper.set("end", 600, 0, 10*3600);
+        //helper.set("end", 6*3600, 0, 10*3600);
         helper.set("dt", 10, 1, 3600);
-        helper.set("samples", 3, 1, 20);
+        helper.set("samples", 8, 1, 20);
     }
 
     virtual ~SamplingModel() {}
