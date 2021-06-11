@@ -157,6 +157,17 @@ private:
     PCAModel::SampleInfo& info;
     DensityGrid densityGrid;
     DensityGrid zoomGrid;
+
+    struct PcaInfo {
+        PcaInfo(double x, double y) : x(x), y(y) {}
+        void setValue(double x, double y) {
+            this->x = this->x*0.95 + 0.05*x;
+            this->y = this->y*0.95 + 0.05*y;
+        }
+        double x, y;
+    };
+
+    std::vector<PcaInfo> averagePCA;
 #ifdef USE_MLPACK
     arma::Row<size_t> assignments;
     arma::mat centroids;
@@ -261,6 +272,19 @@ void PCAModelSample::update() {
                 
                 if (cols.size() != 2) { 
                     RunPCA<ExactSVDPolicy>(A, 2, true, 1.0);
+                }
+
+                for (int f = 0; f < numRows; f++) {
+                    double x = A(0,f);
+                    double y = A(1,f);
+                    if (averagePCA.size() <= f) {
+                        averagePCA.push_back(PcaInfo(x,y));
+                    }
+                    else {
+                        averagePCA[f].setValue(x,y);
+                    }
+                    A(0,f) = averagePCA[f].x;
+                    A(1,f) = averagePCA[f].y;
                 }
 
                 int clusterNum = this->params["clusters"].get<double>();

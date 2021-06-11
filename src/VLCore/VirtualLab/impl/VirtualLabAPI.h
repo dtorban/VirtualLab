@@ -592,7 +592,7 @@ private:
 class SamplingModel : public IModel {
 public:
     SamplingModel(const std::string& name, ModelProxy model) : name(name), model(model) {
-        params = model.getParameters();
+        params["model"] = model.getParameters();
         ParameterHelper helper(&params);
         helper.set("start", 10, 0, 6*3600);
         helper.set("end", 600, 0, 10*3600);

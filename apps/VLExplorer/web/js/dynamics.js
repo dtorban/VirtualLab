@@ -231,7 +231,7 @@ function updatePCA(sample, plot, calcSpatial) {
               .attr("fill", "#6495ED")
               .attr("stroke", "#6495ED")
               //.attr("stroke-opacity", "0.3")
-              .attr("stroke-width", "10")
+              .attr("stroke-width", "5")
 
             d3.select(this).selectAll("line")
               .attr('x2', function(d) {return (d.x-data.x)/200.0 + 50.0;})
