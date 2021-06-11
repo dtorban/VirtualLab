@@ -1,6 +1,6 @@
 function ZoomableScatterplot(container, margin = {top: 10, right: 30, bottom: 30, left: 60}) {
     this.bounds = [0,0,1,1];
-    this.colors = ['red','blue','green','yellow','orange','purple','black'];
+    this.colors = ['darkorange','blue','green','yellow','red','purple','black'];
     this.containerId = "#" + container;
     this.container = container;
 
@@ -110,13 +110,14 @@ ZoomableScatterplot.prototype.updateData = function(bounds, data, a, b, color) {
         .attr("r", 3)
         //.style("fill", "#61a3a9")
         .style("fill", function (d) { return self.colors[color(d)%self.colors.length];})
-        .style("opacity", 1.0)
+        .style("opacity", function (d) { return color(d) == 0 ? 1.0 : 0.5;});
 
     this.scatter
         .selectAll("circle")
         .attr('cx', function(d) {return self.zoomX(a(d))})
         .attr('cy', function(d) {return self.zoomY(b(d))})
-        .style("fill", function (d) { return self.colors[color(d)%self.colors.length];});
+        .style("fill", function (d) { return self.colors[color(d)%self.colors.length];})
+        .style("opacity", function (d) { return color(d) == 0 ? 1.0 : 0.5;});
 
     /*this.scatter
     .selectAll("circle")
@@ -161,7 +162,8 @@ ZoomableScatterplot.prototype.updateData = function(bounds, data, a, b, color) {
             .selectAll("circle")
             .attr('cx', function(d) {return newX(a(d))})
             .attr('cy', function(d) {return newY(b(d))})
-            .style("fill", function (d) { return self.colors[color(d)%self.colors.length];});
+            .style("fill", function (d) { return self.colors[color(d)%self.colors.length];})
+            .style("opacity", function (d) { return color(d) == 0 ? 1.0 : 0.5;});;
         }
 
 }

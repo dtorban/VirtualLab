@@ -168,6 +168,7 @@ private:
     };
 
     std::vector<PcaInfo> averagePCA;
+    std::vector<PcaInfo> averageBounds;
 #ifdef USE_MLPACK
     arma::Row<size_t> assignments;
     arma::mat centroids;
@@ -311,6 +312,19 @@ void PCAModelSample::update() {
                         if (bounds[3] < A(1,f)) { bounds[3] = A(1,f); } 
                     }
 
+                }
+
+                if (averageBounds.size() <= 2) {
+                    averageBounds.push_back(PcaInfo(bounds[0], bounds[1]));
+                    averageBounds.push_back(PcaInfo(bounds[2], bounds[3]));
+                }
+                else {
+                    averageBounds[0].setValue(bounds[0], bounds[1]);
+                    averageBounds[1].setValue(bounds[2], bounds[3]);
+                    bounds[0] = averageBounds[0].x;
+                    bounds[1] = averageBounds[0].y;
+                    bounds[2] = averageBounds[1].x;
+                    bounds[3] = averageBounds[1].y;
                 }
                 
                 for (int i = 0; i < 4; i++) {
@@ -479,7 +493,7 @@ void PCAModelSample::update() {
                             //obj["y"] = DoubleDataValue(centroids(1,f));
                             obj["x"] = DoubleDataValue(A(0,closest[f].second));
                             obj["y"] = DoubleDataValue(A(1,closest[f].second));
-                            obj["cluster"] = DoubleDataValue(0);
+                            obj["cluster"] = DoubleDataValue(0);//DoubleDataValue(0);
                             pca->push_back(obj);
 
                             vl::DataObject close;

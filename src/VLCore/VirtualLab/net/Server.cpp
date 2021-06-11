@@ -520,6 +520,7 @@ void Server::service() {
                 std::string nav;
                 reader.readString(nav);
                 IModelSample* sample = serverModelSamples[modelSampleId];
+                //std::cout << "Update sample on server " << sample << std::endl;
                 serializer.deserialize(nav, sample->getNavigation());
                 delete[] bytes;
 
@@ -544,7 +545,7 @@ void Server::service() {
                 int modelSampleId;
                 receiveData(sd, (unsigned char*)& modelSampleId, sizeof(int));
                 std::map<int, IModelSample*>::iterator it = serverModelSamples.find(modelSampleId);
-                std::cout << "Delete sample on server" << std::endl;
+                std::cout << "Delete sample on server " << it->second << std::endl;
                 delete it->second;
                 serverModelSamples.erase(it);
             }

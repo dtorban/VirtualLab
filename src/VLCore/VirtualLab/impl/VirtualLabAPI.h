@@ -479,6 +479,7 @@ public:
         start = params["start"].get<double>();
         end = params["end"].get<double>();
         dt = params["dt"].get<double>();
+        numSamples = params["samples"].get<double>();
         nav["p"] = DoubleDataValue(0);
     }
     virtual ~SamplingModelSample() {
@@ -499,10 +500,25 @@ public:
     }
     virtual DataObject calculateParams(const DataObject& params) {
         DataObject p = params;
-        ParameterHelper helper(&p);
-        for (vl::Object::iterator it = p.begin(); it != p.end(); it++) {
-            if (it->second.isType<double>()) {
-                std::string param = it->first;
+        if (samples.size() % (numSamples/2) == 0) {
+            ParameterHelper helper(&p);
+            for (vl::Object::iterator it = p.begin(); it != p.end(); it++) {
+                if (it->second.isType<double>()) {
+                    std::string param = it->first;
+                    double max = helper.scale(param, helper.getMax(param));
+                    double min = helper.scale(param, helper.getMin(param));
+                    double r = (double)std::rand() / (double)RAND_MAX;
+                    double value = r*(max - min) + min;
+                    value = helper.invScale(param, value);
+                    p[param].set<double>(value);
+                }
+            }
+        }
+        else {
+            p = samples[samples.size()-1]->getParameters();
+            ParameterHelper helper(&p);
+            {
+                std::string param = "substrate_k";
                 double max = helper.scale(param, helper.getMax(param));
                 double min = helper.scale(param, helper.getMin(param));
                 double r = (double)std::rand() / (double)RAND_MAX;
@@ -510,7 +526,17 @@ public:
                 value = helper.invScale(param, value);
                 p[param].set<double>(value);
             }
+            /*{
+                std::string param = "num";
+                double max = helper.scale(param, helper.getMax(param));
+                double min = helper.scale(param, helper.getMin(param));
+                double r = (double)std::rand() / (double)RAND_MAX;
+                double value = r*(max - min) + min;
+                value = helper.invScale(param, value);
+                p[param].set<double>(value);
+            }*/
         }
+
         return p;
     }
     virtual void createSample() {
@@ -533,7 +559,7 @@ public:
         this->callback = callback;
 
         if (samples.size() == 0) {
-            int numSamples = params["samples"].get<double>();
+            numSamples = params["samples"].get<double>();
             for (int i = 0; i < numSamples; i++) {
                 createSample();
             }
@@ -587,6 +613,7 @@ private:
     double start;
     double end;
     double dt;
+    int numSamples;
 };
 
 class SamplingModel : public IModel {
