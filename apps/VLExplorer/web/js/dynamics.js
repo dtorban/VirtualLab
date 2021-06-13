@@ -25,7 +25,7 @@ $( document ).ready(function() {
       });
     });
 
-    models[0].getParameters().then(function(params) {
+    /*models[0].getParameters().then(function(params) {
       params.params = 0;
       params.clusters = 0;
       models[0].create(params).then(function(sample) { 
@@ -34,7 +34,7 @@ $( document ).ready(function() {
         //sample.nav.t = 10.0;
         updatePCA(sample, scatterPlot2, false);
       });
-    });
+    });*/
 
       
     models[0].getParameters().then(function(params) {
@@ -122,6 +122,12 @@ function updatePCA(sample, plot, calcSpatial) {
             //});
 
     if (calcSpatial) {
+      var pccData = [];
+      for (var i = 0; i < sample.data.vdi.length; i++) {
+        pccData.push(sample.data.vdi[i].data);
+      }
+      pcc.updateData(pccData);
+
       var pcaY = sample.data.vdi.sort((a, b) => { return a.y > b.y;} );
       var sorted = [];
       var row = [];
@@ -177,6 +183,44 @@ function updatePCA(sample, plot, calcSpatial) {
           .attr("stroke-width", "3")
           .attr("fill", "red")*/
         //<circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" />
+
+/*
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+    <defs>
+        <style>
+            .cls-1{fill:#feb500;}
+        </style>
+        <filter id="solid-border2" width="130%" color-interpolation-filters="sRGB">
+            <feFlood flood-color="black" result="base"/>
+            <feGaussianBlur result="blur" in="SourceAlpha" stdDeviation="3"/>
+            <feComponentTransfer in="blur" result="threshold">
+              <feFuncA type="discrete" tableValues="0 1 1 1 1 1 1 1 1 1 1 1 1 1"/>
+            </feComponentTransfer>
+            <feBlend in="SourceGraphic" in2="threshold" mode="normal"/>
+        </filter>
+    </defs>
+    <g id="background" filter="url(#solid-border2)">
+        <polygon class="cls-1" points="64 13 6.5 107 121.5 107"/>
+    </g>
+</svg>
+*/
+
+        /*var filterDef = svg.append("defs");
+        var filter = filterDef.append("filter")
+                .attr("id", "solid-border2")
+                .attr("color-interpolation-filters", "sRGB")
+        filter.append("feFlood")
+                .attr("flood-color", "black")
+                .attr("result","base")
+       filter.append("feGaussianBlur")
+                .attr("flood-color", "black")
+                .attr("result","base");
+        filterMerge.append("feMergeNode")
+                .attr("in", "txtBackground");
+        filterMerge.append("feMergeNode")
+                .attr("in", "SourceGraphic");            
+        d3.selectAll(".xAxis&gt;.tick&gt;text")
+            .style("filter", "url(#textBackground)");*/
 
         svg.append("polyline")
           .attr("points", "")
