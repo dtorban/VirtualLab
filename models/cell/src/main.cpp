@@ -641,6 +641,15 @@ protected:
             data["vel"] = DoubleDataValue(0);
         }
 
+        DataObject obj;
+        obj["x"] = DoubleDataValue(data["x"].get<double>());
+        obj["y"] = DoubleDataValue(data["y"].get<double>());
+        path.get<vl::Array>().push_back(obj);
+        if (path.size() > 10) {
+            path.get<vl::Array>().erase(path.get<vl::Array>().begin());
+        }
+        data["path"] = path;
+
         prev = sample->getData();
         prevTime = time;
     }
@@ -650,6 +659,8 @@ private:
     double prevTime;
     DataObject prev;
     DataObject data;
+    vl::DataArray path;
+    
 };
 
 class VLApiConnector : public IVirtualLabAPI {

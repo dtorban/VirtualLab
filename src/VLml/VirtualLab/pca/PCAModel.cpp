@@ -126,7 +126,7 @@ private:
 
 class PCAModelSample : public IModelSample, public IDataConsumer {
 public:
-	PCAModelSample(const DataObject& params, PCAModel::SampleInfo& info) : params(params), callback(NULL), kmeans_calc(-1), prevColumnSize(0), info(info), densityGrid(30,30), zoomGrid(30,30) {
+	PCAModelSample(const DataObject& params, PCAModel::SampleInfo& info) : params(params), callback(NULL), kmeans_calc(true), prevColumnSize(0), info(info), densityGrid(30,30), zoomGrid(30,30) {
         data["pca"] = DataArray();
         data["bounds"] = DataArray();
         data["vdi"] = DataArray();
@@ -150,7 +150,7 @@ private:
     vl::Array* bound;
     vl::Array* vdi;
 	IUpdateCallback* callback;
-    int kmeans_calc;
+    bool kmeans_calc;
     DataObject keys;
     std::map<std::string, int> keyType;
     int prevColumnSize;
@@ -172,7 +172,7 @@ private:
 #ifdef USE_MLPACK
     arma::Row<size_t> assignments;
     arma::mat centroids;
-    std::vector< std::pair<double, int> > closest;
+    std::vector< std::vector< std::pair<double, int> > > closest;
 #endif
 };
 
@@ -192,6 +192,7 @@ void PCAModelSample::update() {
         double zoomK = zoom["k"].get<double>();
         double zoomX = zoom["x"].get<double>();
         double zoomY = zoom["y"].get<double>();
+        kmeans_calc = kmeans_calc || (zoom["u"].get<double>() > 0.000001);
         vl::Array zBounds = zoom["bounds"].get<vl::Array>();
         //std::cout << zoom["k"].get<double>() << std::endl;
         int params = 0;
@@ -213,7 +214,7 @@ void PCAModelSample::update() {
         //std::cout << numCols << std::endl;
 
         if (prevColumnSize != cols.size()) {
-            kmeans_calc = info.dataRows.size()/100-1;
+            kmeans_calc = true;//info.dataRows.size()/100-1;
         }
         prevColumnSize = cols.size();
 
@@ -420,8 +421,8 @@ void PCAModelSample::update() {
                 }
 
                 if (clusterNum > 0) {
-                    int blah = numRows/100;
-                    if (kmeans_calc < blah) {
+                    //int blah = numRows/100;
+                    if (kmeans_calc) {
                         for (int i = 0; i < numRows; i++) {
                             double x = A(0,i);
                             double y = A(1,i);
@@ -441,7 +442,8 @@ void PCAModelSample::update() {
                             }
 
                             //std::cout << "Calc KMeans" << std::endl;
-                            kmeans_calc++;
+                            //kmeans_calc++;
+                            kmeans_calc = false;
                             // The dataset we are clustering.
                             //extern arma::mat data;
                             // The number of clusters we are getting.
@@ -476,11 +478,21 @@ void PCAModelSample::update() {
                         for (int i = 0; i < clusterNum; i++) {
                             double dist = std::sqrt(std::pow(centroids(0,i)-x,2) + std::pow(centroids(1,i)-y,2));
                             if (closest.size() < clusterNum) {
-                                closest.push_back(std::pair<double, int>(dist, f));
+                                closest.push_back(std::vector< std::pair<double, int> >());
                             }
-                            else if(dist < closest[i].first) {
-                                closest[i] = std::pair<double, int>(dist, f);
+
+                            if (closest[i].size() < 10) {
+                                closest[i].push_back(std::pair<double, int>(dist, f));
                             }
+                            else {
+                                for (int j = 0; j < closest[i].size(); j++) {
+                                    if (closest[i][j].first > dist) {
+                                        closest[i].insert(closest[i].begin()+j, std::pair<double, int>(dist, f));
+                                        closest[i].erase(closest[i].begin()+closest[i].size() -1);
+                                        break;
+                                    }
+                                }
+                            } 
                         }
                     }
                     
@@ -491,20 +503,33 @@ void PCAModelSample::update() {
                             vl::DataObject obj;
                             //obj["x"] = DoubleDataValue(centroids(0,f));
                             //obj["y"] = DoubleDataValue(centroids(1,f));
-                            obj["x"] = DoubleDataValue(A(0,closest[f].second));
-                            obj["y"] = DoubleDataValue(A(1,closest[f].second));
+                            obj["x"] = DoubleDataValue(A(0,closest[f][0].second));
+                            obj["y"] = DoubleDataValue(A(1,closest[f][0].second));
                             obj["cluster"] = DoubleDataValue(0);//DoubleDataValue(0);
                             pca->push_back(obj);
 
-                            vl::DataObject close;
-                            close["id"] = DoubleDataValue(closest[f].second);
-                            close["centroid_id"] = DoubleDataValue(pca->size()-1);
-                            close["data"] = info.dataRows[closest[f].second];
-                            //close["x"] = DoubleDataValue(centroids(0,f));
-                            //close["y"] = DoubleDataValue(centroids(1,f));
-                            close["x"] = DoubleDataValue(A(0,closest[f].second));
-                            close["y"] = DoubleDataValue(A(1,closest[f].second));
-                            vdi->push_back(close);
+                            if (calcClosest) {
+                                vl::DataObject close;
+                                close["id"] = DoubleDataValue(closest[f][0].second);
+                                //close["centroid_id"] = DoubleDataValue(pca->size()-1);
+                                close["data"] = info.dataRows[closest[f][0].second];
+                                //close["x"] = DoubleDataValue(centroids(0,f));
+                                //close["y"] = DoubleDataValue(centroids(1,f));
+                                close["x"] = DoubleDataValue(A(0,closest[f][0].second));
+                                close["y"] = DoubleDataValue(A(1,closest[f][0].second));
+                                DataArray neighbors;
+                                for (int i = 0; i < closest[f].size(); i++) {
+                                    vl::DataObject n;
+                                    n["id"] = DoubleDataValue(closest[f][i].second);
+                                    n["data"] = info.dataRows[closest[f][i].second];
+                                    n["x"] = DoubleDataValue(A(0,closest[f][i].second));
+                                    n["y"] = DoubleDataValue(A(1,closest[f][i].second));
+                                    neighbors.get<vl::Array>().push_back(n);
+                                }
+                                close["n"] = neighbors;
+                                vdi->push_back(close);
+                            }
+                            
                     }
                 }
 

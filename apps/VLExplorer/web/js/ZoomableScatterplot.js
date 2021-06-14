@@ -5,6 +5,7 @@ function ZoomableScatterplot(container, margin = {top: 10, right: 30, bottom: 30
     this.container = container;
     
     this.overlays = [];
+    this.version = 0;
 
     // set the dimensions and margins of the graph
     this.margin = margin;
@@ -141,8 +142,7 @@ ZoomableScatterplot.prototype.updateData = function(bounds, initialData, a, b, c
 
     // A function that updates the chart when the user zoom and thus new boundaries are available
     function updateChart() {
-    
-        self.zoomTransform = {k:d3.event.transform.k, x: d3.event.transform.x, y: d3.event.transform.y};
+        self.zoomTransform = {k:d3.event.transform.k, x: d3.event.transform.x, y: d3.event.transform.y, u:1};
         self.zoomTransform.x = self.zoomTransform.x/(self.width);
         self.zoomTransform.y = -self.zoomTransform.y/(self.height);
         //console.log(self.zoomTransform, d3.event.transform.x, d3.event.transform.y, self.width, self.height);

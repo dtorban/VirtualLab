@@ -7,6 +7,7 @@ let pca = [];
 let numClusters = 25;
 var selected = -1;
 
+
 // This is the function that is called once the document is started.
 $( document ).ready(function() {
   api.getModels().then(function(models) {
@@ -57,6 +58,10 @@ function updatePCA(sample, plot, calcSpatial) {
     return;
   }
 
+  if (!sample.lastUpdateTime) {  
+    sample.lastUpdateTime = (new Date()).getTime();
+  }
+
   sample.update().then(function() {  
     if (!sample) {
       return;
@@ -92,6 +97,13 @@ function updatePCA(sample, plot, calcSpatial) {
       sample.nav.keys = sample.keys;
       sample.nav.zoom = plot.zoomTransform;
       sample.nav.clusters = numClusters;
+
+      var time = (new Date()).getTime();
+      console.log(time - sample.lastUpdateTime);
+      if (time - sample.lastUpdateTime > 10000) {
+        sample.nav.zoom.u = 1;
+        sample.lastUpdateTime = time;
+      }
       //console.log(plot.SVG.node());
       //plot.SVG.node().append('<div class="pca-config">'+JSON.stringify(sample.nav)+'</div>');
       
@@ -124,10 +136,12 @@ function updatePCA(sample, plot, calcSpatial) {
             
             //});
 
-    if (calcSpatial) {
+    if (calcSpatial && sample.data.vdi.length > 0) {
       var pccData = [];
       for (var i = 0; i < sample.data.vdi.length; i++) {
-        pccData.push(sample.data.vdi[i].data);
+        for (var j = 0; j < sample.data.vdi[i].n.length; j++) {
+          pccData.push(sample.data.vdi[i].n[j].data);
+        }
       }
       pcc.updateData(pccData);
 
@@ -242,19 +256,20 @@ function updatePCA(sample, plot, calcSpatial) {
 
           var data = sample.data.vdi[i].data;
           if (selected == i) {
+            console.log("update overlays");
             plot.updateOverlays([{x:sample.data.vdi[i].x, y:sample.data.vdi[i].y, cluster:4}]);
           }
-          d3.select(this)
+          /*d3.select(this)
             .on("mouseover", function() {
               selected = i;
-              //console.log(sample.data.vdi[i]);
+              console.log(sample.data.vdi[i]);
               plot.updateOverlays([{x:sample.data.vdi[i].x, y:sample.data.vdi[i].y, cluster:4}]);
             })
             .on("mouseout", function() {
               selected = -1;
               plot.updateOverlays([]);
               //console.log(sample.data.vdi[i]);
-            });
+            });*/
           if (data.m) {
             var circles = data.m;
             //circles.push({x:data.x, y:data.y});
@@ -288,16 +303,16 @@ function updatePCA(sample, plot, calcSpatial) {
               .append("line")
               .attr('x1', function(d) {return 50.0;})
               .attr('y1', function(d) {return 50.0;})
-              .attr('x2', function(d) {return (d.x-data.x)/200.0 + 50.0;})
-              .attr('y2', function(d) {return (d.y-data.y)/200.0 + 50.0;})
+              .attr('x2', function(d) {return (d.x-data.x)/300.0 + 50.0;})
+              .attr('y2', function(d) {return (d.y-data.y)/300.0 + 50.0;})
               .attr("fill", "#6495ED")
               .attr("stroke", "#6495ED")
               //.attr("stroke-opacity", "0.3")
               .attr("stroke-width", "5")
 
             d3.select(this).selectAll("line")
-              .attr('x2', function(d) {return (d.x-data.x)/200.0 + 50.0;})
-              .attr('y2', function(d) {return (d.y-data.y)/200.0 + 50.0;})
+              .attr('x2', function(d) {return (d.x-data.x)/300.0 + 50.0;})
+              .attr('y2', function(d) {return (d.y-data.y)/300.0 + 50.0;})
 
             if (data.path) {
               var pathStr = "";
@@ -312,7 +327,7 @@ function updatePCA(sample, plot, calcSpatial) {
                   pathStr += "M ";
                 }
 
-                pathStr += ((data.path[i].x - data.x)/200.0 + 50.0) + " " + ((data.path[i].y - data.y)/200.0 + 50.0);
+                pathStr += ((data.path[i].x - data.x)/300.0 + 50.0) + " " + ((data.path[i].y - data.y)/300.0 + 50.0);
                 //M 77.37731058932836 107.61176431474715, C 87.96090015905288 102.62191514688726, 99.19043000104266 100.64454096609593, 105.83112210354054 97.1569349587109, 110.27330060804007 93.8741870641478, 113.36429967827473 89.48077119046745, 103.1627423580935 92.5606056049644, 98.32838852259944 101.76081148527241, 94.33387126763085 109.07764749194875, 104.15876745058335 101.51363651264677, 106.01886726181364 103.69718526411118
               }
               //console.log(pathStr);
@@ -329,7 +344,7 @@ function updatePCA(sample, plot, calcSpatial) {
                 if (i != 0) {
                   pathStr += " ";
                 }
-                pathStr += ((data.path[i].x - data.x)/200.0 + 50.0) + " " + ((data.path[i].y - data.y)/200.0 + 50.0);
+                pathStr += ((data.path[i].x - data.x)/300.0 + 50.0) + " " + ((data.path[i].y - data.y)/300.0 + 50.0);
                 //M 77.37731058932836 107.61176431474715, C 87.96090015905288 102.62191514688726, 99.19043000104266 100.64454096609593, 105.83112210354054 97.1569349587109, 110.27330060804007 93.8741870641478, 113.36429967827473 89.48077119046745, 103.1627423580935 92.5606056049644, 98.32838852259944 101.76081148527241, 94.33387126763085 109.07764749194875, 104.15876745058335 101.51363651264677, 106.01886726181364 103.69718526411118
               }
               //console.log(pathStr);
@@ -359,6 +374,8 @@ function updatePCA(sample, plot, calcSpatial) {
     }
             
     updatePCA(sample, plot, calcSpatial);
+    
+    plot.zoomTransform.u = 0;
   })
 }
 
