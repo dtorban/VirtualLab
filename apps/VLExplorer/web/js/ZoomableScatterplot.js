@@ -3,6 +3,8 @@ function ZoomableScatterplot(container, margin = {top: 10, right: 30, bottom: 30
     this.colors = ['darkorange','blue','green','yellow','red','purple','black'];
     this.containerId = "#" + container;
     this.container = container;
+    
+    this.overlays = [];
 
     // set the dimensions and margins of the graph
     this.margin = margin;
@@ -73,8 +75,10 @@ ZoomableScatterplot.prototype.reset = function() {
         .call(this.zoom.transform, d3.zoomIdentity);
 }
 
-ZoomableScatterplot.prototype.updateData = function(bounds, data, a, b, color) {
+ZoomableScatterplot.prototype.updateData = function(bounds, initialData, a, b, color) {
     var self = this;
+
+    var data = initialData.concat(this.overlays);
 
     for (var i = 0; i < 4; i++) {
         if (this.bounds[i] != bounds[i]) {
@@ -107,17 +111,18 @@ ZoomableScatterplot.prototype.updateData = function(bounds, data, a, b, color) {
         .attr("cx", function (d) { return self.zoomX(a(d)); } )
         .attr("cy", function (d) { return self.zoomY(b(d)); } )
         //.attr("cy", function (d) { return y(d["Petal_Length"]); } )
-        .attr("r", 3)
+        .attr("r", function (d) { return color(d) == 4 ? 10 : 3;})
         //.style("fill", "#61a3a9")
         .style("fill", function (d) { return self.colors[color(d)%self.colors.length];})
-        .style("opacity", function (d) { return color(d) == 0 ? 1.0 : 0.3;});
+        .style("opacity", function (d) { return color(d) == 0 ? 1.0 : (color(d) == 4 ? 0.7 : 0.3);});
 
     this.scatter
         .selectAll("circle")
         .attr('cx', function(d) {return self.zoomX(a(d))})
         .attr('cy', function(d) {return self.zoomY(b(d))})
+        .attr("r", function (d) { return color(d) == 4 ? 10 : 3;})
         .style("fill", function (d) { return self.colors[color(d)%self.colors.length];})
-        .style("opacity", function (d) { return color(d) == 0 ? 1.0 : 0.3;});
+        .style("opacity", function (d) { return color(d) == 0 ? 1.0 : (color(d) == 4 ? 0.7 : 0.3);});
 
     /*this.scatter
     .selectAll("circle")
@@ -162,11 +167,17 @@ ZoomableScatterplot.prototype.updateData = function(bounds, data, a, b, color) {
             .selectAll("circle")
             .attr('cx', function(d) {return newX(a(d))})
             .attr('cy', function(d) {return newY(b(d))})
+            .attr("r", function (d) { return color(d) == 4 ? 10 : 3;})
             .style("fill", function (d) { return self.colors[color(d)%self.colors.length];})
-            .style("opacity", function (d) { return color(d) == 0 ? 1.0 : 0.3;});
+            .style("opacity", function (d) { return color(d) == 0 ? 1.0 : (color(d) == 4 ? 0.7 : 0.3);});
         }
 
 }
+
+ZoomableScatterplot.prototype.updateOverlays = function(data) {
+    this.overlays = data;
+}
+
  
 //Read the data
 /*d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv", function(data) {

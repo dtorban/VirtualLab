@@ -39,7 +39,7 @@ public:
 		//producerAPI.registerModel(new TestModel());
 		//producerAPI.registerModel(new ModelProxy(api->getModels()[0]));
 		compositeApi.registerModel(new PCAModel("PCA", &producerAPI));
-		compositeApi.registerModel(new SamplingModel("Sampling", producerAPI.getModels()[0]));
+		compositeApi.registerModel(new SamplingModel("Sampling", producerAPI.getModels()[2]));
 		compositeApi.addApi(producerAPI);
 		this->state.api = &compositeApi;
 		this->state.models = this->state.api->getModels();

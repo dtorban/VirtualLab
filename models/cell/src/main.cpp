@@ -65,7 +65,7 @@ public:
         data["fx"] = DoubleDataValue();
         data["fy"] = DoubleDataValue();
         data["actin"] = DoubleDataValue();
-        data["free_actin"] = DoubleDataValue();
+        //data["free_actin"] = DoubleDataValue();
         data["aflow"] = DoubleDataValue();
         data["m"] = DataArray();
         data["ev"] = DataObject();
@@ -78,7 +78,7 @@ public:
         fx = &data["fx"].get<double>();
         fy = &data["fy"].get<double>();
         actin = &data["actin"].get<double>();
-        free_actin = &data["free_actin"].get<double>();
+        //free_actin = &data["free_actin"].get<double>();
         aflow = &data["aflow"].get<double>();
         modules = &data["m"].get<vl::Array>();
         events = &data["ev"].get<Object>();
@@ -142,7 +142,7 @@ public:
         *fx = s->GetCell().GetForce().x;
         *fy = s->GetCell().GetForce().y;
         *actin = s->GetCell().GetFActin();
-        *free_actin = s->GetCell().GetFreeActin();
+        //*free_actin = s->GetCell().GetFreeActin();
         *aflow = s->GetCell().GetAFlow();
         *motors = s->GetCell().GetActiveMotors();
 
@@ -183,7 +183,7 @@ private:
     double* fx;
     double* fy;
     double* actin;
-    double* free_actin; 
+    //double* free_actin; 
     double* aflow;
     double* motors;
     vl::Array* modules;
@@ -595,6 +595,63 @@ private:
     DataObject params;
 };
 
+class CellAnalysis : public AsyncModelSampleDecorator {
+public:
+    CellAnalysis(IModelSample* sample) : AsyncModelSampleDecorator(sample), init(false) {
+        prevTime = getNavigation()["t"].get<double>();
+    }
+    virtual ~CellAnalysis() { }
+
+    const DataObject& getData() const { 
+        return data;
+    }
+
+protected:
+    double getDiff(const std::string& param, const DataObject& data, const DataObject& prev) {
+        return data[param].get<double>() - prev[param].get<double>();
+    }
+
+    void asyncUpdate() {
+        if (!init) {
+            prev = sample->getData();
+            init = true;
+        }
+        data = sample->getData();
+        double time = getNavigation()["t"].get<double>();
+        double dt = time-prevTime;
+
+        data["fmag"] = DoubleDataValue(std::sqrt(std::pow(data["fx"].get<double>(), 2) + std::pow(data["fy"].get<double>(), 2)));
+        //data = calcData;
+        
+        /*for (vl::Object::const_iterator it = calcData.begin(); it != calcData.end(); it++) {
+            if (it->second.isType<double>()) {
+                if (dt > 0.0000001) {
+                    data["d_"+ it->first] = DoubleDataValue((it->second.get<double>() - prev[it->first].get<double>())/dt);
+                }
+                else {
+                    data["d_"+ it->first] = DoubleDataValue(0);
+                }
+            }
+        }*/
+
+        if (dt > 0.0000001) {
+            data["vel"] = DoubleDataValue(std::sqrt(std::pow(getDiff("x", data, prev), 2) + std::pow(getDiff("y", data, prev), 2))/dt);
+        }
+        else {
+            data["vel"] = DoubleDataValue(0);
+        }
+
+        prev = sample->getData();
+        prevTime = time;
+    }
+
+private:
+    bool init;
+    double prevTime;
+    DataObject prev;
+    DataObject data;
+};
+
 class VLApiConnector : public IVirtualLabAPI {
 public:
     VLApiConnector(Server* server, int port) : server(server), port(port) {
@@ -633,10 +690,11 @@ int main(int argc, char* argv[]) {
         VLApiConnector api(&server, port);
         api.registerModel(new CellModel("Cell"));
         api.registerModel(new MovingAverageModel("Smooth Cell", new CellModel("Cell")));
+        api.registerModel(new TypedModelDecorator<CellAnalysis>("Cell Analysis", new CellModel("Cell")));
         //api.registerModel(new MovingAverageModel("Cell", new CellModel("Cell")));
-        api.registerModel(new NModel("N-Cell", new CellModel("Cell")));
+        //api.registerModel(new NModel("N-Cell", new CellModel("Cell")));
         //api.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
-        api.registerModel(new NModel("N-Cell-2", new MovingAverageModel("Moving-Average", new CellModel("Cell"))));
+        //api.registerModel(new NModel("N-Cell-2", new MovingAverageModel("Moving-Average", new CellModel("Cell"))));
         while(true) {
             server.service();
         }

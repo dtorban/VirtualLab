@@ -213,7 +213,7 @@ void PCAModelSample::update() {
         //std::cout << numCols << std::endl;
 
         if (prevColumnSize != cols.size()) {
-            kmeans_calc = -1;
+            kmeans_calc = info.dataRows.size()/100-1;
         }
         prevColumnSize = cols.size();
 
@@ -498,6 +498,7 @@ void PCAModelSample::update() {
 
                             vl::DataObject close;
                             close["id"] = DoubleDataValue(closest[f].second);
+                            close["centroid_id"] = DoubleDataValue(pca->size()-1);
                             close["data"] = info.dataRows[closest[f].second];
                             //close["x"] = DoubleDataValue(centroids(0,f));
                             //close["y"] = DoubleDataValue(centroids(1,f));

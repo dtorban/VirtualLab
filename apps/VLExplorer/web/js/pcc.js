@@ -33,7 +33,7 @@ PCChart.prototype.updateData = function(data) {
     var self = this;
 
     // Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
-	  dimensions = d3.keys(data[0]).filter(function(d) { return isNumber(data[0][d]); })
+	  dimensions = d3.keys(data[0]).filter(function(d) { return isNumber(data[0][d]) && d != "fx" && d != "fy" && d != "x" && d != "y"; })
 	
 	  // For each dimension, I build a linear scale. I store all in a y object
 	  for (i in dimensions) {

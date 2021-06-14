@@ -45,6 +45,44 @@ protected:
     IModelSample* sample;
 };
 
+
+class AsyncModelSampleDecorator : public ModelSampleDecorator {
+private:
+    class UpdateCallback : public IUpdateCallback {
+	public:
+		UpdateCallback(AsyncModelSampleDecorator* sample, IUpdateCallback* callback) : sample(sample), callback(callback) {}
+        virtual ~UpdateCallback() {
+            delete callback;
+        }
+
+		void onComplete() {
+			sample->asyncUpdate();
+            callback->onComplete();
+		}
+
+	private:
+		AsyncModelSampleDecorator* sample;
+        IUpdateCallback* callback;
+	};
+public:
+    AsyncModelSampleDecorator(IModelSample* sample) : ModelSampleDecorator(sample) {}
+    virtual ~AsyncModelSampleDecorator() {}
+
+    void update() {
+        ModelSampleDecorator::update();
+        asyncUpdate();
+    }
+
+    void update(IUpdateCallback* callback) {
+        return ModelSampleDecorator::update(new UpdateCallback(this, callback));
+    }
+
+protected:
+    virtual void asyncUpdate() {}
+};
+
+
+
 }
 
 #endif

@@ -500,7 +500,8 @@ public:
     }
     virtual DataObject calculateParams(const DataObject& params) {
         DataObject p = params;
-        if (samples.size() % (numSamples/2) == 0) {
+        //if (samples.size() % (numSamples/2) == 0) {
+        if (true) {
             ParameterHelper helper(&p);
             for (vl::Object::iterator it = p.begin(); it != p.end(); it++) {
                 if (it->second.isType<double>()) {

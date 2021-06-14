@@ -5,6 +5,7 @@ let currentModel = null;
 let currentParams = null;
 let pca = [];
 let numClusters = 25;
+var selected = -1;
 
 // This is the function that is called once the document is started.
 $( document ).ready(function() {
@@ -18,7 +19,7 @@ $( document ).ready(function() {
       params.data = 1;
       params.clusters = numClusters;
       models[0].create(params).then(function(sample) { 
-        sample.nav.keys = {x:0, y:0};
+        sample.nav.keys = {x:0, y:0, fx:0, fy:0};
         //sample.update();
         //sample.nav.t = 10.0;
         updatePCA(sample, scatterPlot, true);
@@ -111,11 +112,13 @@ function updatePCA(sample, plot, calcSpatial) {
     //000samples.push({id:sample.id, data:sample.data});
     //console.log(samples);
     $("#nav").append(JSON.stringify(sample.nav));
+    
+    plot.updateData(sample.data.bounds, sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return d.cluster;});
 
       			//Read the data
             //d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/iris.csv", function(data) {
               //updateData(data, "Sepal_Length", "Petal_Length");
-              plot.updateData(sample.data.bounds, sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return d.cluster;});
+              //plot.updateData(sample.data.bounds, sample.data.pca, function(d) {return d.x;}, function(d){return d.y;}, function(d){return d.cluster;});
               
               //updateData(scatterPlot, samples, function(d) {return d.data.x;}, function(d){return d.data.y;}, function(d){return 0;});
             
@@ -128,13 +131,13 @@ function updatePCA(sample, plot, calcSpatial) {
       }
       pcc.updateData(pccData);
 
-      var pcaY = sample.data.vdi.sort((a, b) => { return a.y > b.y;} );
+      var pcaY = sample.data.vdi.sort((a, b) => { return a.y < b.y;} );
       var sorted = [];
       var row = [];
       for (var i = 0; i <pcaY.length; i++) {
         row.push(pcaY[i]);
         if ((i+1) % 5 == 0) {
-          row = row.sort((a, b) => { return a.x < b.x;});
+          row = row.sort((a, b) => { return a.x > b.x;});
           for (var f = 0; f < row.length; f++) {
             sorted.push(row[f]);
           }
@@ -236,7 +239,22 @@ function updatePCA(sample, plot, calcSpatial) {
           .style("visiblity","hidden")
 
         d3.select("#spatial").selectAll("g").each(function(a, i) {
+
           var data = sample.data.vdi[i].data;
+          if (selected == i) {
+            plot.updateOverlays([{x:sample.data.vdi[i].x, y:sample.data.vdi[i].y, cluster:4}]);
+          }
+          d3.select(this)
+            .on("mouseover", function() {
+              selected = i;
+              //console.log(sample.data.vdi[i]);
+              plot.updateOverlays([{x:sample.data.vdi[i].x, y:sample.data.vdi[i].y, cluster:4}]);
+            })
+            .on("mouseout", function() {
+              selected = -1;
+              plot.updateOverlays([]);
+              //console.log(sample.data.vdi[i]);
+            });
           if (data.m) {
             var circles = data.m;
             //circles.push({x:data.x, y:data.y});
