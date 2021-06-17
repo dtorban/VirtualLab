@@ -18,6 +18,7 @@ ClientModelSample::ClientModelSample(NetInterface* api, SOCKET sd, SOCKET usd, i
 ClientModelSample::~ClientModelSample() {
     std::cout << "delete this craziness" << std::endl;
     updateQueue->removeSample(modelSampleId);
+    //std::cout << "Sample Nullified" << std::endl;
     api->sendMessage(sd, MSG_deleteModelSample, (const unsigned char*)&modelSampleId, sizeof(int));
 }
 
@@ -87,6 +88,9 @@ void ClientModelSample::resolveUpdate(ByteBufferReader& reader, IUpdateCallback*
 
 void ClientSampleUpdateQueue::removeSample(int modelSampleId) {
   std::unique_lock<std::mutex> lock(updateMutex);
+  if (callbacks[modelSampleId]) {
+    delete callbacks[modelSampleId];
+  }
   samples[modelSampleId] = NULL;
   callbacks[modelSampleId] = NULL;
 }
@@ -143,6 +147,7 @@ void ClientSampleUpdateQueue::resolveUpdate() {
   if (samples[sampleId] != NULL) {
     //std::cout << "Resolve " << sampleId << " " << callbacks[sampleId] << std::endl;
     samples[sampleId]->resolveUpdate(reader, callbacks[sampleId]);
+    callbacks[sampleId] = NULL;
   }
 
   waiting--;

@@ -3,6 +3,7 @@
 
 #include "VirtualLab/IModel.h"
 #include "VirtualLab/impl/VirtualLabAPI.h"
+#include <mutex>
 
 namespace vl {
 
@@ -21,6 +22,7 @@ public:
     IModelSample* create(const DataObject& params);
 
     virtual void consume(IModel& model, IModelSample& sample) {
+        std::unique_lock<std::mutex> lock(updateMutex);
         const DataObject& obj = sample.getData();
         const DataObject& nav = sample.getNavigation();
         const DataObject& params = sample.getParameters();
@@ -39,6 +41,16 @@ public:
 		}
 	}
 
+    virtual void removeConsumer(IDataConsumer* consumer) {
+        std::unique_lock<std::mutex> lock(updateMutex);
+        for (std::vector<IDataConsumer*>::iterator it = consumers.begin(); it != consumers.end(); it++) {
+            consumers.erase(it);
+            break;
+        }
+    }
+
+    std::mutex& getUpdateMutex() { return updateMutex; }
+
     struct SampleInfo {
         std::vector<DataObject> dataRows;
         std::vector<DataObject> navRows;
@@ -51,6 +63,7 @@ private:
 	DataObject params;
 	std::vector<IDataConsumer*> consumers;
     SampleInfo info;
+    std::mutex updateMutex;
 };
 
 /*class PCAModel : public IModel {

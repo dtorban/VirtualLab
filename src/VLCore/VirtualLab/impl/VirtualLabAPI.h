@@ -53,17 +53,11 @@ public:
 };
 
 
-class ProducerSample : public ModelSampleDecorator {
+class ProducerSample : public AsyncModelSampleDecorator {
 public:
-    ProducerSample(IModelSample* sample, IModel* model, IDataProducer* producer) : ModelSampleDecorator(sample), model(model), producer(producer) {}
+    ProducerSample(IModelSample* sample, IModel* model, IDataProducer* producer) : AsyncModelSampleDecorator(sample), model(model), producer(producer) {}
 
-    void update() {
-        ModelSampleDecorator::update();
-        producer->produce(*model, *sample);
-    }
-
-    void update(IUpdateCallback* callback) {
-        ModelSampleDecorator::update(callback);
+    void asyncUpdate() {
         producer->produce(*model, *sample);
     }
 

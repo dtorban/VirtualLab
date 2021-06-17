@@ -126,13 +126,18 @@ private:
 
 class PCAModelSample : public IModelSample, public IDataConsumer {
 public:
-	PCAModelSample(const DataObject& params, PCAModel::SampleInfo& info) : params(params), callback(NULL), kmeans_calc(true), prevColumnSize(0), info(info), densityGrid(30,30), zoomGrid(30,30) {
+	PCAModelSample(const DataObject& params, PCAModel::SampleInfo& info, PCAModel& model) : params(params), model(model), callback(NULL), kmeans_calc(true), prevColumnSize(0), info(info), densityGrid(30,30), zoomGrid(30,30) {
         data["pca"] = DataArray();
         data["bounds"] = DataArray();
         data["vdi"] = DataArray();
         pca = &data["pca"].get<vl::Array>();
         bound = &data["bounds"].get<vl::Array>();
         vdi = &data["vdi"].get<vl::Array>();
+    }
+    virtual ~PCAModelSample() {
+        std::cout << "Delete " << this << std::endl;
+        model.removeConsumer(this);
+        std::cout << "Delete remove " << this << std::endl;
     }
 
 	virtual const DataObject& getParameters() const { return params; }
@@ -157,6 +162,7 @@ private:
     PCAModel::SampleInfo& info;
     DensityGrid densityGrid;
     DensityGrid zoomGrid;
+    PCAModel& model;
 
     struct PcaInfo {
         PcaInfo(double x, double y) : x(x), y(y) {}
@@ -178,7 +184,7 @@ private:
 
 
 IModelSample* PCAModel::create(const DataObject& params) {
-		PCAModelSample* sample = new PCAModelSample(params, info);
+		PCAModelSample* sample = new PCAModelSample(params, info, *this);
 		consumers.push_back(sample);
 		return sample;
 }
@@ -551,6 +557,11 @@ void PCAModelSample::update(IUpdateCallback* callback) {
 }
 
 void PCAModelSample::consume(IModel& model, IModelSample& sample) {
+    if (!callback) {
+        return;
+    }
+
+    std::cout << "consume called " << this << std::endl;
 
     const DataObject& obj = sample.getData();
     const DataObject& nav = sample.getNavigation();
@@ -601,6 +612,7 @@ void PCAModelSample::consume(IModel& model, IModelSample& sample) {
     const Object& dataSetObj = obj.get<Object>();
 
 	update();
+    std::cout << "consume end " << this << std::endl;
 }
 
 }
