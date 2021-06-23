@@ -33,14 +33,14 @@ VLModel.prototype.getParameters = function() {
     let self = this;
     return this.api.sendCommand({command: "getParameters", index: this.index}, function(data) {
         self.params = data.params;
-        return self.params;
+        return JSON.parse(JSON.stringify(self.params));
     });
 };
 
 VLModel.prototype.create = function(params) {
     let self = this;
     return this.api.sendCommand({command: "createSample", index: this.index, params: params}, function(data) {
-        let sample = new VLModelSample(self.api, data.sampleId, self.params, data.nav);
+        let sample = new VLModelSample(self.api, data.sampleId, params, data.nav);
         return sample;
     });
 };
