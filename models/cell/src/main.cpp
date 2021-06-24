@@ -4,6 +4,7 @@
 #include "VirtualLab/net/Server.h"
 #include "VirtualLab/net/Client.h"
 #include "VirtualLab/util/JSONSerializer.h"
+#include "VirtualLab/impl/ExtendedModel.h"
 
 /*#include <mlpack/prereqs.hpp>
 #include <mlpack/methods/pca/pca.hpp>
@@ -663,6 +664,7 @@ private:
     
 };
 
+
 class VLApiConnector : public IVirtualLabAPI {
 public:
     VLApiConnector(Server* server, int port) : server(server), port(port) {
@@ -706,6 +708,13 @@ int main(int argc, char* argv[]) {
         //api.registerModel(new NModel("N-Cell", new CellModel("Cell")));
         //api.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
         //api.registerModel(new NModel("N-Cell-2", new MovingAverageModel("Moving-Average", new CellModel("Cell"))));
+        ExtendedModel* extendedModel = new ExtendedModel("Extended Cell", new CellModel("Cell"));
+        extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aflow"), "mean_aflow"));
+        extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("nm"), "mean_nm"));
+        extendedModel->addCalculatedValue(new MagnitudeValue(new KeyCalculation("fx"), new KeyCalculation("fx"), "fmag"));
+        extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("fmag"), "mean_traction"));
+        api.registerModel(extendedModel);
+
         while(true) {
             server.service();
         }
