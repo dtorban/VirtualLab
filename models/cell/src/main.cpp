@@ -5,6 +5,7 @@
 #include "VirtualLab/net/Client.h"
 #include "VirtualLab/util/JSONSerializer.h"
 #include "VirtualLab/impl/ExtendedModel.h"
+#include <gsl/gsl_fit.h>
 
 /*#include <mlpack/prereqs.hpp>
 #include <mlpack/methods/pca/pca.hpp>
@@ -693,6 +694,118 @@ private:
     int port;
 };
 
+class RandomMotilityCoefficentValue : public ICalculatedValue {
+public:
+    RandomMotilityCoefficentValue(IDoubleCalculation* xCalc, IDoubleCalculation* yCalc, IDoubleCalculation* timeCalc, const std::string& output) : xCalc(xCalc), yCalc(yCalc), timeCalc(timeCalc), output(output) {}
+    virtual ~RandomMotilityCoefficentValue() {
+        delete xCalc;
+        delete yCalc;
+        delete timeCalc;
+    }
+
+    struct State : public ICalculatedState {
+        std::vector<double> time;
+        std::vector<double> dt;
+        std::vector<double> x;
+        std::vector<double> y;
+        std::vector<double> msd;
+    };
+
+    ICalculatedState* createState() {
+        return new State();
+    }
+
+    virtual void update(IModelSample& sample, DataObject& data, ICalculatedState* state) const  {
+        State& updateState = *(static_cast<State*>(state));
+        double t = timeCalc->calculate(sample, sample.getNavigation());
+        double x = xCalc->calculate(sample, data)/1000;
+        double y = yCalc->calculate(sample, data)/1000;
+        updateState.time.push_back(t);
+        updateState.x.push_back(x);
+        updateState.y.push_back(y);
+
+        if (updateState.time.size()>1) {
+            //data_dt[i] = data_time[0+i+1]-data_time[0];
+            double dt = t-updateState.time[0];
+            updateState.dt.push_back(dt);
+
+            std::vector<double> data_dt;
+            std::vector<double> data_msd;
+            std::vector<double> data_msd_sem;
+            int analysis_count = updateState.time.size();
+
+            for (int i=0; i<analysis_count-2; i++) {
+                int num_diff = analysis_count-1-i;
+                data_dt.push_back(updateState.time[0+i+1]-updateState.time[0]);
+                data_msd.push_back(0);
+                std::vector<double> sqr_diff;
+                for (int j=0; j<num_diff; j++) {
+                    sqr_diff.push_back(std::pow(updateState.x[j+i+1]-updateState.x[j],2)+std::pow(updateState.y[j+i+1]-updateState.y[j],2));
+                    data_msd[i] += sqr_diff[j];
+                }
+                data_msd[i] = data_msd[i]/num_diff;
+                double std = 0;
+                for (int j=0; j<num_diff; j++) {
+                    std += std::pow(sqr_diff[j]-data_msd[i],2);
+                }
+                std = sqrt(std/(num_diff-1));
+                data_msd_sem.push_back(std/sqrt(num_diff));
+            }
+
+            double cov11, chisq;
+            int rmc_count = int((analysis_count-2)/2);
+            double data_rmc;
+            
+            gsl_fit_wmul (&data_dt[0], 1, &data_msd_sem[0], 1, &data_msd[0], 1, rmc_count,&data_rmc, &cov11,
+                        &chisq);
+            
+            data_rmc = data_rmc/4.0;
+
+            data[output] = DoubleDataValue(data_rmc);
+        }
+        else {
+            data[output] = DoubleDataValue(0);
+        }
+    }
+
+private:
+    IDoubleCalculation* xCalc;
+    IDoubleCalculation* yCalc;
+    IDoubleCalculation* timeCalc;
+    std::string output;
+};
+
+/*double sqr_diff[analysis_count];
+    int num_diff;
+    double std;
+    
+    for (int i=0; i<analysis_count-2; i++) {
+        num_diff = analysis_count-1-i;
+        data_dt[i] = data_time[0+i+1]-data_time[0];
+        data_msd[i]=0;
+        for (int j=0; j<num_diff; j++) {
+            sqr_diff[j] = SQR(data_cell_pos[j+i+1][0]-data_cell_pos[j][0])+SQR(data_cell_pos[j+i+1][1]-data_cell_pos[j][1]);
+            data_msd[i] += sqr_diff[j];
+        }
+        data_msd[i] = data_msd[i]/num_diff;
+        std = 0;
+        for (int j=0; j<num_diff; j++) {
+            std += SQR(sqr_diff[j]-data_msd[i]);
+        }
+        std = sqrt(std/(num_diff-1));
+        data_msd_sem[i] = std/sqrt(num_diff);
+    }
+    
+    double cov11, chisq;
+    int rmc_count = int((analysis_count-2)/2);
+    
+    gsl_fit_wmul (data_dt, 1, data_msd_sem, 1, data_msd, 1, rmc_count,&data_rmc, &cov11,
+                  &chisq);
+    
+    data_rmc = data_rmc/4.0;
+    //end//
+*/
+
 int main(int argc, char* argv[]) {
     std::cout << "Usage: CellModel <port>" << std::endl;
 
@@ -711,8 +824,9 @@ int main(int argc, char* argv[]) {
         ExtendedModel* extendedModel = new ExtendedModel("Extended Cell", new CellModel("Cell"));
         extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aflow"), "mean_aflow"));
         extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("nm"), "mean_nm"));
-        extendedModel->addCalculatedValue(new MagnitudeValue(new KeyCalculation("fx"), new KeyCalculation("fx"), "fmag"));
+        extendedModel->addCalculatedValue(new SimpleCalculatedValue(new MagnitudeCalculation(new KeyCalculation("fx"), new KeyCalculation("fx")), "fmag"));
         extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("fmag"), "mean_traction"));
+        extendedModel->addCalculatedValue(new RandomMotilityCoefficentValue(new KeyCalculation("x"),new KeyCalculation("y"),new KeyCalculation("t"), "rmc"));
         api.registerModel(extendedModel);
 
         while(true) {

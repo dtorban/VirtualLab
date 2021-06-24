@@ -16,6 +16,7 @@
 		<script src="js/DynamicLineChart.js"></script>
 	</head>
 	<body>
+    <input id="sampleCreate" type="button" value="Create Sample" onclick="createNewSample()">
     <div id="my_dataviz" class="lineChart"></div>
     <div id="my_dataviz2" class="lineChart"></div>
     <div id="my_dataviz3" class="lineChart"></div>
@@ -23,29 +24,30 @@
 
 	<script>
         var samples = [];
+        var modelList = null;
+        var currentNum = 0;
 
         var api = new VLApi();
         $( document ).ready(function() {
 
-
-        var lineChart1 = new DynamicLineChart("my_dataviz");
           api.getModels().then(function(models) {
             console.log(models);
-            let model = models[5];
-            createSample(model, "a", 0.1).then( function() {
-              createSample(model, "a", 1)
+            modelList = models;
+            /*let model = models[5];
+            createSample(model, "a", 0.1, 0).then( function() {
+              createSample(model, "a", 1, 0)
             .then( function() {
-              createSample(model, "a", 10)
+              createSample(model, "a", 10, 0)
             .then( function() {
-              createSample(model, "a", 300)
+              createSample(model, "a", 300, 0)
             .then( function() {
-              createSample(model, "b", 0.2)
+              createSample(model, "b", 0.1, 1)
             .then( function() {
-              createSample(model, "b", 1.1)
+              createSample(model, "b", 1, 1)
             .then( function() {
-              createSample(model, "b", 10.1)
+              createSample(model, "b", 10, 1)
             .then( function() {
-              createSample(model, "b", 299.9);
+              createSample(model, "b", 300, 1);
             })})})})})})})/**/
             
             /*createSample(model, "a", 20);
@@ -57,6 +59,21 @@
           });
         });
 
+        function createNewSample() {
+          console.log(modelList);
+          if (modelList) {
+            let model = modelList[5];
+            createSample(model, "a"+currentNum, 0.1, currentNum).then( function() {
+                createSample(model, "a"+currentNum, 1, currentNum)
+              .then( function() {
+                createSample(model, "a"+currentNum, 10, currentNum)
+              .then( function() {
+                createSample(model, "a"+currentNum, 300, currentNum)
+                currentNum++;
+              })})});
+          }
+        }
+
         function updateSample(sample) {
           sample.update().then(function(data) {
               sample.nav.t += 10.0;
@@ -64,19 +81,20 @@
               updateSample(sample);
               lineChart1.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;});
               lineChart2.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;});
-              lineChart3.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_nm;});
+              lineChart3.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;});
           });
         }
 
-        function createSample(model, name, k) {   
+        function createSample(model, name, k, num) {   
           return new Promise(function(resolve, reject) {       
             model.getParameters().then(function(params) {
                 console.log("params", name, k);
                 params.substrate_k = k;
+                params.num = num;
                 model.create(params).then(function(sample) { 
                     console.log("samples", name, k);
                     sample.name = name;
-                    sample.nav.t = 10.0;
+                    sample.nav.t = 30.0;
                     samples.push(sample);
                     resolve();
                     updateSample(sample);

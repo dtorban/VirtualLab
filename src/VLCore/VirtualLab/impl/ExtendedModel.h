@@ -100,6 +100,21 @@ private:
     std::string key;
 };
 
+class MagnitudeCalculation : public IDoubleCalculation {
+public:
+    MagnitudeCalculation(IDoubleCalculation* a, IDoubleCalculation* b) : a(a), b(b) {}
+    virtual ~MagnitudeCalculation() {
+        delete a;
+        delete b;
+    }
+    virtual double calculate(const IModelSample& sample, const DataObject& data) const {
+        return std::sqrt(std::pow(a->calculate(sample, data), 2) + std::pow(b->calculate(sample, data), 2));
+    }
+
+private:
+    IDoubleCalculation* a, *b;
+};
+
 
 class MeanValue : public ICalculatedValue {
 public:
@@ -130,12 +145,11 @@ private:
     std::string output;
 };
 
-class MagnitudeValue : public ICalculatedValue {
+class SimpleCalculatedValue : public ICalculatedValue {
 public:
-    MagnitudeValue(IDoubleCalculation* a, IDoubleCalculation* b, const std::string& output) : a(a), b(b), output(output) {}
-    virtual ~MagnitudeValue() {
-        delete a;
-        delete b;
+    SimpleCalculatedValue(IDoubleCalculation* calc, const std::string& output) : calc(calc), output(output) {}
+    virtual ~SimpleCalculatedValue() {
+        delete calc;
     }
 
     ICalculatedState* createState() {
@@ -143,11 +157,11 @@ public:
     }
 
     virtual void update(IModelSample& sample, DataObject& data, ICalculatedState* state) const  {
-        data[output] = DoubleDataValue(std::sqrt(std::pow(a->calculate(sample, data), 2) + std::pow(b->calculate(sample, data), 2)));
+        data[output] = DoubleDataValue(calc->calculate(sample, data));
     }
 
 private:
-    IDoubleCalculation* a, *b;
+    IDoubleCalculation* calc;
     std::string output;
 };
 
