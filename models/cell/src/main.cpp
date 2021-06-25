@@ -66,6 +66,7 @@ public:
         data["en"] = DoubleDataValue();
         data["fx"] = DoubleDataValue();
         data["fy"] = DoubleDataValue();
+        data["f"] = DoubleDataValue();
         data["actin"] = DoubleDataValue();
         //data["free_actin"] = DoubleDataValue();
         data["aflow"] = DoubleDataValue();
@@ -79,6 +80,7 @@ public:
         engageNum = &data["en"].get<double>();
         fx = &data["fx"].get<double>();
         fy = &data["fy"].get<double>();
+        force = &data["f"].get<double>();
         actin = &data["actin"].get<double>();
         //free_actin = &data["free_actin"].get<double>();
         aflow = &data["aflow"].get<double>();
@@ -147,6 +149,7 @@ public:
         //*free_actin = s->GetCell().GetFreeActin();
         *aflow = s->GetCell().GetAFlow();
         *motors = s->GetCell().GetActiveMotors();
+        *force = s->GetCell().GetForceTotal();
 
         /*if (30.0 == nav["t"].get<double>()) {
             //ByteBufferWriter writer;
@@ -184,6 +187,7 @@ private:
     double* engageNum;
     double* fx;
     double* fy;
+    double* force;
     double* actin;
     //double* free_actin; 
     double* aflow;
@@ -717,7 +721,7 @@ public:
 
     virtual void update(IModelSample& sample, DataObject& data, ICalculatedState* state) const  {
         State& updateState = *(static_cast<State*>(state));
-        double t = timeCalc->calculate(sample, sample.getNavigation());
+        double t = timeCalc->calculate(sample, sample.getNavigation())/60.0;
         double x = xCalc->calculate(sample, data)/1000;
         double y = yCalc->calculate(sample, data)/1000;
         updateState.time.push_back(t);
@@ -825,7 +829,7 @@ int main(int argc, char* argv[]) {
         extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aflow"), "mean_aflow"));
         extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("nm"), "mean_nm"));
         extendedModel->addCalculatedValue(new SimpleCalculatedValue(new MagnitudeCalculation(new KeyCalculation("fx"), new KeyCalculation("fx")), "fmag"));
-        extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("fmag"), "mean_traction"));
+        extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("f"), "mean_traction"));
         extendedModel->addCalculatedValue(new RandomMotilityCoefficentValue(new KeyCalculation("x"),new KeyCalculation("y"),new KeyCalculation("t"), "rmc"));
         api.registerModel(extendedModel);
 

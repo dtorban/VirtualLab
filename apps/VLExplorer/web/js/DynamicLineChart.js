@@ -68,7 +68,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey) {
         .exit()
         .remove()
 
-      console.log(sumstat);
+      //console.log(sumstat);
 
       this.svg.selectAll(".line")
           .data(sumstat)

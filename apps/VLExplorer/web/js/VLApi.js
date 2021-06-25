@@ -109,5 +109,14 @@ VLApi.prototype.sendCommand = function(cmd, calcVal) {
     return promise;
 };
 
-
+function getParamMetaData(params, param, key, defaultVal) {
+    let metadata = params[".metadata"];
+    if (metadata && metadata[param]) {
+      metadata = metadata[param];
+      return metadata[key];
+    }
+    else {
+      return defaultVal;
+    }
+}
 

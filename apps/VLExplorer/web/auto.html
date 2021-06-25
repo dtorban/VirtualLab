@@ -33,29 +33,6 @@
           api.getModels().then(function(models) {
             console.log(models);
             modelList = models;
-            /*let model = models[5];
-            createSample(model, "a", 0.1, 0).then( function() {
-              createSample(model, "a", 1, 0)
-            .then( function() {
-              createSample(model, "a", 10, 0)
-            .then( function() {
-              createSample(model, "a", 300, 0)
-            .then( function() {
-              createSample(model, "b", 0.1, 1)
-            .then( function() {
-              createSample(model, "b", 1, 1)
-            .then( function() {
-              createSample(model, "b", 10, 1)
-            .then( function() {
-              createSample(model, "b", 300, 1);
-            })})})})})})})/**/
-            
-            /*createSample(model, "a", 20);
-            createSample(model, "a", 30);
-            createSample(model, "b", 1.1);
-            createSample(model, "b", 9.9);
-            createSample(model, "b", 19.9);
-            createSample(model, "b", 29.9);*/
           });
         });
 
@@ -63,21 +40,64 @@
           console.log(modelList);
           if (modelList) {
             let model = modelList[5];
-            createSample(model, "a"+currentNum, 0.1, currentNum).then( function() {
-                createSample(model, "a"+currentNum, 1, currentNum)
-              .then( function() {
-                createSample(model, "a"+currentNum, 10, currentNum)
-              .then( function() {
-                createSample(model, "a"+currentNum, 300, currentNum)
-                currentNum++;
-              })})});
+            model.getParameters().then(function(params) {
+              for (var key in params) {
+                if (!(typeof params[key] === 'object')) {
+                  let scale = function(val) {
+                    if (getParamMetaData(params, key, "scale", "linear") == "log") {
+                      return Math.log(val);
+                    }
+                    else {
+                      return val;
+                    }
+                  };
+                  let inv_scale = function(val) {
+                    if (getParamMetaData(params, key, "scale", "linear") == "log") {
+                      return Math.exp(val);
+                    }
+                    else {
+                      return val;
+                    }
+                  };
+                  var val = scale(params[key]);
+                  let min = scale(getParamMetaData(params, key, "min", val));
+                  let max = scale(getParamMetaData(params, key, "max", val));
+                  //val = Math.random()*(max - min) + min;
+                  val = (Math.random()*0.1-0.05)*(max - min) + val;
+                  params[key] = inv_scale(val);
+                }
+              }
+              //params.cpool = 80;
+              /*
+              0.1
+0.22269585080133
+0.495934419641283
+1.1044253752368
+2.45950948584936
+5.47722557505166
+12.1975540946693
+27.1634468680764
+60.49186910983
+134.712882579763
+300
+*/
+              createSample(model, "a"+currentNum, params, 0.1, currentNum).then( function() {
+                  createSample(model, "a"+currentNum, params, 1, currentNum)
+                .then( function() {
+                  createSample(model, "a"+currentNum, params, 10, currentNum)
+                .then( function() {
+                  createSample(model, "a"+currentNum, params, 300, currentNum)
+                  currentNum++;
+                })})});
+            });
           }
         }
 
         function updateSample(sample) {
           sample.update().then(function(data) {
-              sample.nav.t += 10.0;
-              console.log(sample.data);
+              sample.nav.t += 10.0;//10.0*60;
+              //sample.nav.t += 10.0*60;
+              console.log(sample.data.substrate_k, sample.nav.t);
               updateSample(sample);
               lineChart1.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;});
               lineChart2.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;});
@@ -85,28 +105,26 @@
           });
         }
 
-        function createSample(model, name, k, num) {   
+        function createSample(model, name, params, k, num) {   
           return new Promise(function(resolve, reject) {       
-            model.getParameters().then(function(params) {
-                console.log("params", name, k);
-                params.substrate_k = k;
-                params.num = num;
-                model.create(params).then(function(sample) { 
-                    console.log("samples", name, k);
+                var p = JSON.parse(JSON.stringify(params));
+                p.substrate_k = k;
+                p.num = num;
+                model.create(p).then(function(sample) { 
+                    //console.log("samples", name, k);
                     sample.name = name;
-                    sample.nav.t = 30.0;
+                    sample.nav.t = 10;//3600.0;
+                    //sample.nav.t = 3600.0;
                     samples.push(sample);
                     resolve();
                     updateSample(sample);
                 });
-            });
           });
         }
 
         var lineChart1 = new DynamicLineChart("my_dataviz");
         var lineChart2 = new DynamicLineChart("my_dataviz2");
         var lineChart3 = new DynamicLineChart("my_dataviz3");
-        console.log(lineChart1);
         
         </script>
 </html>
