@@ -39,7 +39,8 @@
         function createNewSample() {
           console.log(modelList);
           if (modelList) {
-            let model = modelList[4];
+            let model = modelList[3];//cell
+            //let model = modelList[4];//nmodel
             model.getParameters().then(function(params) {
               for (var key in params) {
                 if (!(typeof params[key] === 'object')) {
@@ -64,10 +65,10 @@
                   let max = scale(getParamMetaData(params, key, "max", val));
                   //val = Math.random()*(max - min) + min;
                   val = (Math.random()*0.1-0.05)*(max - min) + val;
-                  //params[key] = inv_scale(val);
+                  params[key] = inv_scale(val);
                 }
               }
-              params.cpool = 80;
+              //params.cpool = 80;
               /*
               0.1
 0.22269585080133
@@ -110,7 +111,7 @@
               }
               lineChart1.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;});
               lineChart2.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;});
-              lineChart3.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_rmc;});
+              lineChart3.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;});
           });
         }
 
@@ -122,8 +123,8 @@
                 model.create(p).then(function(sample) { 
                     //console.log("samples", name, k);
                     sample.name = name;
-                    sample.nav.t = 10;//3600.0;
-                    //sample.nav.t = 3600.0;
+                    //sample.nav.t = 10;//3600.0;
+                    sample.nav.t = 3600.0;
                     samples.push(sample);
                     resolve();
                     updateSample(sample);

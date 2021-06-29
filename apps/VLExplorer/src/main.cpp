@@ -224,11 +224,11 @@ int main(int argc, char**argv) {
 	IVirtualLabAPI* api;
 
 	Client client;
-	api = &client;
-	ModelProxy cell = api->getModels()[0];
-	ModelProxy smothedCell = api->getModels()[1];
-	api->registerModel(new TypedModelDecorator<ModifiedSample>("Modified Cell", &cell));
-	api->registerModel(new TypedModelDecorator<ModifiedSample>("Modified Smooth Cell", &smothedCell));
+	api = new LoadBalancedAPI(&client);
+	//ModelProxy cell = api->getModels()[0];
+	//ModelProxy smothedCell = api->getModels()[1];
+	//api->registerModel(new TypedModelDecorator<ModifiedSample>("Modified Cell", &cell));
+	//api->registerModel(new TypedModelDecorator<ModifiedSample>("Modified Smooth Cell", &smothedCell));
 	api->registerModel(new TestModel("Test"));
 
 	/*ProducerAPI producerAPI(client);
