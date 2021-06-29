@@ -681,6 +681,26 @@ private:
     int count;
 };
 
+class RandomBinSampler : public IModelSampler {
+public:
+    RandomBinSampler(const std::string& param, int resolution) : param(param), resolution(resolution), count(0) {}
+    void sample(DataObject& params) {
+        ParameterHelper helper(params);
+        double max = helper.scale(param, helper.getMax(param));
+        double min = helper.scale(param, helper.getMin(param));
+        double binSize = (max-min)/resolution;
+        double r = (double)std::rand() / (double)RAND_MAX;
+        double val = min + binSize*(count%resolution) + binSize*r;
+        val = helper.invScale(param, val);
+        params[param].set<double>(val);
+        count++;
+    }
+private:
+    std::string param;
+    int resolution;
+    int count;
+};
+
 class RandomSampler : public IModelSampler {
 public:
     RandomSampler(const std::string& param) : param(param) {}

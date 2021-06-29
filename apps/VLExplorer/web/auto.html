@@ -65,10 +65,10 @@
                   let max = scale(getParamMetaData(params, key, "max", val));
                   //val = Math.random()*(max - min) + min;
                   val = (Math.random()*0.1-0.05)*(max - min) + val;
-                  params[key] = inv_scale(val);
+                  //params[key] = inv_scale(val);
                 }
               }
-              //params.cpool = 80;
+              params.cpool = 80;
               /*
               0.1
 0.22269585080133
@@ -82,7 +82,8 @@
 134.712882579763
 300
 */
-              createSample(model, "a"+currentNum, params, 0.1, currentNum).then( function() {
+              createSample(model, "a"+currentNum, params, 0.1, currentNum, 5);
+              /*createSample(model, "a"+currentNum, params, 0.1, currentNum).then( function() {
                   createSample(model, "a"+currentNum, params, 1, currentNum)
                 .then( function() {
                   createSample(model, "a"+currentNum, params, 3, currentNum)
@@ -96,7 +97,7 @@
                   createSample(model, "a"+currentNum, params, 300, currentNum)
                   currentNum+=20;
                   console.log("Sample Created");
-                })})})})})});
+                })})})})})});*/
             });
           }
         }
@@ -114,8 +115,8 @@
           });
         }
 
-        function createSample(model, name, params, k, num) {   
-          return new Promise(function(resolve, reject) {       
+        function createSample(model, name, params, k, num, size) {   
+          //return new Promise(function(resolve, reject) {       
                 var p = JSON.parse(JSON.stringify(params));
                 p.substrate_k = k;
                 p.num = num;
@@ -125,10 +126,18 @@
                     sample.nav.t = 10;//3600.0;
                     //sample.nav.t = 3600.0;
                     samples.push(sample);
-                    resolve();
+                    //resolve();
+                    if (size > 1) {
+                      console.log(size);
+                      createSample(model, name, params, k, num, size - 1);
+                    }
+                    else {
+                      currentNum+=20;
+                      console.log("Sample Created");
+                    }
                     updateSample(sample);
                 });
-          });
+          //});
         }
 
         var lineChart1 = new DynamicLineChart("my_dataviz");

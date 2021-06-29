@@ -326,7 +326,7 @@ private:
 
 class RandomMotilityCoefficentValue : public ICalculatedValue {
 public:
-    RandomMotilityCoefficentValue(IDoubleCalculation* xCalc, IDoubleCalculation* yCalc, IDoubleCalculation* timeCalc, const std::string& output) : xCalc(xCalc), yCalc(yCalc), timeCalc(timeCalc), output(output) {}
+    RandomMotilityCoefficentValue(IDoubleCalculation* xCalc, IDoubleCalculation* yCalc, IDoubleCalculation* timeCalc, const std::string& output, int size = 100) : xCalc(xCalc), yCalc(yCalc), timeCalc(timeCalc), output(output), size(size) {}
     virtual ~RandomMotilityCoefficentValue() {
         delete xCalc;
         delete yCalc;
@@ -335,10 +335,8 @@ public:
 
     struct State : public ICalculatedState {
         std::vector<double> time;
-        std::vector<double> dt;
         std::vector<double> x;
         std::vector<double> y;
-        std::vector<double> msd;
     };
 
     ICalculatedState* createState() {
@@ -347,17 +345,37 @@ public:
 
     virtual void update(IModelSample& sample, DataObject& data, ICalculatedState* state) const  {
         State& updateState = *(static_cast<State*>(state));
+        //std::cout << updateState.time.size() << std::endl;
+        if (updateState.time.size() >= size) {
+            std::vector<double> time;
+            std::vector<double> x;
+            std::vector<double> y;
+            for (int i = 0; i < updateState.time.size(); i += 2) {
+                time.push_back(updateState.time[i]);
+                x.push_back(updateState.x[i]);
+                y.push_back(updateState.y[i]);
+            }
+            updateState.time = time;
+            updateState.x = x;
+            updateState.y = y;
+        }
+
         double t = timeCalc->calculate(sample, sample.getNavigation())/60.0;
-        double x = xCalc->calculate(sample, data)/1000;
-        double y = yCalc->calculate(sample, data)/1000;
-        updateState.time.push_back(t);
-        updateState.x.push_back(x);
-        updateState.y.push_back(y);
+        double lastTime = updateState.time.size() > 0 ? updateState.time[updateState.time.size()-1] : -1;
+        double averageDt = updateState.time.size() > 0 ? (lastTime-updateState.time[0])/updateState.time.size() : 0.0;
+        //std::cout << averageDt << std::endl;
+        
+        if (averageDt < t - lastTime) {
+            double x = xCalc->calculate(sample, data)/1000;
+            double y = yCalc->calculate(sample, data)/1000;
+            updateState.time.push_back(t);
+            updateState.x.push_back(x);
+            updateState.y.push_back(y);
+        }
 
         if (updateState.time.size()>1) {
             //data_dt[i] = data_time[0+i+1]-data_time[0];
             double dt = t-updateState.time[0];
-            updateState.dt.push_back(dt);
 
             std::vector<double> data_dt;
             std::vector<double> data_msd;
@@ -403,6 +421,7 @@ private:
     IDoubleCalculation* yCalc;
     IDoubleCalculation* timeCalc;
     std::string output;
+    int size;
 };
 
 class NSampleMeanValue : public ICalculatedValue {
@@ -500,7 +519,9 @@ int main(int argc, char* argv[]) {
         Server server(port);
         VLApiConnector api(&server, port);
         api.registerModel(new CellModel("Cell"));
-        IModelSampler* sampler = new RandomSampler("num");
+        CompositeSampler* sampler = new CompositeSampler();
+        sampler->addSampler(new RandomSampler("num"));
+        sampler->addSampler(new RandomBinSampler("substrate_k", 5));
         api.registerModel(new SampledModel(createExtendedModel(), sampler));
 
         ExtendedModel* extendedNCell = new ExtendedModel("Extended N-Cell", new NModel("N-Cell", createExtendedModel()));
