@@ -278,12 +278,12 @@ public:
 
         int numSamples = params["N"].get<double>();
 
-        for (int i = 0; i < numSamples; i++) {
+        /*for (int i = 0; i < numSamples; i++) {
             DataObject parameters = params;
             parameters["num"].set<double>(parameters["num"].get<double>()+i);
             IModelSample* sample = model->create(parameters);
             samples.push_back(sample);
-        }
+        }*/
 
         return new NSample(params, samples);
     }
@@ -292,6 +292,7 @@ private:
     IModel* model;
     std::string name;
     DataObject params;
+    IModelSampler* sampler;
 };
 
 
@@ -487,7 +488,7 @@ IModel* createExtendedModel() {
     extendedModel->addCalculatedValue(new SimpleCalculatedValue(new MagnitudeCalculation(new KeyCalculation("fx"), new KeyCalculation("fx")), "fmag"));
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("f"), "mean_traction"));
     extendedModel->addCalculatedValue(new RandomMotilityCoefficentValue(new KeyCalculation("x"),new KeyCalculation("y"),new KeyCalculation("t"), "rmc"));
-    return extendedModel;    
+    return extendedModel;
 }
 
 int main(int argc, char* argv[]) {
@@ -499,7 +500,8 @@ int main(int argc, char* argv[]) {
         Server server(port);
         VLApiConnector api(&server, port);
         api.registerModel(new CellModel("Cell"));
-        api.registerModel(createExtendedModel());
+        IModelSampler* sampler = new RandomSampler("num");
+        api.registerModel(new SampledModel(createExtendedModel(), sampler));
 
         ExtendedModel* extendedNCell = new ExtendedModel("Extended N-Cell", new NModel("N-Cell", createExtendedModel()));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));

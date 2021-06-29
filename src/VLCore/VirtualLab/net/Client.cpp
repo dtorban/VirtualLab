@@ -29,6 +29,7 @@ void ClientModelSample::update() {
     buf.addData(modelSampleId);
     buf.addString(nav);
     api->sendMessage(sd, MSG_updateModelSample, buf.getBytes(), buf.getSize());
+
     int dataLength;
     api->receiveData(sd, (unsigned char*)& dataLength, sizeof(int));
     
@@ -122,13 +123,15 @@ void ClientSampleUpdateQueue::scheduleForUpdate(int modelSampleId, ClientModelSa
 }
 
 void ClientSampleUpdateQueue::update() {
-  while(true) {
+  while(running || waiting) {
     std::unique_lock<std::mutex> lock(updateMutex);
     if (waiting == 0) {
       cond.wait(lock);
     }
     lock.unlock();
-    resolveUpdate();
+    if (waiting) {
+      resolveUpdate();
+    }
   }
 }
 

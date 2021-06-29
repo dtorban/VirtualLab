@@ -639,7 +639,82 @@ private:
     std::string name;
     ModelProxy model;
 };
+
+class CompositeSampler : public IModelSampler {
+public:
+    CompositeSampler() {}
+    virtual ~CompositeSampler() {
+        for (int i = 0; i < samplers.size(); i++) {
+            delete samplers[i];
+        }
+    }
+
+    void addSampler(IModelSampler* sampler) {
+        samplers.push_back(sampler);
+    }
+
+    void sample(DataObject& params) {
+        for (int i = 0; i < samplers.size(); i++) {
+            samplers[i]->sample(params);
+        }
+    }
+private:
+    std::vector<IModelSampler*> samplers;
 };
+
+class StructuredSampler : public IModelSampler {
+public:
+    StructuredSampler(const std::string& param, int resolution) : param(param), resolution(resolution), count(0) {}
+    void sample(DataObject& params) {
+        ParameterHelper helper(params);
+        double max = helper.scale(param, helper.getMax(param));
+        double min = helper.scale(param, helper.getMin(param));
+        double binSize = (max-min)/resolution;
+        double val = min + binSize*(count%resolution) + binSize/2.0;
+        val = helper.invScale(param, val);
+        params[param].set<double>(val);
+        count++;
+    }
+private:
+    std::string param;
+    int resolution;
+    int count;
+};
+
+class RandomSampler : public IModelSampler {
+public:
+    RandomSampler(const std::string& param) : param(param) {}
+    void sample(DataObject& params) {
+        ParameterHelper helper(params);
+        double max = helper.scale(param, helper.getMax(param));
+        double min = helper.scale(param, helper.getMin(param));
+        double r = (double)std::rand() / (double)RAND_MAX;
+        double val = min + r*(max-min);
+        val = helper.invScale(param, val);
+        params[param].set<double>(val);
+    }
+private:
+    std::string param;
+};
+
+class SampledModel : public ModelDecorator {
+public:
+    SampledModel(IModel* model, IModelSampler* sampler) : ModelDecorator(model), sampler(sampler) {}
+    virtual ~SampledModel() {
+        delete sampler;
+    }
+
+    IModelSample* create(const DataObject& params) {
+        DataObject p = params;
+        sampler->sample(p);
+        return ModelDecorator::create(p);
+    }
+
+private:
+    IModelSampler* sampler;
+};
+
+}
 
 
 #endif

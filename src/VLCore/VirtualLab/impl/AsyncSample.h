@@ -11,7 +11,7 @@ namespace vl {
 
 class AsyncSample : public ModelSampleDecorator {
 public:
-    AsyncSample(IModelSample* sample) : ModelSampleDecorator(sample), running(true), ready(false) {
+    AsyncSample(IModelSample* sample) : ModelSampleDecorator(sample), running(true), ready(false), callback(NULL) {
         updateThread = new std::thread(&AsyncSample::updateLoop, this);
     }
 

@@ -12,6 +12,18 @@ Copyright (c) 2019 Dan Orban
 
 using namespace vl;
 
+/*class TestUpdateCallback : public IUpdateCallback {
+public:
+	TestUpdateCallback(IModelSample* sample) : sample(sample) {}
+	virtual ~TestUpdateCallback() {}
+
+	void onComplete() {
+	}
+
+private:
+	IModelSample* sample;
+};*/
+
 int main(int argc, char**argv) { 
 
 	//Client client;
@@ -23,7 +35,7 @@ int main(int argc, char**argv) {
 		std::cout << models[f].getName() << std::endl;
 	}
 
-	ModelProxy proxy = 	api.getModels()[0];	
+	ModelProxy proxy = 	api.getModels()[2];	
 	IModel* model = &proxy;
 	//model = new PCAModel("Test", model);
 	std::cout << model->getName() << std::endl;
@@ -44,10 +56,9 @@ int main(int argc, char**argv) {
 		std::cout << "t=" << sample->getNavigation()["t"].get<double>() << ": ";
 		std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
 		std::cout << std::endl;
-
 	}
 
-
+	delete sample;
 
 	return 0;
 }

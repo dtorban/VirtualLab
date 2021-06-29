@@ -171,6 +171,7 @@ public:
 
 		data["sampleId"] = picojson::value((double)id);
 		data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
+		data["params"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getParameters()));
 		
 		picojson::value ret(data);
 		session->sendJSON(ret);

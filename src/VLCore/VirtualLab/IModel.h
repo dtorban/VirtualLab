@@ -6,6 +6,12 @@
 
 namespace vl {
 
+class IModelSampler {
+public:
+    virtual ~IModelSampler() {}
+    virtual void sample(DataObject& params) = 0;
+};
+
 class IModel {
 public:
     virtual ~IModel() {}
@@ -13,6 +19,14 @@ public:
     virtual const std::string& getName() const = 0;
     virtual const DataObject& getParameters() = 0;
     virtual IModelSample* create(const DataObject& params) = 0;
+    IModelSample* create(const DataObject& params, IModelSampler& sampler) {
+        DataObject p = params;
+        sampler.sample(p);
+        return create(p);
+    }
+    IModelSample* create(IModelSampler& sampler) {
+        return create(getParameters(), sampler);
+    }
 };
 
 class ModelProxy : public IModel {

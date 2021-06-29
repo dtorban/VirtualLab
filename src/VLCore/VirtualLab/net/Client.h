@@ -73,11 +73,20 @@ private:
 
 class ClientSampleUpdateQueue {
 public:
-    ClientSampleUpdateQueue(NetInterface* api, SOCKET usd) : api(api), usd(usd), waiting(0) {
+    ClientSampleUpdateQueue(NetInterface* api, SOCKET usd) : api(api), usd(usd), waiting(0), running(true) {
         thread = new std::thread(&ClientSampleUpdateQueue::update, this);
     }
     virtual ~ClientSampleUpdateQueue() { 
-        delete thread; 
+        std::unique_lock<std::mutex> lock(updateMutex);
+        running = false;
+        std::cout << "Notify all" << std::endl;
+        while (waiting) {
+            cond.notify_all();
+        }
+
+        std::cout << "Join / delete" << std::endl;
+        thread->join();
+        delete thread;
     }
 
     void scheduleForUpdate(int modelSampleId, ClientModelSample* sample, IUpdateCallback* callback);
@@ -87,6 +96,7 @@ public:
 
 private:
     int waiting;
+    bool running;
     std::map<int, ClientModelSample*> samples;
     std::map<int, IUpdateCallback*> callbacks;
     NetInterface* api;

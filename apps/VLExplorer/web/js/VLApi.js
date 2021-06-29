@@ -40,7 +40,8 @@ VLModel.prototype.getParameters = function() {
 VLModel.prototype.create = function(params) {
     let self = this;
     return this.api.sendCommand({command: "createSample", index: this.index, params: params}, function(data) {
-        let sample = new VLModelSample(self.api, data.sampleId, params, data.nav);
+        console.log(data.params);
+        let sample = new VLModelSample(self.api, data.sampleId, data.params, data.nav);
         return sample;
     });
 };

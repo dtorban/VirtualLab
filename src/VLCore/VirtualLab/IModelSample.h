@@ -126,7 +126,7 @@ private:
         }
 
 		void onComplete() {
-            std::cout << "async " << sample << std::endl;
+            //std::cout << "async " << sample << std::endl;
             if (*sampleAvailable) {
 			    sample->asyncUpdate();
             }

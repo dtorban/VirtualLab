@@ -499,7 +499,7 @@ void Server::service() {
 
                 nav = JSONSerializer::instance().serialize(sample->getNavigation());
                 std::string data = JSONSerializer::instance().serialize(sample->getData());
-                int dataSize = 3*sizeof(int) + nav.size() + data.size();
+                int dataSize = 2*sizeof(int) + nav.size() + data.size();
                 writer.addData(dataSize);
                 if (messageType == MSG_updateModelSampleAsync) {
                     writer.addData(modelSampleId);
