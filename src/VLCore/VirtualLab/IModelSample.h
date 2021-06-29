@@ -27,6 +27,8 @@ public:
         callback->onComplete();
         delete callback;
     }
+
+	virtual IModelSample* getInnerSample() { return NULL; }
     //virtual bool saveState(ByteBufferWriter& writer) { return false; }
     //virtual bool loadState(ByteBufferReader& reader) { return false; }
 };
@@ -41,6 +43,7 @@ public:
     virtual const DataObject& getData() const { return sample->getData(); }
     virtual void update() { return sample->update(); }
     virtual void update(IUpdateCallback* callback) { return sample->update(callback); }
+	virtual IModelSample* getInnerSample() { return sample; }
 
 protected:
     IModelSample* sample;

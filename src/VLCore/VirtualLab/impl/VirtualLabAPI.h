@@ -135,7 +135,7 @@ protected:
 };
 
 
-/*class LoadBalancedModel : public IModel {
+class LoadBalancedModel : public IModel {
 public:
     LoadBalancedModel() : index(0) {}
     virtual ~LoadBalancedModel() {}
@@ -166,9 +166,10 @@ public:
         api->deregisterModel(model);
     }
     virtual const std::vector<ModelProxy> getModels() {
-        models.clear();
+        if (models.size() > 0) {
+            return models;
+        }
 
-        std::map<std::string, LoadBalancedModel*> loadBalancedModels;
         std::vector<ModelProxy> apiModels = api->getModels();
         for (int i = 0; i < apiModels.size(); i++) {
             std::string name = apiModels[i].getName();
@@ -180,13 +181,15 @@ public:
             }
             loadBalancedModels[name]->addModel(apiModels[i]);
         }
+        
         return models;
     }
 
 protected:
     IVirtualLabAPI* api;
     std::vector<ModelProxy> models;
-};*/
+    std::map<std::string, LoadBalancedModel*> loadBalancedModels;
+};
 
 
 class CompositeAPI : public IVirtualLabAPI {

@@ -39,7 +39,7 @@
         function createNewSample() {
           console.log(modelList);
           if (modelList) {
-            let model = modelList[5];
+            let model = modelList[4];
             model.getParameters().then(function(params) {
               for (var key in params) {
                 if (!(typeof params[key] === 'object')) {
@@ -64,10 +64,10 @@
                   let max = scale(getParamMetaData(params, key, "max", val));
                   //val = Math.random()*(max - min) + min;
                   val = (Math.random()*0.1-0.05)*(max - min) + val;
-                  params[key] = inv_scale(val);
+                  //params[key] = inv_scale(val);
                 }
               }
-              //params.cpool = 80;
+              params.cpool = 80;
               /*
               0.1
 0.22269585080133
@@ -84,11 +84,18 @@
               createSample(model, "a"+currentNum, params, 0.1, currentNum).then( function() {
                   createSample(model, "a"+currentNum, params, 1, currentNum)
                 .then( function() {
+                  createSample(model, "a"+currentNum, params, 3, currentNum)
+                .then( function() {
                   createSample(model, "a"+currentNum, params, 10, currentNum)
                 .then( function() {
+                  createSample(model, "a"+currentNum, params, 30, currentNum)
+                .then( function() {
+                  createSample(model, "a"+currentNum, params, 100, currentNum)
+                .then( function() {
                   createSample(model, "a"+currentNum, params, 300, currentNum)
-                  currentNum++;
-                })})});
+                  currentNum+=20;
+                  console.log("Sample Created");
+                })})})})})});
             });
           }
         }
@@ -98,10 +105,12 @@
               sample.nav.t += 10.0;//10.0*60;
               //sample.nav.t += 10.0*60;
               console.log(sample.data.substrate_k, sample.nav.t);
-              updateSample(sample);
+              if (sample.nav.t < 3600*6) {
+                updateSample(sample);
+              }
               lineChart1.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;});
               lineChart2.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;});
-              lineChart3.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;});
+              lineChart3.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_rmc;});
           });
         }
 

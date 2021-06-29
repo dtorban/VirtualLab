@@ -68,7 +68,6 @@ public:
         data["fy"] = DoubleDataValue();
         data["f"] = DoubleDataValue();
         data["actin"] = DoubleDataValue();
-        //data["free_actin"] = DoubleDataValue();
         data["aflow"] = DoubleDataValue();
         data["m"] = DataArray();
         data["ev"] = DataObject();
@@ -82,7 +81,6 @@ public:
         fy = &data["fy"].get<double>();
         force = &data["f"].get<double>();
         actin = &data["actin"].get<double>();
-        //free_actin = &data["free_actin"].get<double>();
         aflow = &data["aflow"].get<double>();
         modules = &data["m"].get<vl::Array>();
         events = &data["ev"].get<Object>();
@@ -146,34 +144,11 @@ public:
         *fx = s->GetCell().GetForce().x;
         *fy = s->GetCell().GetForce().y;
         *actin = s->GetCell().GetFActin();
-        //*free_actin = s->GetCell().GetFreeActin();
         *aflow = s->GetCell().GetAFlow();
         *motors = s->GetCell().GetActiveMotors();
         *force = s->GetCell().GetForceTotal();
 
-        /*if (30.0 == nav["t"].get<double>()) {
-            //ByteBufferWriter writer;
-            saveState(writer);
-            std::cout << writer.getSize() << std::endl;
-        }
-        if (100.0 == nav["t"].get<double>()) {
-            ByteBufferReader reader(writer.getBytes());
-            loadState(reader);
-        }*/
-
         nav["t"].set<double>(s->GetTime());
-    }
-
-    bool saveState(ByteBufferWriter& writer) {
-        CellSimStateWriter w(writer);
-        s->saveState(w);
-        return true;
-    }
-
-    bool loadState(ByteBufferReader& reader) {
-        CellSimStateReader r(reader);
-        s->loadState(r);
-        return true;
     }
 
 private:
@@ -189,7 +164,6 @@ private:
     double* fy;
     double* force;
     double* actin;
-    //double* free_actin; 
     double* aflow;
     double* motors;
     vl::Array* modules;
@@ -221,10 +195,6 @@ public:
         addParameter("kbirth", 1, 0.1, 10, "log");
         addParameter("cap_k", 0.001, 0.0001, 0.01, "log");
         addParameter("num", 0.0, 0, 100000, "linear");
-
-        //names = ['substrate_k', 'mpool', 'cpool', 'maxpoly','clutch_k', 'kon', 'koff', 'fb', 'fm', 'kbirth', 'cap_k']
-        //min = [0.1, 100, 75, 100, 0.08, 0.1, 0.01, 0.2, 0.2, 0.1, 0.0001]
-        //max = [300, 10000, 750, 400, 8, 10, 1, 20, 20, 10, 0.01]
     }
     virtual ~CellModel() {}
 
@@ -233,10 +203,6 @@ public:
     }
 
     void addParameter(const std::string& key, double defaultValue, double min, double max, const std::string& scale) {
-        //params[key] = DoubleDataValue(defaultValue);
-        //params["min"].get<vl::Object>()[key] = DoubleDataValue(min);
-        //params["max"].get<vl::Object>()[key] = DoubleDataValue(max);
-        //params["scale"].get<vl::Object>()[key] = StringDataValue(scale);
         paramHelper.set(key, defaultValue, min, max, scale);
     }
 
@@ -256,8 +222,6 @@ private:
 class NSample : public IModelSample {
 public:
     NSample(DataObject params, const std::vector<IModelSample*>& samples) : params(params), samples(samples) {
-        //data["data"] = DataArray();
-        //d = &data["data"].get<vl::Array>();
 
         nav = samples[0]->getNavigation();
         nav["sim"] = DoubleDataValue(0);
@@ -280,28 +244,19 @@ public:
         for (int i = 0; i < samples.size(); i++) {
             samples[i]->getNavigation() = nav;
             samples[i]->update();
-            //array.push_back(samples[i]->getData());
         }
 
         int simIndex = nav["sim"].get<double>();
         data.set<Object>(samples[simIndex]->getData().get<Object>());
-        
-        double meanRMC = 0.0;
-        for (int i = 0; i < samples.size(); i++) {
-            array.push_back(samples[i]->getData());
-            meanRMC += samples[i]->getData()["rmc"].get<double>();
-        }
-        data["meanRMC"] = DoubleDataValue(meanRMC/samples.size());
-
-        //*d = array;
     }
+
+    const std::vector<IModelSample*>& getSamples() { return samples; }
 
 private:
     std::vector<IModelSample*> samples;
     DataObject params;
     DataObject nav;
     DataObject data;
-    //vl::Array* d;
 };
 
 class NModel : public IModel {
@@ -325,10 +280,7 @@ public:
 
         for (int i = 0; i < numSamples; i++) {
             DataObject parameters = params;
-            parameters["num"].set<double>(i);
-            //parameters["substrate_k"].set<double>(std::exp(std::log(0.1) + ((1.0*i)/(numSamples-1))*(std::log(300)-std::log(0.1))));
-            //parameters["cpool"].set<double>(std::exp(std::log(75) + ((1.0*i)/(numSamples-1))*(std::log(750)-std::log(75))));
-            //parameters["mpool"].set<double>(std::exp(std::log(100) + ((1.0*i)/(numSamples-1))*(std::log(10000)-std::log(100))));
+            parameters["num"].set<double>(parameters["num"].get<double>()+i);
             IModelSample* sample = model->create(parameters);
             samples.push_back(sample);
         }
@@ -340,333 +292,6 @@ private:
     IModel* model;
     std::string name;
     DataObject params;
-};
-
-/*
-// Run RunPCA on the specified dataset with the given decomposition method.
-template<typename DecompositionPolicy>
-void RunPCA(arma::mat& dataset,
-            const size_t newDimension,
-            const bool scale,
-            const double varToRetain)
-{
-  PCA<DecompositionPolicy> p(scale);
-
-  //std::cout << "Performing PCA on dataset..." << std::endl;
-  double varRetained;
-
-    varRetained = p.Apply(dataset, newDimension);
-
-  //std::cout << (varRetained * 100) << "% of variance retained (" <<
-      //dataset.n_rows << " dimensions)." << std::endl;
-}
-
-class PCASample : public IModelSample {
-public:
-    PCASample(DataObject params, IModelSample* sample) : params(params), sample(sample) {
-        data["data"] = DataArray();
-        data["pca"] = DataArray();
-        data["pca2"] = DataArray();
-        arr = &data["data"].get<vl::Array>();
-        d = &data["pca"].get<vl::Array>();
-        d2 = &data["pca2"].get<vl::Array>();
-
-        nav = sample->getNavigation();
-    }
-
-    virtual ~PCASample() {
-        delete sample;
-    }
-
-    virtual const DataObject& getParameters() const { return params; }
-    virtual DataObject& getNavigation() { return nav; }
-    virtual const DataObject& getData() const { return data; }
-
-    virtual void update(int id, Object& prev, Object& obj) {
-
-        double x = prev["x"].get<double>();
-        double y = prev["y"].get<double>();
-        double dx = obj["x"].get<double>() - x;
-        double dy = obj["y"].get<double>() - y;
-        double dist = std::sqrt(std::pow(dx,2.0)+std::pow(dy,2.0)) ;
-
-        arma::rowvec r;
-		r << obj["actin"].get<double>()
-			<< obj["aflow"].get<double>() 
-			<< obj["en"].get<double>() 
-			<< obj["free_actin"].get<double>() 
-			<< obj["nm"].get<double>()
-			<< std::sqrt(std::pow(obj["fx"].get<double>(),2.0)+std::pow(obj["fy"].get<double>(),2.0)) 
-            << dist
-			<< sample->getData()["rmc"].get<double>()
-			<< arma::endr;
-        if (nav["t"].get<double>() > 50.0) {
-		    rows.push_back(r);
-        }
-
-
-
-    }
-
-    virtual void update() {
-
-        std::vector<Object> prev;
-        //std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
-        for (int i = 0; i < sample->getData()["data"].get<vl::Array>().size(); i++) {
-            prev.push_back(sample->getData()["data"].get<vl::Array>()[i].get<Object>());
-        }
-
-        sample->getNavigation() = nav;
-        sample->update();
-        
-        vl::Array array;
-        vl::Array array2;
-        if (prev.size() > 0) {
-            for (int i = 0; i < sample->getData()["data"].get<vl::Array>().size(); i++) {
-                Object obj = sample->getData()["data"].get<vl::Array>()[i].get<Object>();
-                update(i, prev[i], obj);
-            }
-
-            if (rows.size() > 2) {
-                arma::mat A(rows.size(), rows[0].n_cols);
-            
-                //B << sample->getNavigation()["t"].get<double>() << arma::endr << sample->getNavigation()["t"].get<double>() << arma::endr;
-                for (int i = 0; i < rows.size(); i++) {
-                    A.row(i) = rows[i];
-                }
-                A = A.t();
-                RunPCA<ExactSVDPolicy>(A, 2, true, 1.0);
-                A = A.t();
-
-
-                for (int f = 0; f < rows.size(); f+=10*prev.size()) {
-                    for (int i = 0; i < prev.size(); i++) {
-                        vl::DataObject obj;
-                        //std::cout << A.row(f);
-                        obj["x"] = DoubleDataValue(A(f+i,0));
-                        obj["y"] = DoubleDataValue(A(f+i,1));
-                        obj["id"] = DoubleDataValue(i);
-                        obj["t"] = DoubleDataValue(f/prev.size());
-                        array2.push_back(obj);
-                    }
-                }
-
-                for (int f = rows.size() - 20*prev.size(); f < rows.size(); f+=1*prev.size()) {
-                    for (int i = 0; i < prev.size(); i++) {
-                        vl::DataObject obj;
-                        //std::cout << A.row(f);
-                        obj["x"] = DoubleDataValue(A(f+i,0));
-                        obj["y"] = DoubleDataValue(A(f+i,1));
-                        obj["id"] = DoubleDataValue(i);
-                        obj["t"] = DoubleDataValue(f/prev.size());
-                        array.push_back(obj);
-                    }
-                }
-            }
-        }
-        *d = array;
-        *d2 = array2;
-        *arr = sample->getData()["data"].get<vl::Array>();
-    }
-
-private:
-    IModelSample* sample;
-    DataObject params;
-    DataObject nav;
-    DataObject data;
-    vl::Array* d;
-    vl::Array* d2;
-    vl::Array* arr;
-	std::vector<arma::rowvec> rows;
-};
-
-class PCAModel : public IModel {
-public:
-    PCAModel(const std::string& name, IModel* model) : name(name), model(model) {
-        params = model->getParameters();
-        params["N"] = DoubleDataValue(10);
-    }
-    virtual ~PCAModel() {
-        delete model;
-    }
-
-    const std::string& getName() const { return name; }
-
-    const DataObject& getParameters() { return params; }
-
-    IModelSample* create(const DataObject& params) {
-        return new PCASample(params, model->create(params));
-    }
-
-private:
-    IModel* model;
-    std::string name;
-    DataObject params;
-};*/
-
-class MovingAverageSample : public IModelSample {
-public:
-    MovingAverageSample(DataObject params, IModelSample* sample) : params(params), sample(sample) {
-        radius = params["radius"].get<double>();
-        nav = sample->getNavigation();
-    }
-
-    virtual ~MovingAverageSample() {
-        delete sample;
-    }
-
-    virtual const DataObject& getParameters() const { return params; }
-    virtual DataObject& getNavigation() { return nav; }
-    virtual const DataObject& getData() const { return data; }
-
-    virtual void update() {
-        sample->getNavigation() = nav;
-        sample->update();
-        
-        window.push_back(sample->getData());
-
-        int dataIndex = window.size() > radius ? window.size()-radius-1 : 0;
-        //data = sample->getData();
-        data.set<Object>(window[dataIndex].get<Object>());
-
-        if (window.size() > radius*2+1) {
-            window.erase(window.begin());
-            double x = 0;
-            double y = 0;
-            double fx = 0;
-            double fy = 0;
-            double rmc = 0;
-            for (int i = 0; i < window.size(); i++) {
-                x += window[i].get<Object>().find("x")->second.get<double>();
-                y += window[i].get<Object>().find("y")->second.get<double>();
-                fx += window[i].get<Object>().find("fx")->second.get<double>();
-                fy += window[i].get<Object>().find("fy")->second.get<double>();
-                if (i > 0) {
-                    double prevX = window[i-1].get<Object>().find("x")->second.get<double>();
-                    double prevY = window[i-1].get<Object>().find("x")->second.get<double>();
-                    rmc += std::sqrt(std::pow(x-prevX,2) + std::pow(x-prevY,2));
-                }
-            }
-            data["x"].set<double>(x/window.size());
-            data["y"].set<double>(y/window.size());
-            data["fx"].set<double>(x/window.size());
-            data["fy"].set<double>(y/window.size());
-            data["rmc"] = DoubleDataValue(rmc/(window.size()-1));
-
-            vl::DataArray path;
-            for (int i = 0; i < window.size(); i++) {
-                DataObject obj;
-                obj["x"] = window[i].get<Object>().find("x")->second;
-                obj["y"] = window[i].get<Object>().find("y")->second;
-                path.get<vl::Array>().push_back(obj);
-                //path.push_back(Da)
-            }
-            data["path"] = path;
-        }
-        else {
-            data["rmc"] = DoubleDataValue(0);
-        }
-    }
-
-private:
-    IModelSample* sample;
-    DataObject params;
-    DataObject nav;
-    DataObject data;
-    int radius;
-    std::vector<DataValue> window;
-};
-
-class MovingAverageModel : public IModel {
-public:
-    MovingAverageModel(const std::string& name, IModel* model) : name(name), model(model) {
-        params = model->getParameters();
-        params["radius"] = DoubleDataValue(5);
-    }
-    virtual ~MovingAverageModel() {
-        delete model;
-    }
-
-    const std::string& getName() const { return name; }
-
-    const DataObject& getParameters() { return params; }
-
-    IModelSample* create(const DataObject& params) {
-        return new MovingAverageSample(params, model->create(params));
-    }
-
-private:
-    IModel* model;
-    std::string name;
-    DataObject params;
-};
-
-class CellAnalysis : public AsyncModelSampleDecorator {
-public:
-    CellAnalysis(IModelSample* sample) : AsyncModelSampleDecorator(sample), init(false) {
-        prevTime = getNavigation()["t"].get<double>();
-    }
-    virtual ~CellAnalysis() { }
-
-    const DataObject& getData() const { 
-        return data;
-    }
-
-protected:
-    double getDiff(const std::string& param, const DataObject& data, const DataObject& prev) {
-        return data[param].get<double>() - prev[param].get<double>();
-    }
-
-    void asyncUpdate() {
-        if (!init) {
-            prev = sample->getData();
-            init = true;
-        }
-        data = sample->getData();
-        double time = getNavigation()["t"].get<double>();
-        double dt = time-prevTime;
-
-        data["fmag"] = DoubleDataValue(std::sqrt(std::pow(data["fx"].get<double>(), 2) + std::pow(data["fy"].get<double>(), 2)));
-        //data = calcData;
-        
-        /*for (vl::Object::const_iterator it = calcData.begin(); it != calcData.end(); it++) {
-            if (it->second.isType<double>()) {
-                if (dt > 0.0000001) {
-                    data["d_"+ it->first] = DoubleDataValue((it->second.get<double>() - prev[it->first].get<double>())/dt);
-                }
-                else {
-                    data["d_"+ it->first] = DoubleDataValue(0);
-                }
-            }
-        }*/
-
-        if (dt > 0.0000001) {
-            data["vel"] = DoubleDataValue(std::sqrt(std::pow(getDiff("x", data, prev), 2) + std::pow(getDiff("y", data, prev), 2))/dt);
-        }
-        else {
-            data["vel"] = DoubleDataValue(0);
-        }
-
-        DataObject obj;
-        obj["x"] = DoubleDataValue(data["x"].get<double>());
-        obj["y"] = DoubleDataValue(data["y"].get<double>());
-        path.get<vl::Array>().push_back(obj);
-        if (path.size() > 10) {
-            path.get<vl::Array>().erase(path.get<vl::Array>().begin());
-        }
-        data["path"] = path;
-
-        prev = sample->getData();
-        prevTime = time;
-    }
-
-private:
-    bool init;
-    double prevTime;
-    DataObject prev;
-    DataObject data;
-    vl::DataArray path;
-    
 };
 
 
@@ -779,6 +404,51 @@ private:
     std::string output;
 };
 
+class NSampleMeanValue : public ICalculatedValue {
+public:
+    struct State : public ICalculatedState {
+        State() : sample(NULL), init(false) {}
+        NSample* sample;
+        bool init;
+    };
+
+    NSampleMeanValue(IDoubleCalculation* valCalc, const std::string& output) : valCalc(valCalc), output(output) {}
+    virtual ~NSampleMeanValue() {
+        delete valCalc;
+    }
+
+    ICalculatedState* createState() {
+        return new State();
+    }
+
+    virtual void update(IModelSample& sample, DataObject& data, ICalculatedState* state) const  {
+        State& updateState = *(static_cast<State*>(state));
+        if (!updateState.init) {
+            for (IModelSample* s = &sample; s != NULL; s = s->getInnerSample()) {
+                updateState.sample = dynamic_cast<NSample*>(s);
+                if (updateState.sample) {
+                    break;
+                }
+            }
+            updateState.init = true;
+        }
+
+        if (updateState.sample) {
+            const std::vector<IModelSample*>& samples = updateState.sample->getSamples();
+            double val = 0.0;
+            for (int i = 0; i < samples.size(); i++) {
+                val += valCalc->calculate(sample, data);
+            }
+
+            data[output] = DoubleDataValue(val/samples.size());
+        }
+    }
+
+private:
+    IDoubleCalculation* valCalc;
+    std::string output;
+};
+
 /*double sqr_diff[analysis_count];
     int num_diff;
     double std;
@@ -810,6 +480,16 @@ private:
     //end//
 */
 
+IModel* createExtendedModel() {
+    ExtendedModel* extendedModel = new ExtendedModel("Extended Cell", new CellModel("Cell"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aflow"), "mean_aflow"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("nm"), "mean_nm"));
+    extendedModel->addCalculatedValue(new SimpleCalculatedValue(new MagnitudeCalculation(new KeyCalculation("fx"), new KeyCalculation("fx")), "fmag"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("f"), "mean_traction"));
+    extendedModel->addCalculatedValue(new RandomMotilityCoefficentValue(new KeyCalculation("x"),new KeyCalculation("y"),new KeyCalculation("t"), "rmc"));
+    return extendedModel;    
+}
+
 int main(int argc, char* argv[]) {
     std::cout << "Usage: CellModel <port>" << std::endl;
 
@@ -819,51 +499,19 @@ int main(int argc, char* argv[]) {
         Server server(port);
         VLApiConnector api(&server, port);
         api.registerModel(new CellModel("Cell"));
-        api.registerModel(new MovingAverageModel("Smooth Cell", new CellModel("Cell")));
-        api.registerModel(new TypedModelDecorator<CellAnalysis>("Cell Analysis", new CellModel("Cell")));
-        //api.registerModel(new MovingAverageModel("Cell", new CellModel("Cell")));
-        //api.registerModel(new NModel("N-Cell", new CellModel("Cell")));
-        //api.registerModel(new PCAModel("PCA-Cell", new CellModel("Cell")));
-        //api.registerModel(new NModel("N-Cell-2", new MovingAverageModel("Moving-Average", new CellModel("Cell"))));
-        ExtendedModel* extendedModel = new ExtendedModel("Extended Cell", new CellModel("Cell"));
-        extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aflow"), "mean_aflow"));
-        extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("nm"), "mean_nm"));
-        extendedModel->addCalculatedValue(new SimpleCalculatedValue(new MagnitudeCalculation(new KeyCalculation("fx"), new KeyCalculation("fx")), "fmag"));
-        extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("f"), "mean_traction"));
-        extendedModel->addCalculatedValue(new RandomMotilityCoefficentValue(new KeyCalculation("x"),new KeyCalculation("y"),new KeyCalculation("t"), "rmc"));
-        api.registerModel(extendedModel);
+        api.registerModel(createExtendedModel());
+
+        ExtendedModel* extendedNCell = new ExtendedModel("Extended N-Cell", new NModel("N-Cell", createExtendedModel()));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
+
+        api.registerModel(extendedNCell);
 
         while(true) {
             server.service();
         }
     }
-
-    /*VirtualLabAPI api;
-    api.registerModel(new CellModel("ModelA"));
-	//VirtualLabAPI api;
-	//api.registerModel(new TestModel());
-	IModel* model = api.getModels()[0];
-
-	IModelSample* sample = model->create(model->getParameters());
-	std::cout << JSONSerializer::instance().serialize(sample->getParameters()) << std::endl;
-	std::cout << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
-	std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
-
-	std::string str = JSONSerializer::instance().serialize(sample->getParameters());
-	DataValue d;
-	JSONSerializer::instance().deserialize(str, d);
-	std::cout << str << " " << JSONSerializer::instance().serialize(d) << std::endl;
-
-    DataObject time = sample->getNavigation();
-
-	for (int i = 1; i < 1000; i++) {
-		time["time"].set<double>(0.1*i);
-        std::string sTime = JSONSerializer::instance().serialize(time);
-        JSONSerializer::instance().deserialize(sTime, sample->getNavigation());
-		sample->update();
-		std::cout << JSONSerializer::instance().serialize(sample->getNavigation()) << std::endl;
-		std::cout << i << " " <<  JSONSerializer::instance().serialize(sample->getData()) << std::endl;
-	}*/
 
     return 0;
 }
