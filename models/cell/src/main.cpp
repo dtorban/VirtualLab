@@ -478,7 +478,7 @@ public:
             const std::vector<IModelSample*>& samples = updateState.sample->getSamples();
             double val = 0.0;
             for (int i = 0; i < samples.size(); i++) {
-                val += valCalc->calculate(sample, data);
+                val += valCalc->calculate(*samples[i], samples[i]->getData());
             }
 
             data[output] = DoubleDataValue(val/samples.size());
