@@ -560,7 +560,16 @@ int main(int argc, char* argv[]) {
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
-        api.registerModel(extendedNCell);
+
+        LatinHypercubeSampler* latinSampler = new LatinHypercubeSampler(5);
+        /*for (DataObject::const_iterator it = extendedNCell->getParameters().begin(); it != extendedNCell->getParameters().end(); it++) {
+            if (it->first != "N") {
+                latinSampler->addParameter(it->first);
+            }
+        }*/
+        latinSampler->addParameter("cpool");
+        latinSampler->addParameter("mpool");
+        api.registerModel(new SampledModel(extendedNCell, latinSampler));
 
         while(true) {
             server.service();

@@ -5,6 +5,8 @@
 #include "VirtualLab/impl/TestModel.h"
 #include <algorithm>
 #include <mutex>
+#include <random>
+#include <chrono>
 
 namespace vl {
 
@@ -723,7 +725,6 @@ class BinSampler : public ResolutionSampler {
 public:
     BinSampler(const std::string& param, const std::string& resolutionParam) : ResolutionSampler(resolutionParam), param(param) {}
 
-protected:
     void sample(DataObject& params, int index, int resolution) {
         ParameterHelper helper(params);
         double max = helper.scale(param, helper.getMax(param));
@@ -750,11 +751,25 @@ public:
 
 class RandomBinSampler : public BinSampler {
 public:
-    RandomBinSampler(const std::string& param, const std::string& resolutionParam) : BinSampler(param, resolutionParam) {}
+    RandomBinSampler(const std::string& param, const std::string& resolutionParam) : BinSampler(param, resolutionParam) {
+        r = (double)std::rand() / (double)RAND_MAX;
+    }
+
+    virtual void reset() { 
+        BinSampler::reset();
+        r = (double)std::rand() / (double)RAND_MAX;
+    }
+    virtual bool hasNext() { return BinSampler::hasNext(); }
+    virtual void next() { BinSampler::next(); }
+
+protected:
     double calculateVal(DataObject& params, double min, double max, int bin, double binSize) {
         double r = (double)std::rand() / (double)RAND_MAX;
         return min + binSize*(bin) + binSize*r;
     }
+
+private:
+    double r;
 };
 
 class RandomSampler : public IModelSampler {
@@ -816,6 +831,114 @@ public:
 private:
     IModelSampler* sampler;
 };
+
+class LatinHypercubeSampler : public IModelSampler {
+public:
+    LatinHypercubeSampler(int bins) : bins(bins), currentIndex(0),
+        g(std::chrono::system_clock::now().time_since_epoch().count()) {}
+
+    virtual ~LatinHypercubeSampler() {
+        for (std::map<std::string, RandomBinSampler* >::iterator it = samplers.begin(); it != samplers.end(); it++) {
+            delete it->second;
+        }
+    }
+    
+    void addParameter(const std::string& param) {
+        randomizedBins[param] = std::vector<int>();
+        samplers[param] = new RandomBinSampler(param, "");
+    }
+
+    void sample(DataObject& params) {
+        if (currentIndex % bins == 0) {
+            for (std::map<std::string, std::vector<int> >::iterator it = randomizedBins.begin(); it != randomizedBins.end(); it++) {
+                it->second.clear();
+                for (int i = 0; i < bins; i++) {
+                    it->second.push_back(i);
+                }
+
+                std::shuffle(it->second.begin(), it->second.end(), g);
+            }
+        }
+
+        for (std::map<std::string, std::vector<int> >::iterator it = randomizedBins.begin(); it != randomizedBins.end(); it++) {
+            int bin = currentIndex % bins;
+            RandomBinSampler* sampler = samplers[it->first];
+            sampler->sample(params, it->second[bin], bins);
+        }
+    }
+    virtual void reset() {
+        currentIndex = 0;
+    }
+    virtual bool hasNext() { return currentIndex == 0 || currentIndex % bins != 0; }
+    virtual void next() {
+        currentIndex++;
+        for (std::map<std::string, RandomBinSampler* >::iterator it = samplers.begin(); it != samplers.end(); it++) {
+            it->second->reset();
+        }
+    }
+
+private:
+    std::map<std::string, std::vector<int> > randomizedBins;
+    std::map<std::string, RandomBinSampler* > samplers;
+    int currentIndex;
+    int bins;
+    std::default_random_engine g;
+};
+
+/*
+class LatinHypercubeSampler : public CompositeSamplingStrategy {
+public:
+    LatinHypercubeSampler(int bins) : CompositeSamplingStrategy(false), bins(bins), currentIndex(0),
+        g(std::chrono::system_clock::now().time_since_epoch().count()) {
+    }
+
+    template <typename T>
+    void addParameter(const std::string& key) {
+        randomizedBins[key] = std::vector<int>();
+        addStrategy(new RandomSampler<T>(key));
+    }
+
+    void setParameters(IDataSet& params, DataSetStack& metaData) {
+        RandomSamplingContext context(params, metaData);
+
+        metaData.push();
+
+        // recreate samples
+        if (currentIndex % bins == 0) {
+            for (std::map<std::string, std::vector<int> >::iterator it = randomizedBins.begin(); it != randomizedBins.end(); it++) {
+                it->second.clear();
+                for (int i = 0; i < bins; i++) {
+                    it->second.push_back(i);
+                }
+
+                std::shuffle(it->second.begin(), it->second.end(), g);
+
+            }
+        }
+        
+
+        for (std::map<std::string, std::vector<int> >::iterator it = randomizedBins.begin(); it != randomizedBins.end(); it++) {
+            int bin = currentIndex % bins;
+            context.setNumBins(it->first, bins);
+            context.setBin(it->first, it->second[bin]);
+        }
+
+        CompositeSamplingStrategy::setParameters(params, metaData);
+
+        metaData.pop();
+
+        currentIndex++;
+
+
+
+    }
+
+private:
+    std::map<std::string, std::vector<int> > randomizedBins;
+    int currentIndex;
+    int bins;
+    std::default_random_engine g;
+};*/
 
 }
 
