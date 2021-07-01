@@ -797,6 +797,39 @@ private:
     double r;
 };
 
+class LocalRandomSampler : public IModelSampler {
+public:
+    LocalRandomSampler(const std::string& param, double closeness) : param(param), closeness(closeness) {
+        r = (double)std::rand() / (double)RAND_MAX;
+    }
+    void sample(DataObject& params) {
+        ParameterHelper helper(params);
+        double max = helper.scale(param, helper.getMax(param));
+        double min = helper.scale(param, helper.getMin(param));
+        double val = helper.scale(param, params[param].get<double>());
+        val = val + 2.0*(r-0.5)*closeness*(max-min);
+        if (val < min) {
+            val = min;
+        }
+        if (val > max) {
+            val = max;
+        }
+        val = helper.invScale(param, val);
+        params[param].set<double>(val);
+    }
+
+    virtual void reset() {
+        r = (double)std::rand() / (double)RAND_MAX;
+    }
+    virtual bool hasNext() { return false; }
+    virtual void next() {}
+
+private:
+    std::string param;
+    double r;
+    double closeness;
+};
+
 class AddParameterValueToSample : public IModelSampler {
 public:
     AddParameterValueToSample(const std::string& param, double val) : param(param), val(val) {}

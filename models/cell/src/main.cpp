@@ -561,6 +561,12 @@ int main(int argc, char* argv[]) {
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
 
+        CompositeSampler* localSampler = new CompositeSampler();
+        for (DataObject::const_iterator it = extendedNCell->getParameters().begin(); it != extendedNCell->getParameters().end(); it++) {
+            if (it->first != "N") {
+                localSampler->addSampler(new LocalRandomSampler(it->first, 0.01));
+            }
+        }
         LatinHypercubeSampler* latinSampler = new LatinHypercubeSampler(5);
         /*for (DataObject::const_iterator it = extendedNCell->getParameters().begin(); it != extendedNCell->getParameters().end(); it++) {
             if (it->first != "N") {
@@ -569,7 +575,9 @@ int main(int argc, char* argv[]) {
         }*/
         latinSampler->addParameter("cpool");
         latinSampler->addParameter("mpool");
-        api.registerModel(new SampledModel(extendedNCell, latinSampler));
+        //api.registerModel(new SampledModel(extendedNCell, latinSampler));
+        api.registerModel(new SampledModel(extendedNCell, localSampler));
+        
 
         while(true) {
             server.service();
