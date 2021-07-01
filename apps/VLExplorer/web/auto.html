@@ -71,35 +71,9 @@
               }
               params.cpool = 80;
               params.N = 6;
-              /*
-              0.1
-0.22269585080133
-0.495934419641283
-1.1044253752368
-2.45950948584936
-5.47722557505166
-12.1975540946693
-27.1634468680764
-60.49186910983
-134.712882579763
-300
-*/
+
               createSample(model, "a"+currentNum, params, 0.1, currentNum, 1);
-              /*createSample(model, "a"+currentNum, params, 0.1, currentNum).then( function() {
-                  createSample(model, "a"+currentNum, params, 1, currentNum)
-                .then( function() {
-                  createSample(model, "a"+currentNum, params, 3, currentNum)
-                .then( function() {
-                  createSample(model, "a"+currentNum, params, 10, currentNum)
-                .then( function() {
-                  createSample(model, "a"+currentNum, params, 30, currentNum)
-                .then( function() {
-                  createSample(model, "a"+currentNum, params, 100, currentNum)
-                .then( function() {
-                  createSample(model, "a"+currentNum, params, 300, currentNum)
-                  currentNum+=20;
-                  console.log("Sample Created");
-                })})})})})});*/
+
             });
           }
         }

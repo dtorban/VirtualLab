@@ -6,6 +6,7 @@
 #include "VirtualLab/util/JSONSerializer.h"
 #include "VirtualLab/impl/ExtendedModel.h"
 #include <gsl/gsl_fit.h>
+#include "VirtualLab/opt/OptimizedModel.h"
 
 /*#include <mlpack/prereqs.hpp>
 #include <mlpack/methods/pca/pca.hpp>
@@ -244,7 +245,6 @@ public:
             samples[i]->getNavigation() = nav;
             samples[i]->update();
         }
-
 
         int simIndex = nav["sim"].get<double>();
         data.set<Object>(samples[simIndex]->getData().get<Object>());
@@ -567,6 +567,7 @@ int main(int argc, char* argv[]) {
                 localSampler->addSampler(new LocalRandomSampler(it->first, 0.01));
             }
         }
+
         LatinHypercubeSampler* latinSampler = new LatinHypercubeSampler(5);
         /*for (DataObject::const_iterator it = extendedNCell->getParameters().begin(); it != extendedNCell->getParameters().end(); it++) {
             if (it->first != "N") {
@@ -575,8 +576,13 @@ int main(int argc, char* argv[]) {
         }*/
         latinSampler->addParameter("cpool");
         latinSampler->addParameter("mpool");
+        
         //api.registerModel(new SampledModel(extendedNCell, latinSampler));
-        api.registerModel(new SampledModel(extendedNCell, localSampler));
+        //api.registerModel(new SampledModel(extendedNCell, localSampler));
+
+
+
+        api.registerModel(new SampledModel(new OptimizedModel(extendedNCell,new DoubleValueDistance("mean_aflow",90), 0.01, 5), localSampler));
         
 
         while(true) {

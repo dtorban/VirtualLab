@@ -411,6 +411,19 @@ public:
         return val;
     }
 
+    double clamp(const std::string& param, double val) {
+        double min = getMin(param);
+        double max = getMax(param);
+        if (val < min) {
+            return min;
+        }
+        if (val > max) {
+            return max;
+        }
+
+        return val;
+    }
+
     template<typename T>
     const T& getMetaData(const std::string& param, const std::string& key) const {
         if (const_metadata) {

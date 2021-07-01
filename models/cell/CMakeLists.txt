@@ -41,10 +41,9 @@ set(DEP_INCLUDES ${DEP_INCLUDES}
   ${external_dir}/picojson/src
   /dependencies/include
   ${external_dir}/CellSim/src/libs/gsl/include
-  ${CMAKE_PROJECT_DIR}/../VLCore
 )
 
-set(DEP_LIBS ${DEP_LIBS} VLCore)
+set(DEP_LIBS ${DEP_LIBS} VLCore VLopt)
 
 set(ALL_LIBS ${ALL_LIBS} crypto ssl z) # mlpack armadillo
 
