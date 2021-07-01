@@ -238,7 +238,6 @@ public:
     virtual const DataObject& getData() const { return data; }
 
     virtual void update() {
-        vl::Array array;
 
         #pragma omp parallel for 
         for (int i = 0; i < samples.size(); i++) {
@@ -246,8 +245,15 @@ public:
             samples[i]->update();
         }
 
+
         int simIndex = nav["sim"].get<double>();
         data.set<Object>(samples[simIndex]->getData().get<Object>());
+
+        DataArray sampleData;
+        for (int i = 0; i < samples.size(); i++) {
+            sampleData.push_back(samples[i]->getData());
+        }
+        data["samples"] = sampleData;
     }
 
     const std::vector<IModelSample*>& getSamples() { return samples; }
@@ -261,12 +267,13 @@ private:
 
 class NModel : public IModel {
 public:
-    NModel(const std::string& name, IModel* model) : name(name), model(model) {
+    NModel(const std::string& name, IModel* model, IModelSampler* sampler = NULL) : name(name), model(model), sampler(sampler) {
         params = model->getParameters();
         params["N"] = DoubleDataValue(10);
     }
     virtual ~NModel() {
         delete model;
+        delete sampler;
     }
 
     const std::string& getName() const { return name; }
@@ -277,15 +284,29 @@ public:
         std::vector<IModelSample*> samples;
 
         int numSamples = params["N"].get<double>();
+        std::cout << "num Samples = " << numSamples << std::endl;
 
-        /*for (int i = 0; i < numSamples; i++) {
+        if (sampler) {
+            sampler->reset();
+        }
+
+        DataArray sampleParams;
+        for (int i = 0; i < numSamples; i++) {
             DataObject parameters = params;
-            parameters["num"].set<double>(parameters["num"].get<double>()+i);
+            //parameters["num"].set<double>(parameters["num"].get<double>()+i);
+            if (sampler && sampler->hasNext()) {
+                sampler->sample(parameters);
+                sampler->next();
+            }
             IModelSample* sample = model->create(parameters);
+            sampleParams.push_back(sample->getParameters());
             samples.push_back(sample);
-        }*/
+        }
 
-        return new NSample(params, samples);
+        DataObject p = params;
+        p["samples"] = sampleParams;
+
+        return new NSample(p, samples);
     }
 
 private:
@@ -520,15 +541,25 @@ int main(int argc, char* argv[]) {
         VLApiConnector api(&server, port);
         api.registerModel(new CellModel("Cell"));
         CompositeSampler* sampler = new CompositeSampler();
+        sampler->addSampler(new AddParameterValueToSample("N", 5));
         sampler->addSampler(new RandomSampler("num"));
-        sampler->addSampler(new RandomBinSampler("substrate_k", 5));
+        sampler->addSampler(new RandomBinSampler("substrate_k", "N"));
         api.registerModel(new SampledModel(createExtendedModel(), sampler));
 
         ExtendedModel* extendedNCell = new ExtendedModel("Extended N-Cell", new NModel("N-Cell", createExtendedModel()));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
+        api.registerModel(extendedNCell);
 
+        sampler = new CompositeSampler();
+        //sampler->addSampler(new AddParameterValueToSample("N", 5));
+        sampler->addSampler(new RandomSampler("num"));
+        sampler->addSampler(new RandomBinSampler("substrate_k", "N"));
+        extendedNCell = new ExtendedModel("Cell Substrate", new NModel("N-Cell", createExtendedModel(), sampler));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
         api.registerModel(extendedNCell);
 
         while(true) {

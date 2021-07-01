@@ -223,6 +223,9 @@ class DataArray : public TypedDataValue<Array> {
 public:
     DataArray() : TypedDataValue<Array>() {}
     DataArray(const DataArray& arr) : TypedDataValue<Array>(arr) {}
+    void push_back(const DataValue& val) {
+        get<Array>().push_back(val);
+    }
     DataValue& operator[](int index) {
         return get<Array>()[index];
     }

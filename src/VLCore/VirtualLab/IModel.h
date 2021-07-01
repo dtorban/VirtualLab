@@ -10,7 +10,11 @@ class IModelSampler {
 public:
     virtual ~IModelSampler() {}
     virtual void sample(DataObject& params) = 0;
+    virtual void reset() = 0;
+    virtual bool hasNext() = 0;
+    virtual void next() = 0;
 };
+
 
 class IModel {
 public:
@@ -21,7 +25,11 @@ public:
     virtual IModelSample* create(const DataObject& params) = 0;
     IModelSample* create(const DataObject& params, IModelSampler& sampler) {
         DataObject p = params;
+        if (!sampler.hasNext()) {
+            sampler.reset();
+        }
         sampler.sample(p);
+        sampler.next();
         return create(p);
     }
     IModelSample* create(IModelSampler& sampler) {

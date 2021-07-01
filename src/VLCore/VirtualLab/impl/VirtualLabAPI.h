@@ -658,63 +658,142 @@ public:
             samplers[i]->sample(params);
         }
     }
-private:
+
+    void reset() {
+        for (int i = 0; i < samplers.size(); i++) {
+            samplers[i]->reset();
+        }
+    }
+
+    virtual bool hasNext() {
+        for (int i = 0; i < samplers.size(); i++) {
+            if (samplers[i]->hasNext()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    virtual void next() {
+        for (int i = 0; i < samplers.size(); i++) {
+            if (samplers[i]->hasNext()) {
+                return samplers[i]->next();
+            }
+        }
+    }
+    
+protected:
     std::vector<IModelSampler*> samplers;
 };
 
-class StructuredSampler : public IModelSampler {
+class ResolutionSampler : public IModelSampler {
 public:
-    StructuredSampler(const std::string& param, int resolution) : param(param), resolution(resolution), count(0) {}
+    ResolutionSampler(const std::string& resolutionParam) : resolution(-1), count(0) {}
+
     void sample(DataObject& params) {
-        ParameterHelper helper(params);
-        double max = helper.scale(param, helper.getMax(param));
-        double min = helper.scale(param, helper.getMin(param));
-        double binSize = (max-min)/resolution;
-        double val = min + binSize*(count%resolution) + binSize/2.0;
-        val = helper.invScale(param, val);
-        params[param].set<double>(val);
-        count++;
+        if (resolution < 0) {
+            resolution = params["N"].get<double>();
+            if (resolution == 0) {
+                resolution = 1;
+            }
+        }
+        std::cout << "Resolution = " << resolution << std::endl;
+
+        sample(params, count % resolution, resolution);
     }
+
+    virtual void reset() { 
+        count = 0;
+        resolution = -1; 
+    }
+    virtual bool hasNext() { return resolution < 0 || count < resolution; }
+    virtual void next() { count++; }
+
+protected:
+    virtual void sample(DataObject& params, int index, int resolution) = 0;
+    
 private:
-    std::string param;
+    std::string resolutionParam;
     int resolution;
     int count;
 };
 
-class RandomBinSampler : public IModelSampler {
+class BinSampler : public ResolutionSampler {
 public:
-    RandomBinSampler(const std::string& param, int resolution) : param(param), resolution(resolution), count(0) {}
-    void sample(DataObject& params) {
+    BinSampler(const std::string& param, const std::string& resolutionParam) : ResolutionSampler(resolutionParam), param(param) {}
+
+protected:
+    void sample(DataObject& params, int index, int resolution) {
         ParameterHelper helper(params);
         double max = helper.scale(param, helper.getMax(param));
         double min = helper.scale(param, helper.getMin(param));
         double binSize = (max-min)/resolution;
-        double r = (double)std::rand() / (double)RAND_MAX;
-        double val = min + binSize*(count%resolution) + binSize*r;
+        double val = calculateVal(params, min, max, index, binSize);
         val = helper.invScale(param, val);
         params[param].set<double>(val);
-        count++;
     }
+protected:
+    virtual double calculateVal(DataObject& params, double min, double max, int bin, double binSize) = 0;
+
 private:
     std::string param;
-    int resolution;
-    int count;
+};
+
+class StructuredSampler : public BinSampler {
+public:
+    StructuredSampler(const std::string& param, const std::string& resolutionParam) : BinSampler(param, resolutionParam) {}
+    double calculateVal(DataObject& params, double min, double max, int bin, double binSize) {
+        return min + binSize*(bin) + binSize/2.0;
+    }
+};
+
+class RandomBinSampler : public BinSampler {
+public:
+    RandomBinSampler(const std::string& param, const std::string& resolutionParam) : BinSampler(param, resolutionParam) {}
+    double calculateVal(DataObject& params, double min, double max, int bin, double binSize) {
+        double r = (double)std::rand() / (double)RAND_MAX;
+        return min + binSize*(bin) + binSize*r;
+    }
 };
 
 class RandomSampler : public IModelSampler {
 public:
-    RandomSampler(const std::string& param) : param(param) {}
+    RandomSampler(const std::string& param) : param(param) {
+        r = (double)std::rand() / (double)RAND_MAX;
+    }
     void sample(DataObject& params) {
         ParameterHelper helper(params);
         double max = helper.scale(param, helper.getMax(param));
         double min = helper.scale(param, helper.getMin(param));
-        double r = (double)std::rand() / (double)RAND_MAX;
         double val = min + r*(max-min);
         val = helper.invScale(param, val);
         params[param].set<double>(val);
     }
+
+    virtual void reset() {
+        r = (double)std::rand() / (double)RAND_MAX;
+    }
+    virtual bool hasNext() { return false; }
+    virtual void next() {}
+
 private:
     std::string param;
+    double r;
+};
+
+class AddParameterValueToSample : public IModelSampler {
+public:
+    AddParameterValueToSample(const std::string& param, double val) : param(param), val(val) {}
+    void sample(DataObject& params) {
+        params[param] = DoubleDataValue(val);
+    }
+    virtual void reset() {}
+    virtual bool hasNext() { return false; }
+    virtual void next() {}
+private:
+    std::string param;
+    double val;
 };
 
 class SampledModel : public ModelDecorator {
@@ -726,7 +805,11 @@ public:
 
     IModelSample* create(const DataObject& params) {
         DataObject p = params;
+        if (!sampler->hasNext()) {
+            sampler->reset();
+        }
         sampler->sample(p);
+        sampler->next();
         return ModelDecorator::create(p);
     }
 

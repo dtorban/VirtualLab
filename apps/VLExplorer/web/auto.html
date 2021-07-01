@@ -39,8 +39,9 @@
         function createNewSample() {
           console.log(modelList);
           if (modelList) {
-            let model = modelList[3];//cell
+            //let model = modelList[3];//cell
             //let model = modelList[4];//nmodel
+            let model = modelList[5];//nmodel substrate
             model.getParameters().then(function(params) {
               for (var key in params) {
                 if (!(typeof params[key] === 'object')) {
@@ -69,6 +70,7 @@
                 }
               }
               params.cpool = 80;
+              params.N = 6;
               /*
               0.1
 0.22269585080133
@@ -82,7 +84,7 @@
 134.712882579763
 300
 */
-              createSample(model, "a"+currentNum, params, 0.1, currentNum, 5);
+              createSample(model, "a"+currentNum, params, 0.1, currentNum, 1);
               /*createSample(model, "a"+currentNum, params, 0.1, currentNum).then( function() {
                   createSample(model, "a"+currentNum, params, 1, currentNum)
                 .then( function() {
@@ -109,9 +111,18 @@
               if (sample.nav.t < 3600*6) {
                 updateSample(sample);
               }
-              lineChart1.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;});
-              lineChart2.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;});
-              lineChart3.updateData(samples, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;});
+              var sampleData = [];
+              for (var i = 0; i < samples.length; i++) {
+                var s = samples[i];
+                for (var j = 0; j < s.params.samples.length; j++) {
+                  if (s.data.samples) {
+                    sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j]});
+                  }
+                }
+              }
+              lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;});
+              lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;});
+              lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;});
           });
         }
 
