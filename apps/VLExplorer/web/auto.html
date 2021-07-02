@@ -17,6 +17,7 @@
 	</head>
 	<body>
     <input id="sampleCreate" type="button" value="Create Sample" onclick="createNewSample()">
+    <input id="toggleSim" type="button" value="Toggle Sim" onclick="running = !running;">
     <div id="my_dataviz" class="lineChart"></div>
     <div id="my_dataviz2" class="lineChart"></div>
     <div id="my_dataviz3" class="lineChart"></div>
@@ -26,6 +27,8 @@
         var samples = [];
         var modelList = null;
         var currentNum = 0;
+        var simulations = 0;
+        var running = true;
 
         var api = new VLApi();
         $( document ).ready(function() {
@@ -37,7 +40,11 @@
         });
 
         function createNewSample() {
-          console.log(modelList);
+          if (!running) {
+            return;
+          }
+          simulations++;
+          console.log(simulations, samples.length);
           if (modelList) {
             //let model = modelList[3];//cell
             //let model = modelList[4];//nmodel
@@ -55,17 +62,23 @@
 
         function updateSample(sample) {
           sample.update().then(function(data) {
+              sample.chosen = 0;
               sample.nav.t += 10.0;//10.0*60;
               //sample.nav.t += 10.0*60;
               if (sample.nav.t < 300) {//sample.nav.t < 3600*6) {
                 updateSample(sample);
               }
               else {
-                if (sample.data.mean_aflow < 60 || sample.data.mean_aflow > 100) {
+                if (sample.data.mean_aflow < 40 || sample.data.mean_aflow > 100 || 
+                 sample.data.mean_traction < 200 || sample.data.mean_traction > 800
+                ) {
                   const index = samples.indexOf(sample);
                   if (index > -1) {
                     samples.splice(index, 1);
                   }
+                }
+                else {
+                  sample.chosen = 1;
                 }
                 sample.delete();
                 createNewSample();
@@ -75,7 +88,7 @@
                 var s = samples[i];
                 for (var j = 0; j < s.params.samples.length; j++) {
                   if (s.data.samples) {
-                    sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j]});
+                    sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen});
                   }
                 }
               }
