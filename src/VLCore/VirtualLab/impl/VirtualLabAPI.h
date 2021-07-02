@@ -825,6 +825,8 @@ private:
     double r;
 };
 
+
+
 class LocalRandomSampler : public IModelSampler {
 public:
     LocalRandomSampler(const std::string& param, double closeness) : param(param), closeness(closeness) {
@@ -944,6 +946,18 @@ private:
     int currentIndex;
     int bins;
     std::default_random_engine g;
+};
+
+class IterationSampler : public ResolutionSampler {
+public:
+    IterationSampler(const std::string& param, const std::string& resolutionParam) : ResolutionSampler(resolutionParam), param(param) {}
+
+    void sample(DataObject& params, int index, int resolution) {
+        params[param].set<double>(index);
+    }
+
+private:
+    std::string param;
 };
 
 /*

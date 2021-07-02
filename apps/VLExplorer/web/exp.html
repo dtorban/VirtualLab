@@ -1,0 +1,132 @@
+<html>
+	<head>
+		<title>Virtual Lab</title>
+		<style>
+      .lineChart {
+        position: relative;
+        float:left;
+        margin-left: 0;
+        width: 30%;
+      }
+
+		</style>
+		<script src="js/d3.v4.js"></script>
+		<script src="js/jquery-3.5.1.min.js"></script>
+		<script src="js/VLApi.js"></script>
+		<script src="js/DynamicLineChart.js"></script>
+	</head>
+	<body>
+    <input id="sampleCreate" type="button" value="Create Sample" onclick="createNewSample()">
+    <input id="toggleSim" type="button" value="Toggle Sim" onclick="running = !running;">
+    <div id="my_dataviz" class="lineChart"></div>
+    <div id="my_dataviz2" class="lineChart"></div>
+    <div id="my_dataviz3" class="lineChart"></div>
+	</body>
+
+	<script>
+        var samples = [];
+        var modelList = null;
+        var currentNum = 0;
+        var simulations = 0;
+        var running = true;
+
+        var api = new VLApi();
+        $( document ).ready(function() {
+
+          api.getModels().then(function(models) {
+            console.log(models);
+            modelList = models;
+          });
+        });
+
+        function createNewSample() {
+          if (!running) {
+            return;
+          }
+          simulations++;
+          console.log(simulations, samples.length);
+          if (modelList) {
+            //let model = modelList[3];//cell
+            //let model = modelList[4];//nmodel
+            let model = modelList[6];//nmodel substrate
+            model.getParameters().then(function(params) {
+              //params.cpool = 80;
+              params.N = 10;
+
+
+              createSample(model, "a"+currentNum, params, 0.1, currentNum, 1);
+
+            });
+          }
+        }
+
+        function updateSample(sample) {
+          sample.update().then(function(data) {
+              sample.chosen = 0;
+              sample.nav.t += 10.0;//10.0*60;
+              //sample.nav.t += 10.0*60;
+              //if (sample.nav.t < 300) {//sample.nav.t < 3600*6) {
+              if (sample.nav.t < 3600*6) {
+                updateSample(sample);
+              }
+              else {
+                if (sample.data.mean_aflow < 40 || sample.data.mean_aflow > 100 || 
+                 sample.data.mean_traction < 200 || sample.data.mean_traction > 800
+                ) {
+                  const index = samples.indexOf(sample);
+                  if (index > -1) {
+                    samples.splice(index, 1);
+                  }
+                }
+                else {
+                  sample.chosen = 1;
+                }
+                sample.delete();
+                createNewSample();
+              }
+              var sampleData = [];
+              for (var i = 0; i < samples.length; i++) {
+                var s = samples[i];
+                for (var j = 0; j < s.params.samples.length; j++) {
+                  if (s.data.samples) {
+                    sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen});
+                  }
+                }
+              }
+              lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;});
+              lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;});
+              lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;});
+          });
+        }
+
+        function createSample(model, name, params, k, num, size) {   
+          //return new Promise(function(resolve, reject) {       
+                var p = JSON.parse(JSON.stringify(params));
+                p.substrate_k = k;
+                p.num = num;
+                model.create(p).then(function(sample) { 
+                    //console.log("samples", name, k);
+                    sample.name = name;
+                    //sample.nav.t = 10;//3600.0;
+                    sample.nav.t = 10.0;
+                    samples.push(sample);
+                    //resolve();
+                    if (size > 1) {
+                      console.log(size);
+                      createSample(model, name, params, k, num, size - 1);
+                    }
+                    else {
+                      currentNum+=20;
+                      console.log("Sample Created");
+                    }
+                    updateSample(sample);
+                });
+          //});
+        }
+
+        var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow");
+        var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction");
+        var lineChart3 = new DynamicLineChart("my_dataviz3", "Substrate Stiffness", "Mean RMC");
+        
+        </script>
+</html>
