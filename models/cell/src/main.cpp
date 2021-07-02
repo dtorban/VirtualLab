@@ -578,11 +578,11 @@ int main(int argc, char* argv[]) {
         latinSampler->addParameter("mpool");
         
         //api.registerModel(new SampledModel(extendedNCell, latinSampler));
-        //api.registerModel(new SampledModel(extendedNCell, localSampler));
+        api.registerModel(new SampledModel(extendedNCell, localSampler));
 
 
 
-        api.registerModel(new SampledModel(new OptimizedModel(extendedNCell,new DoubleValueDistance("mean_aflow",90), 0.01, 5), localSampler));
+        //api.registerModel(new SampledModel(new OptimizedModel(extendedNCell,new DoubleValueDistance("mean_traction",100), 0.01, 20), localSampler));
         
 
         while(true) {

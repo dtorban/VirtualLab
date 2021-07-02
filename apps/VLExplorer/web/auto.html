@@ -43,34 +43,9 @@
             //let model = modelList[4];//nmodel
             let model = modelList[5];//nmodel substrate
             model.getParameters().then(function(params) {
-              for (var key in params) {
-                if (!(typeof params[key] === 'object')) {
-                  let scale = function(val) {
-                    if (getParamMetaData(params, key, "scale", "linear") == "log") {
-                      return Math.log(val);
-                    }
-                    else {
-                      return val;
-                    }
-                  };
-                  let inv_scale = function(val) {
-                    if (getParamMetaData(params, key, "scale", "linear") == "log") {
-                      return Math.exp(val);
-                    }
-                    else {
-                      return val;
-                    }
-                  };
-                  var val = scale(params[key]);
-                  let min = scale(getParamMetaData(params, key, "min", val));
-                  let max = scale(getParamMetaData(params, key, "max", val));
-                  //val = Math.random()*(max - min) + min;
-                  val = (Math.random()*0.1-0.05)*(max - min) + val;
-                  //params[key] = inv_scale(val);
-                }
-              }
-              params.cpool = 80;
+              //params.cpool = 80;
               params.N = 6;
+
 
               createSample(model, "a"+currentNum, params, 0.1, currentNum, 1);
 

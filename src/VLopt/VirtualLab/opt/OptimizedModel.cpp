@@ -19,7 +19,7 @@ public:
         }
 
         for (DataObject::const_iterator it = getParameters().begin(); it != getParameters().end(); it++) {
-            if (it->second.isType<double>()) {
+            if (it->second.isType<double>() && it->first != "N" && it->first != "num") {
                 paramKeys.push_back(it->first);
             }
         }
@@ -56,14 +56,23 @@ public:
         Eigen::MatrixXd A = Eigen::MatrixXd(testSamples.size(), paramKeys.size());
         Eigen::VectorXd b = Eigen::VectorXd(testSamples.size());
 
+        ParameterHelper helper(getParameters());
 
         for (int i = 0; i < testSamples.size(); i++) {
             Eigen::VectorXd diff = Eigen::VectorXd(paramKeys.size());
             for (int j = 0; j < paramKeys.size(); j++) {
-                diff[j] = testSamples[i]->getParameters()[paramKeys[j]].get<double>() - sample->getParameters()[paramKeys[j]].get<double>();
+                std::string key = paramKeys[j];
+                double testVal = helper.normalize(key, testSamples[i]->getParameters()[key].get<double>());
+                double sampleVal = helper.normalize(key, sample->getParameters()[key].get<double>());
+                //std::cout << key << " " << sampleVal << std::endl;
+
+                //std::cout << testVal << " " << sampleVal << " " << testVal - sampleVal << std::endl;
+                diff[j] = testVal - sampleVal;
             }
 
-            b[i] = distFunction->calculate(*sample, *testSamples[i]) / diff.norm();
+            b[i] = (distFunction->calculate(*testSamples[i]) - distFunction->calculate(*sample))  / diff.norm();
+            std::cout << "100 " << distFunction->calculate(*testSamples[i]) << " " << distFunction->calculate(*sample) << " " << (distFunction->calculate(*testSamples[i]) - distFunction->calculate(*sample)) << std::endl;
+            std::cout << "diff norm " << " " << diff.norm() << std::endl;
             Eigen::VectorXd dir = diff.normalized();
             A.block(i, 0, 1, paramKeys.size()) = dir.transpose();
         }
@@ -80,6 +89,9 @@ public:
         std::cout << "Average gradient Diff " << diffAverage << std::endl;
         prevGradient = sol;
 
+        std::cout << "Gradient Mag: " << sol.norm() << std::endl;
+        Eigen::VectorXd normGradient = sol.normalized();
+
         DataObject gradient;
         for (int i = 0; i < paramKeys.size(); i++) {
             gradient[paramKeys[i]] = DoubleDataValue(sol[i]);
@@ -92,12 +104,15 @@ public:
         }
         data["dist"] = dist;
 
-        ParameterHelper helper(getParameters());
+        double lambda = distFunction->calculate(*sample) / sol.norm();
+        std::cout << "lambda " << lambda << std::endl;
 
         for (int i = 0; i < paramKeys.size(); i++) {
             std::string key = paramKeys[i];
             double val = sample->getParameters()[key].get<double>();
-            std::cout << "params." << key << "=" << helper.clamp(key, val-sol[i]*2.0) << "; //" << val << "," << sol[i] << std::endl;
+            double normalizedVal = helper.normalize(key, val);
+            std::cout << "params." << key << "=" << helper.clamp(key, helper.deNormalize(key, normalizedVal - normGradient[i]*lambda))
+               << "; //" << val << " " << helper.normalize(key, val) << " " << normGradient[i] << " " << sol[i]*lambda << std::endl;
         }
     }
 

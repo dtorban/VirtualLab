@@ -12,7 +12,7 @@ public:
     class DistanceFunction {
     public:
         virtual ~DistanceFunction() {}
-        virtual double calculate(const IModelSample& a, const IModelSample& b) const = 0;
+        virtual double calculate(const IModelSample& a) const = 0;
     };
 
     OptimizedModel(IModel* model, DistanceFunction* distFunction, double closeness, int numTestSamples);
@@ -29,11 +29,12 @@ private:
 class DoubleValueDistance : public OptimizedModel::DistanceFunction {
 public:
     DoubleValueDistance(const std::string& key, double val) : key(key), val(val) {}
-    double calculate(const IModelSample& a, const IModelSample& b) const {
-        double x1 = a.getData()[key].get<double>();
-        double x2 = b.getData()[key].get<double>();
+    double calculate(const IModelSample& a) const {
+        //vl::Array arr = a.getData()["samples"].get<vl::Array>();
+        //double x = arr[0].get<vl::Object>()[key].get<double>();
+        double x = a.getData()[key].get<double>();
         //return std::fabs(val-(x2-x1));
-        return std::fabs(val - x2);
+        return std::fabs(val-x);
     }
 
 private:

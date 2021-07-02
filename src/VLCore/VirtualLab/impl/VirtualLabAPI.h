@@ -424,6 +424,21 @@ public:
         return val;
     }
 
+    double normalize(const std::string& param, double val) {
+        double min = scale(param, getMin(param));
+        double max = scale(param, getMax(param));
+        double scaleVal = scale(param,val);
+        return (scaleVal-min)/(max-min);
+    }
+
+    double deNormalize(const std::string& param, double val) {
+        double min = scale(param, getMin(param));
+        double max = scale(param, getMax(param));
+        double scaleVal = val*(max-min)+min;
+        return invScale(param, scaleVal);
+    }
+
+
     template<typename T>
     const T& getMetaData(const std::string& param, const std::string& key) const {
         if (const_metadata) {
