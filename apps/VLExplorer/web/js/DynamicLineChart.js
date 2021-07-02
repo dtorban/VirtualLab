@@ -1,4 +1,4 @@
-function DynamicLineChart(container) {
+function DynamicLineChart(container, xlabel, ylabel) {
         // set the dimensions and margins of the graph
         this.margin = {top: 10, right: 30, bottom: 30, left: 60},
         this.width = 460 - this.margin.left - this.margin.right,
@@ -13,6 +13,21 @@ function DynamicLineChart(container) {
             .attr("transform",
                   "translate(" + this.margin.left + "," + this.margin.top + ")");
         
+        this.svg.append("text")
+                  .attr("class", "x label")
+                  .attr("text-anchor", "end")
+                  .attr("x", this.width)
+                  .attr("y", this.height - 6)
+                  .text(xlabel);
+
+        this.svg.append("text")
+                  .attr("class", "y label")
+                  .attr("text-anchor", "end")
+                  .attr("y", 6)
+                  .attr("dy", ".75em")
+                  .attr("transform", "rotate(-90)")
+                  .text(ylabel);
+
         /*var lineKey = "name";
         var xKey = "year";
         var yKey = "n";*/
@@ -56,6 +71,8 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey) {
       else {
         this.yAxis.call(d3.axisLeft(y))
       }
+
+      
 
       // color palette
       var res = sumstat.map(function(d){ return d.key }) // list of group names

@@ -44,7 +44,7 @@
             let model = modelList[5];//nmodel substrate
             model.getParameters().then(function(params) {
               //params.cpool = 80;
-              params.N = 6;
+              params.N = 8;
 
 
               createSample(model, "a"+currentNum, params, 0.1, currentNum, 1);
@@ -57,8 +57,18 @@
           sample.update().then(function(data) {
               sample.nav.t += 10.0;//10.0*60;
               //sample.nav.t += 10.0*60;
-              if (sample.nav.t < 3600*6) {
+              if (sample.nav.t < 300) {//sample.nav.t < 3600*6) {
                 updateSample(sample);
+              }
+              else {
+                if (sample.data.mean_aflow < 60 || sample.data.mean_aflow > 100) {
+                  const index = samples.indexOf(sample);
+                  if (index > -1) {
+                    samples.splice(index, 1);
+                  }
+                }
+                sample.delete();
+                createNewSample();
               }
               var sampleData = [];
               for (var i = 0; i < samples.length; i++) {
@@ -83,8 +93,8 @@
                 model.create(p).then(function(sample) { 
                     //console.log("samples", name, k);
                     sample.name = name;
-                    sample.nav.t = 10;//3600.0;
-                    //sample.nav.t = 3600.0;
+                    //sample.nav.t = 10;//3600.0;
+                    sample.nav.t = 10.0;
                     samples.push(sample);
                     //resolve();
                     if (size > 1) {
@@ -100,9 +110,9 @@
           //});
         }
 
-        var lineChart1 = new DynamicLineChart("my_dataviz");
-        var lineChart2 = new DynamicLineChart("my_dataviz2");
-        var lineChart3 = new DynamicLineChart("my_dataviz3");
+        var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow");
+        var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction");
+        var lineChart3 = new DynamicLineChart("my_dataviz3", "Substrate Stiffness", "Mean RMC");
         
         </script>
 </html>

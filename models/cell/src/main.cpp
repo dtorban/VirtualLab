@@ -569,16 +569,16 @@ int main(int argc, char* argv[]) {
         }
 
         LatinHypercubeSampler* latinSampler = new LatinHypercubeSampler(5);
-        /*for (DataObject::const_iterator it = extendedNCell->getParameters().begin(); it != extendedNCell->getParameters().end(); it++) {
+        for (DataObject::const_iterator it = extendedNCell->getParameters().begin(); it != extendedNCell->getParameters().end(); it++) {
             if (it->first != "N") {
                 latinSampler->addParameter(it->first);
             }
-        }*/
-        latinSampler->addParameter("cpool");
-        latinSampler->addParameter("mpool");
+        }
+        //latinSampler->addParameter("cpool");
+        //latinSampler->addParameter("mpool");
         
         //api.registerModel(new SampledModel(extendedNCell, latinSampler));
-        api.registerModel(new SampledModel(extendedNCell, localSampler));
+        api.registerModel(new SampledModel(extendedNCell, latinSampler));
 
 
 
