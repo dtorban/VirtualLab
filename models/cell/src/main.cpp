@@ -179,12 +179,12 @@ public:
         params["min"] = DataObject();
         params["scale"] = DataObject();
 
-        addParameter("substrate_k", 1.0, 0.1, 300.0, "log");
+        addParameter("substrate_k", 1.0, 0.01, 1000.0, "log");
         addParameter("length", 5000.0, 100, 10000, "log");
         addParameter("cell_k", 10000.0, 100, 100000, "log");
         addParameter("totact", 100000.0, 100, 1000000, "log");
         addParameter("mpool", 1000.0, 100, 10000, "log");
-        addParameter("cpool", 750, 75, 750, "log");
+        addParameter("cpool", 750, 75, 7500, "log");
         addParameter("cell_nclutch", 10, 1, 100, "log");
         addParameter("kon", 1, 0.1, 10, "log");
         addParameter("koff", 0.1, 0.01, 1, "log");
@@ -581,18 +581,18 @@ int main(int argc, char* argv[]) {
 
         // Experiment Model
         IModel* extendedModel = createExtendedModel();
-        extendedModel = new NModel("N-Cell", extendedModel, new IterationSampler("num","N"));
+        /*extendedModel = new NModel("N-Cell", extendedModel, new IterationSampler("num","N"));
         ExtendedModel* ext = new ExtendedModel("Experiment", extendedModel);
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
-        extendedModel = ext;
+        extendedModel = ext;*/
         extendedModel = new NModel("Substate Model", extendedModel, new RandomBinSampler("substrate_k", "N"));
-        ext = new ExtendedModel("Experiment", extendedModel);
-        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_rmc"), "mean_rmc"));
+        ExtendedModel* ext = new ExtendedModel("Experiment", extendedModel);
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
-        extendedModel = ext;//new SampledModel(ext, new RandomSampler("num"));
+        extendedModel = new SampledModel(ext, new RandomSampler("num"));
         api.registerModel(extendedModel);
 
         //api.registerModel(new SampledModel(new OptimizedModel(extendedNCell,new DoubleValueDistance("mean_traction",100), 0.01, 20), localSampler));
