@@ -56,14 +56,31 @@
               //params.mpool = lerpParamMetaData(params, "mpool", 100, 1000, percent*0.5);
               //params.cpool = lerpParamMetaData(params, "cpool", 75, 750, percent*0.5);
               
-              //params.mpool = lerpParamMetaData(params, "mpool", 100, 1000, percent*0.5);
-              params.cpool = lerpParamMetaData(params, "cpool", 5, 300, percent);
+              //params.cpool = lerpParamMetaData(params, "cpool", 50, 500, percent);
+
+              //params.mpool = lerpParamMetaData(params, "mpool", 50, 1600, percent);
+              //params.cpool = lerpParamMetaData(params, "cpool", 50, 1600, percent);
+
+              //params.mpool = lerpParamMetaData(params, "mpool", 50, 750, percent);
+              //params.cpool = lerpParamMetaData(params, "cpool", 50, 750, percent);
+
+
+              params.mpool = lerpParamMetaData(params, "mpool", 50, 1600, percent);
+              params.cpool = lerpParamMetaData(params, "cpool", 50, 1600, percent);
+              
+              //params.kon = lerpParamMetaData(params, "mpool", 0.3, 3, percent);
+              //params.koff = lerpParamMetaData(params, "cpool", 0.1, 1, percent);
+
+              //addParameter("kon", 1, 0.1, 10, "log");
+              //addParameter("koff", 0.1, 0.01, 1, "log");
+
               console.log(params.cpool);
               params.N = 10;
-              params.num = simulations;
+              //params.num = simulations;
               simulations++;
 
-              createSample(model, currentNum, params, 0.1, currentNum, 1);
+              //createSample(model, currentNum, params, 0.1, simulations, 1);
+              createSample(model, currentNum, params, 0.1, 0, 1);
 
             });
           }
