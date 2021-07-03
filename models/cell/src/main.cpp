@@ -592,7 +592,8 @@ int main(int argc, char* argv[]) {
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
-        extendedModel = new SampledModel(ext, new RandomSampler("num"));
+        extendedModel = ext;
+        //extendedModel = new SampledModel(ext, new RandomSampler("num"));
         api.registerModel(extendedModel);
 
         //api.registerModel(new SampledModel(new OptimizedModel(extendedNCell,new DoubleValueDistance("mean_traction",100), 0.01, 20), localSampler));

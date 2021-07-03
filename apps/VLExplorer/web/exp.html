@@ -51,18 +51,14 @@
             model.getParameters().then(function(params) {
               //params.cpool = 80;
               params.N = 10;
-
-              if (simulations == 1) {
-                params.cpool = 7500;
-                params.mpool = 10000;
-              }
+              params.num = simulations;
+              simulations++;
 
               createSample(model, "a"+currentNum, params, 0.1, currentNum, 1);
 
             });
           }
 
-          simulations++;
         }
 
         function updateSample(sample) {
