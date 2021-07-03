@@ -76,9 +76,12 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey) {
 
       // color palette
       var res = sumstat.map(function(d){ return d.key }) // list of group names
-      var color = d3.scaleOrdinal()
+      /*var color = d3.scaleOrdinal()
         .domain(res)
-        .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'])
+        .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'])*/
+
+      var color = d3.scaleLinear().domain([1,10])
+        .range(["#b8c1f5", "blue"])
     
       this.svg.selectAll(".line")
         .data(sumstat)
@@ -99,7 +102,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey) {
           .append("path")
             .attr("class","line")
             .attr("fill", "none")
-            .attr("stroke", function(d){ return color(d.key) })
+            .attr("stroke", function(d){ return color(+d.key) })
             .attr("stroke-width", 1.5)
             .attr("d", function(d){
               return d3.line()

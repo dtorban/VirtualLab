@@ -49,12 +49,21 @@
             //let model = modelList[4];//nmodel
             let model = modelList[6];//nmodel substrate
             model.getParameters().then(function(params) {
-              //params.cpool = 80;
+              //params.mpool = 10000;
+              //params.cpool = 7500;
+              var percent = 1.0*(simulations%10)/(9.0);
+              console.log(percent);
+              //params.mpool = lerpParamMetaData(params, "mpool", 100, 1000, percent*0.5);
+              //params.cpool = lerpParamMetaData(params, "cpool", 75, 750, percent*0.5);
+              
+              //params.mpool = lerpParamMetaData(params, "mpool", 100, 1000, percent*0.5);
+              params.cpool = lerpParamMetaData(params, "cpool", 5, 300, percent);
+              console.log(params.cpool);
               params.N = 10;
               params.num = simulations;
               simulations++;
 
-              createSample(model, "a"+currentNum, params, 0.1, currentNum, 1);
+              createSample(model, currentNum, params, 0.1, currentNum, 1);
 
             });
           }
@@ -71,7 +80,7 @@
                 updateSample(sample);
               }
               else {
-                if (sample.data.mean_aflow < 40 || sample.data.mean_aflow > 100 || 
+                /*if (sample.data.mean_aflow < 40 || sample.data.mean_aflow > 100 || 
                  sample.data.mean_traction < 200 || sample.data.mean_traction > 800
                 ) {
                   const index = samples.indexOf(sample);
@@ -81,9 +90,9 @@
                 }
                 else {
                   sample.chosen = 1;
-                }
+                }*/
                 sample.delete();
-                createNewSample();
+                //createNewSample();
               }
               var sampleData = [];
               for (var i = 0; i < samples.length; i++) {
@@ -108,7 +117,7 @@
                 model.create(p).then(function(sample) { 
                     //console.log("samples", name, k);
                     sample.name = name;
-                    //sample.nav.t = 10;//3600.0;
+                    //sample.nav.t = 3600.0;
                     sample.nav.t = 10.0;
                     samples.push(sample);
                     //resolve();
@@ -117,7 +126,7 @@
                       createSample(model, name, params, k, num, size - 1);
                     }
                     else {
-                      currentNum+=20;
+                      currentNum++;
                       console.log("Sample Created");
                     }
                     updateSample(sample);

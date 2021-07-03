@@ -10,7 +10,7 @@ namespace vl {
 class PCAModel : public IModel, public IDataConsumer {
 public:
 	PCAModel(const std::string& name, IDataProducer* producer) : name(name) {
-		producer->addConsumer(this);
+		//producer->addConsumer(this);
         params["params"] = DoubleDataValue(0);
         params["navigation"] = DoubleDataValue(0);
         params["data"] = DoubleDataValue(0);

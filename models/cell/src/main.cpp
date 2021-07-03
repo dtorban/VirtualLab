@@ -179,12 +179,15 @@ public:
         params["min"] = DataObject();
         params["scale"] = DataObject();
 
-        addParameter("substrate_k", 1.0, 0.01, 1000.0, "log");
+        //addParameter("substrate_k", 1.0, 0.01, 1000.0, "log");
+        addParameter("substrate_k", 1.0, 0.01, 100.0, "log");
         addParameter("length", 5000.0, 100, 10000, "log");
         addParameter("cell_k", 10000.0, 100, 100000, "log");
         addParameter("totact", 100000.0, 100, 1000000, "log");
-        addParameter("mpool", 1000.0, 100, 10000, "log");
-        addParameter("cpool", 750, 75, 7500, "log");
+        //addParameter("mpool", 1000.0, 100, 10000, "log");
+        addParameter("mpool", 1000.0, 50, 10000, "log");
+        //addParameter("cpool", 750, 75, 7500, "log");
+        addParameter("cpool", 750, 5, 7500, "log");
         addParameter("cell_nclutch", 10, 1, 100, "log");
         addParameter("kon", 1, 0.1, 10, "log");
         addParameter("koff", 0.1, 0.01, 1, "log");

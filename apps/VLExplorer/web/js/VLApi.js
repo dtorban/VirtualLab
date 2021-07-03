@@ -121,3 +121,25 @@ function getParamMetaData(params, param, key, defaultVal) {
     }
 }
 
+function lerpParamMetaData(params, param, a, b, percent) { 
+    let scale = function(val) {
+        if (getParamMetaData(params, param, "scale", "linear") == "log") {
+            return Math.log(val);
+        }
+        else {
+            return val;
+        }
+    };
+    let inv_scale = function(val) {
+        if (getParamMetaData(params, param, "scale", "linear") == "log") {
+            return Math.exp(val);
+        }
+        else {
+            return val;
+        }
+    };
+    var aVal = scale(a);
+    var bVal = scale(b);
+    var val = (percent)*(bVal - aVal) + aVal;
+    return inv_scale(val);
+}
