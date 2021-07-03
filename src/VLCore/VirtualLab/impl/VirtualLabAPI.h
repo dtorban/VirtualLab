@@ -7,6 +7,7 @@
 #include <mutex>
 #include <random>
 #include <chrono>
+#include <time.h>
 
 namespace vl {
 
@@ -780,6 +781,7 @@ public:
 class RandomBinSampler : public BinSampler {
 public:
     RandomBinSampler(const std::string& param, const std::string& resolutionParam) : BinSampler(param, resolutionParam) {
+        std::srand(time(NULL));
         r = (double)std::rand() / (double)RAND_MAX;
     }
 
@@ -803,6 +805,7 @@ private:
 class RandomSampler : public IModelSampler {
 public:
     RandomSampler(const std::string& param) : param(param) {
+        std::srand(time(NULL));
         r = (double)std::rand() / (double)RAND_MAX;
     }
     void sample(DataObject& params) {
