@@ -81,7 +81,8 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey) {
         .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'])*/
 
       var color = d3.scaleLinear().domain([1,10])
-        .range(["#b8c1f5", "blue"])
+      .range(["#b8c1f5", "blue"])
+      //.range(["red", "blue"])
     
       this.svg.selectAll(".line")
         .data(sumstat)
