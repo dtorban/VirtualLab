@@ -36,7 +36,7 @@ function DynamicLineChart(container, xlabel, ylabel) {
 
 }
 
-DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey) {
+DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, colorKey) {
     var data = samples;
     //var data = [{year:1234, name:"toast", n:1234}, {year:1235, name:"toast", n:2346}, {year:1235, name:"abc", n:200}, {year:1234, name:"abc", n:300}];
     //Read the data
@@ -103,8 +103,9 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey) {
           .append("path")
             .attr("class","line")
             .attr("fill", "none")
-            .attr("stroke", function(d){ return color(+d.key) })
-            .attr("stroke-width", 1.5)
+            .attr("stroke", function(d){ return colorKey(d) })
+            //.style("opacity", function(d) { return +d.values[0].chosen > 0 ? 0 : 1; })
+            .attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
             .attr("d", function(d){
               return d3.line()
                 .x(function(d) { return x(xKey(d)); })
@@ -114,6 +115,8 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey) {
 
       this.svg.selectAll(".line")
           .data(sumstat)
+          //.style("opacity", function(d) { return +d.values[0].chosen > 0 ? 0 : 1; })
+          .attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
           .attr("d", function(d){
               return d3.line()
                 .x(function(d) { return x(xKey(d)); })

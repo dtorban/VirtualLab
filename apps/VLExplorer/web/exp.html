@@ -38,6 +38,11 @@
       .sample{margin-top: 2px;margin-bottom: 2px; font-size: small;white-space: nowrap;}
       .section-title{margin-top: 15px;margin-bottom: 10px;font-weight: bold;}
       #samples{overflow: auto; height: 300px;}
+      progress {
+				background-color: #c0bdbd;
+				width: 30px;
+				margin-right: 10px;
+			}
 		</style>
 		<script src="js/d3.v4.js"></script>
 		<script src="js/jquery-3.5.1.min.js"></script>
@@ -199,14 +204,34 @@
               samplingMethods.push(new SamplingStrategy(params, "Low"));
               samplingMethods.push(new SamplingStrategy(params, "High", function(params, callback) {
                   params.mpool = 10000;
-                  params.cpool = 750;
+                  params.cpool = 7500;
                   callback();
               }));
-              samplingMethods.push(new SamplingStrategy(params, "Interp", function(params, callback) {
+              samplingMethods.push(new SamplingStrategy(params, "Interp", function(params, callback, samplingMethod) {
+                var numSamples = 10;
                 if (createNum <= 0) {
-                  createNum = 10;
+                  createNum = numSamples;
+                  var selected = 0;
+                  for (var i = 0; i < samples.length; i++) {
+                    if (samples[i].chosen == 1) {
+                      if (selected == 0) {
+                        samplingMethod.sampleA = samples[i];
+                        //samplingMethod.sampleA = samples[samples.length == 2 ? 0 : samples.length-1];
+                      }
+                      else {
+                        samplingMethod.sampleB = samples[i];
+                        //samplingMethod.sampleB = samples[1];
+                        break;
+                      }
+                      selected++;
+                    }
+                  }
                 }
-                var p = JSON.parse(JSON.stringify(interpolate(samples[0].params,samples[1].params, 10)));
+                var percent = 1.0*((numSamples-createNum)%numSamples)/(numSamples-1);
+                var color = d3.scaleLinear().domain([0,1])
+                  .range([samplingMethod.sampleA.color, samplingMethod.sampleB.color]);
+                samplingMethod.color = color(percent);
+                var p = JSON.parse(JSON.stringify(interpolate(samplingMethod.sampleA.params, samplingMethod.sampleB.params, numSamples)));
                 Object.keys(p).forEach(function(key, index) {
                   if (!(typeof p[key] === 'object')) {
                     params[key] = p[key];
@@ -214,18 +239,24 @@
                 });
                 callback();
               }));
-              samplingMethods.push(new SamplingStrategy(params, "Local", function(params, callback) {
+              samplingMethods.push(new SamplingStrategy(params, "Random", function(params, callback) {
                 if (createNum <= 0) {
-                  createNum = 10;
+                  createNum = 1;
                 }
-                /*var p = JSON.parse(JSON.stringify(interpolate(samples[0].params,samples[1].params, 10)));
-                Object.keys(p).forEach(function(key, index) {
-                  if (!(typeof p[key] === 'object')) {
-                    params[key] = p[key];
+                //var p = JSON.parse(JSON.stringify(interpolate(samples[0].params,samples[1].params, 10)));
+                Object.keys(params).forEach(function(key, index) {
+                  if (!(typeof params[key] === 'object')) {
+                    var r = Math.random();
+                    params[key] = lerpParamMetaData(params, key, getParamMetaData(params, key, "min", params[key]), getParamMetaData(params, key, "max", params[key]), r);
                   }
-                });*/
+                });
                 callback();
               }));
+              samplingMethods[0].color = "#000BFF";
+              samplingMethods[1].color = "#FF0000";
+              samplingMethods[2].color = "#000BFF";
+              samplingMethods[3].color = "#9E9E9E";
+              samplingMethods[4].color = "#000BFF";
               updateSamplingMethods();
             });
           });
@@ -235,7 +266,7 @@
           $("#samplingMethods").html("");
           samplingMethods.forEach(function(item, index) {
             var div = $(" <div class=\"sampling\"><div style=\"position:relative; float:left; width: 75px;\">" +
-              item.name + "</div><input type=\"button\" value=\"+\" onclick=\"createNewSample(samplingMethods["+index+"])\"></div>");
+              item.name + "</div><input type=\"button\" value=\"+\" onclick=\"createNewSample(samplingMethods["+index+"])\"><input type=\"color\" value=\"" + item.color + "\"></div>");
             $("#samplingMethods").append(div);
           });
         }
@@ -293,7 +324,10 @@
 
         function updateSample(sample) {
           sample.update().then(function(data) {
-              sample.chosen = 0;
+              let prog = Math.floor(100.0*sample.nav.t/(3600*6));
+              $("#progress-" + sample.id).val(''+prog);
+
+              //sample.chosen = 0;
               sample.nav.t += 10.0;//10.0*60;
               //sample.nav.t += 10.0*60;
               //if (sample.nav.t < 300) {//sample.nav.t < 3600*6) {
@@ -320,13 +354,13 @@
                 var s = samples[i];
                 for (var j = 0; j < s.params.samples.length; j++) {
                   if (s.data.samples) {
-                    sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen});
+                    sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen, color: s.color});
                   }
                 }
               }
-              lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;});
-              lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;});
-              lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;});
+              lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;}, function(d) {return d.values[0].color;});
+              lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;}, function(d) {return d.values[0].color;});
+              lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.values[0].color;});
           });
         }
 
@@ -337,24 +371,41 @@
                     if (createNum > 0) {
                       createNewSample(samplingMethod);
                     }
+                    sample.color = samplingMethod.color;
                     sample.name = name;
                     sample.nav.t = 10.0;
+                    sample.id = samples.length;
                     samples.push(sample);
                     currentNum++;
                     console.log("Sample Created");
                     var div = $("<div class='sample'></div>");
                     var tempParams = JSON.parse(JSON.stringify(params));
                     delete tempParams[".metadata"];
-                    div.append("<input type='checkbox' class='sample-checkbox'>")
+                    var checkbox = $("<input type='checkbox' class='sample-checkbox'>");
+                    var currentSample = samples.length-1;
+                    checkbox.change(function () {
+                      if(checkbox.is(':checked')){
+                          samples[currentSample].chosen = 1;
+                      } else {
+                          samples[currentSample].chosen = 0;
+                      }
+                      console.log(currentSample, samples[currentSample].chosen);
+                    });
+                    checkbox.css('outline-color', sample.color);
+                    checkbox.css('outline-style', 'solid');
+                    checkbox.css('outline-width', 'medium');
+                    div.append(checkbox);
+                    div.append("<progress id='progress-"+(samples.length-1)+"' value='0' max='100'> 0% </progress>")
                     div.append(sampleName + ": " + JSON.stringify(tempParams));
                     $("#samples").append(div);
+                    
                     updateSample(sample);
                 });
         }
 
         function interpolate(a, b, num) {
           //for (var i = 1; i < num-1; i++) {
-            var i = createNum;
+            var i = num-createNum;
             var percent = 1.0*(i%num)/(num-1);
             //percent = 0.5;
             console.log(percent);

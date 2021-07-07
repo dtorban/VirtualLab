@@ -2,6 +2,7 @@ function SamplingStrategy(params, name, sampleMethod = null) {
   var self = this;
   this.name = name;
   this.sampleMethod = sampleMethod;
+  this.color = "#e66465";
 
   var p = JSON.parse(JSON.stringify(params));
   self.params = p;
@@ -19,7 +20,7 @@ SamplingStrategy.prototype.sample = function() {
           name = self.name;
         }
         resolve({name:name, params:p});
-      });
+      }, self);
     }
     else {
       console.log("Resolved!a");
