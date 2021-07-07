@@ -13,14 +13,17 @@ SamplingStrategy.prototype.sample = function() {
     var p = JSON.parse(JSON.stringify(self.params));
 
     if (self.sampleMethod) {
-      self.sampleMethod(p, function() {
-        console.log("Resolved!");
-        resolve(p);
+      self.sampleMethod(p, function(name) {
+        console.log("Resolved!" + name);
+        if (!name) {
+          name = self.name;
+        }
+        resolve({name:name, params:p});
       });
     }
     else {
       console.log("Resolved!a");
-      resolve(p);
+      resolve({name:self.name, params:p});
     }
   });
   

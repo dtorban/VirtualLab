@@ -116,7 +116,7 @@
         <div class="section-title">Sampling Methods</div>
         <div id="samplingMethods">
           <div class="sampling"><div style="position:relative; float:left; width: 75px;">Low </div><input type="button" value="+" onclick="createNewSample()"></div>
-          <div class="sampling"><div style="position:relative; float:left; width: 75px;">High </div> <input type="button" value="+" onclick="createNewSample()"></div>
+          <!--div class="sampling"><div style="position:relative; float:left; width: 75px;">High </div> <input type="button" value="+" onclick="createNewSample()"></div-->
         </div>
         <!--input id="createSampling" type="button" value="Create Sampling" onclick="$('.popup').hide();$('#sampling').show();"-->
         <!--input id="sampleCreate" type="button" value="Create Sample" onclick="createNewSample()"-->
@@ -127,6 +127,7 @@
         <div class="section-title">Samples</div>
         <div id="samples">
         </div>
+        <input type="button" value="Create Template"><input type="button" value="Interpolate" onclick="interpolate(samples[0].params, samples[1].params, 3);">
       </div>
 
     </div>
@@ -148,6 +149,7 @@
         var running = true;
         var samplingMethods = [];
         var model = null;
+        var createNum = 0;
 
         var color = d3.scaleLinear().domain([0,1])
           .range(["#b8c1f5", "blue"])
@@ -187,7 +189,8 @@
                     Object.keys(input).forEach(function(key, index) {
                       params[key] = +input[key].val();
                     });
-                    callback();
+                    console.log($("#adhoc-name"), $("#adhoc-name").val())
+                    callback($("#adhoc-name").val());
                     $("#adhoc").hide();
                     $("#adhoc").unbind();
                   });
@@ -198,6 +201,30 @@
                   params.mpool = 10000;
                   params.cpool = 750;
                   callback();
+              }));
+              samplingMethods.push(new SamplingStrategy(params, "Interp", function(params, callback) {
+                if (createNum <= 0) {
+                  createNum = 10;
+                }
+                var p = JSON.parse(JSON.stringify(interpolate(samples[0].params,samples[1].params, 10)));
+                Object.keys(p).forEach(function(key, index) {
+                  if (!(typeof p[key] === 'object')) {
+                    params[key] = p[key];
+                  }
+                });
+                callback();
+              }));
+              samplingMethods.push(new SamplingStrategy(params, "Local", function(params, callback) {
+                if (createNum <= 0) {
+                  createNum = 10;
+                }
+                /*var p = JSON.parse(JSON.stringify(interpolate(samples[0].params,samples[1].params, 10)));
+                Object.keys(p).forEach(function(key, index) {
+                  if (!(typeof p[key] === 'object')) {
+                    params[key] = p[key];
+                  }
+                });*/
+                callback();
               }));
               updateSamplingMethods();
             });
@@ -247,15 +274,15 @@
               //addParameter("kon", 1, 0.1, 10, "log");
               //addParameter("koff", 0.1, 0.01, 1, "log");
 
-              samplingMethod.sample().then(function(params) {
-
-                console.log(params.cpool);
+              samplingMethod.sample().then(function(s) {
+                var params = s.params;
+                console.log(s.name, s.params.cpool);
                 params.N = 10;
                 params.num = simulations;
                 simulations++;
 
                 //createSample(model, currentNum, params, 0.1, simulations, 1);
-                createSample(model, currentNum, params);
+                createSample(model, currentNum, s.name, params, samplingMethod);
               });
 
 
@@ -303,9 +330,13 @@
           });
         }
 
-        function createSample(model, name, params) {    
+        function createSample(model, name, sampleName, params, samplingMethod) {    
                 var p = JSON.parse(JSON.stringify(params));
                 model.create(p).then(function(sample) { 
+                    createNum--;
+                    if (createNum > 0) {
+                      createNewSample(samplingMethod);
+                    }
                     sample.name = name;
                     sample.nav.t = 10.0;
                     samples.push(sample);
@@ -314,11 +345,51 @@
                     var div = $("<div class='sample'></div>");
                     var tempParams = JSON.parse(JSON.stringify(params));
                     delete tempParams[".metadata"];
-                    div.html(JSON.stringify(tempParams));
+                    div.append("<input type='checkbox' class='sample-checkbox'>")
+                    div.append(sampleName + ": " + JSON.stringify(tempParams));
                     $("#samples").append(div);
                     updateSample(sample);
                 });
         }
+
+        function interpolate(a, b, num) {
+          //for (var i = 1; i < num-1; i++) {
+            var i = createNum;
+            var percent = 1.0*(i%num)/(num-1);
+            //percent = 0.5;
+            console.log(percent);
+
+            var params = JSON.parse(JSON.stringify(a));
+
+            Object.keys(params).forEach(function(key, index) {
+              if (!(typeof params[key] === 'object')) {
+                var aVal = a[key];
+                var bVal = b[key];
+                if (aVal > bVal) {
+                  var temp = bVal;
+                  bVal = aVal;
+                  aVal = temp;
+                  percent = 1-percent;
+                }
+                if (bVal-aVal > 0.0001) {
+                  params[key] = lerpParamMetaData(params, key, aVal, bVal, percent);
+                }
+                console.log(key, params[key]);
+              }
+            });
+
+            return params;
+            //createNewSample(samplingMethods[2]);
+            //setTimeout(() => {  
+              /*createNewSample(new SamplingStrategy(params, "Interp", function(params, callback) {
+                    params = p;
+                    console.log(params);
+                    callback();
+              }));*/
+              //}, 1000);
+            
+          }
+        //}
 
         var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow");
         var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction");
