@@ -3,6 +3,9 @@ function SamplingStrategy(params, name, sampleMethod = null) {
   this.name = name;
   this.sampleMethod = sampleMethod;
   this.color = "#e66465";
+  this.numSamples = 1;
+  this.createNum = 0;
+  this.hasColor = true;
 
   var p = JSON.parse(JSON.stringify(params));
   self.params = p;
@@ -10,6 +13,11 @@ function SamplingStrategy(params, name, sampleMethod = null) {
 
 SamplingStrategy.prototype.sample = function() {
   var self = this;
+
+  if (this.createNum <= 0) {
+    this.createNum = this.numSamples;
+  }
+
   return new Promise(function(resolve, reject){
     var p = JSON.parse(JSON.stringify(self.params));
 

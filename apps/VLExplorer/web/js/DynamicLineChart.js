@@ -1,8 +1,11 @@
-function DynamicLineChart(container, xlabel, ylabel) {
+function DynamicLineChart(container, xlabel, ylabel, lineHover, lineClick) {
         // set the dimensions and margins of the graph
         this.margin = {top: 10, right: 30, bottom: 30, left: 60},
         this.width = 460 - this.margin.left - this.margin.right,
         this.height = 400 - this.margin.top - this.margin.bottom;
+
+        this.lineHover = lineHover;
+        this.lineClick = lineClick;
         
         // append the svg object to the body of the page
         this.svg = d3.select("#" + container)
@@ -37,6 +40,7 @@ function DynamicLineChart(container, xlabel, ylabel) {
 }
 
 DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, colorKey) {
+    var self = this;
     var data = samples;
     //var data = [{year:1234, name:"toast", n:1234}, {year:1235, name:"toast", n:2346}, {year:1235, name:"abc", n:200}, {year:1234, name:"abc", n:300}];
     //Read the data
@@ -104,6 +108,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
             .attr("class","line")
             .attr("fill", "none")
             .attr("stroke", function(d){ return colorKey(d) })
+            .style("opacity", 0.5)
             //.style("opacity", function(d) { return +d.values[0].chosen > 0 ? 0 : 1; })
             .attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
             .attr("d", function(d){
@@ -111,7 +116,54 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
                 .x(function(d) { return x(xKey(d)); })
                 .y(function(d) { return y(+yKey(d)); })
                 (d.values)
-            });
+            })
+            /*.on("mouseenter", function(d) {
+              //console.log(+d.key,);
+              //d3.select(d3.event.target).attr("stroke-width", function(d) { return 2.0 + 1.5; })
+              //.attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
+            });*/
+
+      // Draw the line
+      this.svg.selectAll(".hoverline")
+        .data(sumstat)
+        .enter()
+        .append("path")
+          .attr("class","hoverline")
+          .attr("fill", "none")
+          .attr("stroke", function(d){ return colorKey(d) })
+          .style("opacity","0.0")
+          .style("stroke-width","15px")
+          .attr("d", function(d){
+            return d3.line()
+              .x(function(d) { return x(xKey(d)); })
+              .y(function(d) { return y(+yKey(d)); })
+              (d.values)
+          })
+          .on("mouseenter", function(d) {
+            //console.log(+d.key,);
+            d3.select(d3.event.target)
+            //.attr("stroke-width", function(d) { return 2.0 + 1.5; })
+              .style("opacity","0.5")
+            //.attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
+            if (self.lineHover) {
+              self.lineHover(d);
+            }
+          })
+          .on("mouseleave", function(d) {
+            //console.log(+d.key,);
+            d3.select(d3.event.target)
+            //.attr("stroke-width", function(d) { return 2.0 + 1.5; })
+              .style("opacity","0.0")
+            //.attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
+            if (self.lineHover) {
+              self.lineHover(null);
+            }
+          })
+          .on("mousedown", function(d) {
+            if (self.lineClick) {
+              self.lineClick(d);
+            }
+          });;
 
       this.svg.selectAll(".line")
           .data(sumstat)
@@ -123,6 +175,17 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
                 .y(function(d) { return y(+yKey(d)); })
                 (d.values)
             });
+
+      this.svg.selectAll(".hoverline")
+            .data(sumstat)
+            //.style("opacity", function(d) { return +d.values[0].chosen > 0 ? 0 : 1; })
+            .style("opacity", function(d) { return d.values[0].hover ? 0.5 : 0.0; })
+            .attr("d", function(d){
+                return d3.line()
+                  .x(function(d) { return x(xKey(d)); })
+                  .y(function(d) { return y(+yKey(d)); })
+                  (d.values)
+              });
   }
 
 

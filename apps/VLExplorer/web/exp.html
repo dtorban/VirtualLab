@@ -101,12 +101,9 @@
 
 
     <div class="workarea">
-      <div id="my_dataviz" class="lineChart" onclick="console.log('click')"></div>
+      <div id="my_dataviz" class="lineChart"></div>
       <div id="my_dataviz2" class="lineChart"></div>
       <div id="my_dataviz3" class="lineChart"></div>
-      <div id="my_dataviza" class="lineChart"></div>
-      <div id="my_datavizb" class="lineChart"></div>
-      <div id="my_datavizc" class="lineChart"></div>
     </div>
 
     <div class="nav">
@@ -154,7 +151,6 @@
         var running = true;
         var samplingMethods = [];
         var model = null;
-        var createNum = 0;
 
         var color = d3.scaleLinear().domain([0,1])
           .range(["#b8c1f5", "blue"])
@@ -172,7 +168,8 @@
             model = modelList[6];
 
             model.getParameters().then(function(params) {
-              samplingMethods.push(new SamplingStrategy(params, "Ad Hoc", function(params, callback) {
+              samplingMethods.push(new SamplingStrategy(params, "Ad Hoc", function(params, callback, samplingMethod) {
+                if (samplingMethod.createNum == samplingMethod.numSamples) {
                   $("#adhoc").show();
                   $("#adhoc-params").html("");
                   var input = {};
@@ -191,15 +188,22 @@
                     }
                   });
                   $( "#adhoc-button" ).click(function() {
+                    samplingMethod.currentInput = input;
                     Object.keys(input).forEach(function(key, index) {
                       params[key] = +input[key].val();
                     });
-                    console.log($("#adhoc-name"), $("#adhoc-name").val())
                     callback($("#adhoc-name").val());
                     $("#adhoc").hide();
                     $("#adhoc").unbind();
                   });
-                  
+                }
+                else {
+                  let input = samplingMethod.currentInput;
+                    Object.keys(input).forEach(function(key, index) {
+                      params[key] = +input[key].val();
+                  });
+                  callback($("#adhoc-name").val());
+                }
               }));
               samplingMethods.push(new SamplingStrategy(params, "Low"));
               samplingMethods.push(new SamplingStrategy(params, "High", function(params, callback) {
@@ -207,10 +211,38 @@
                   params.cpool = 7500;
                   callback();
               }));
+              samplingMethods.push(new SamplingStrategy(params, "Random", function(params, callback) {
+                //var p = JSON.parse(JSON.stringify(interpolate(samples[0].params,samples[1].params, 10)));
+                Object.keys(params).forEach(function(key, index) {
+                  if (!(typeof params[key] === 'object')) {
+                    var r = Math.random();
+                    params[key] = lerpParamMetaData(params, key, getParamMetaData(params, key, "min", params[key]), getParamMetaData(params, key, "max", params[key]), r);
+                  }
+                });
+                callback();
+              }));
+              samplingMethods.push(new SamplingStrategy(params, "More", function(params, callback, samplingMethod) {
+                if (samplingMethod.createNum == samplingMethod.numSamples) {
+                  for (var i = 0; i < samples.length; i++) {
+                    if (samples[i].chosen == 1) {
+                      samplingMethod.selectedSample = samples[i];
+                      samplingMethod.color = samples[i].color;
+                      break;
+                    }
+                  }
+                }
+                //var p = JSON.parse(JSON.stringify(interpolate(samples[0].params,samples[1].params, 10)));
+                Object.keys(params).forEach(function(key, index) {
+                  if (!(typeof params[key] === 'object')) {
+                    params[key] = samplingMethod.selectedSample.params[key];
+                  }
+                });
+                callback(samplingMethod.selectedSample.sampleName);
+              }));
               samplingMethods.push(new SamplingStrategy(params, "Interp", function(params, callback, samplingMethod) {
-                var numSamples = 10;
-                if (createNum <= 0) {
-                  createNum = numSamples;
+                var numSamples = samplingMethod.numSamples;
+                if (samplingMethod.createNum == numSamples) {
+                  samplingMethod.createNum = numSamples;
                   var selected = 0;
                   for (var i = 0; i < samples.length; i++) {
                     if (samples[i].chosen == 1) {
@@ -227,11 +259,12 @@
                     }
                   }
                 }
-                var percent = 1.0*((numSamples-createNum)%numSamples)/(numSamples-1);
+                var percent = 1.0*((numSamples-samplingMethod.createNum)%numSamples)/(numSamples-1);
                 var color = d3.scaleLinear().domain([0,1])
                   .range([samplingMethod.sampleA.color, samplingMethod.sampleB.color]);
                 samplingMethod.color = color(percent);
-                var p = JSON.parse(JSON.stringify(interpolate(samplingMethod.sampleA.params, samplingMethod.sampleB.params, numSamples)));
+                var i = numSamples-samplingMethod.createNum;
+                var p = JSON.parse(JSON.stringify(interpolate(samplingMethod.sampleA.params, samplingMethod.sampleB.params, numSamples, i)));
                 Object.keys(p).forEach(function(key, index) {
                   if (!(typeof p[key] === 'object')) {
                     params[key] = p[key];
@@ -239,24 +272,17 @@
                 });
                 callback();
               }));
-              samplingMethods.push(new SamplingStrategy(params, "Random", function(params, callback) {
-                if (createNum <= 0) {
-                  createNum = 1;
-                }
-                //var p = JSON.parse(JSON.stringify(interpolate(samples[0].params,samples[1].params, 10)));
-                Object.keys(params).forEach(function(key, index) {
-                  if (!(typeof params[key] === 'object')) {
-                    var r = Math.random();
-                    params[key] = lerpParamMetaData(params, key, getParamMetaData(params, key, "min", params[key]), getParamMetaData(params, key, "max", params[key]), r);
-                  }
-                });
-                callback();
-              }));
-              samplingMethods[0].color = "#000BFF";
-              samplingMethods[1].color = "#FF0000";
-              samplingMethods[2].color = "#000BFF";
-              samplingMethods[3].color = "#9E9E9E";
-              samplingMethods[4].color = "#000BFF";
+              //'#e41a1c','#377eb8','g#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'
+              samplingMethods[0].color = "#ff7f00";
+              samplingMethods[1].color = "#e41a1c";
+              samplingMethods[2].color = "#377eb8";
+              samplingMethods[3].color = "#984ea3";
+              samplingMethods[4].color = "#9E9E9E";
+              samplingMethods[4].numSamples = 10;
+              samplingMethods[4].hasColor = false;
+              samplingMethods[5].color = "#9E9E9E";
+              samplingMethods[5].hasColor = false;
+              samplingMethods[5].numSamples = 10;
               updateSamplingMethods();
             });
           });
@@ -266,7 +292,24 @@
           $("#samplingMethods").html("");
           samplingMethods.forEach(function(item, index) {
             var div = $(" <div class=\"sampling\"><div style=\"position:relative; float:left; width: 75px;\">" +
-              item.name + "</div><input type=\"button\" value=\"+\" onclick=\"createNewSample(samplingMethods["+index+"])\"><input type=\"color\" value=\"" + item.color + "\"></div>");
+              item.name + "</div><input type=\"button\" value=\"+\" onclick=\"createNewSample(samplingMethods["+index+"])\"></div>");
+            var sampleNumSelect = $("<select></select>");
+            for (var i = 1; i <= 10; i++) {
+              var selected = i == item.numSamples ? "selected" : "";
+              sampleNumSelect.append($("<option value='"+i+"'" + selected + ">"+i+"</option>"))
+            }
+            sampleNumSelect.change(function(){
+              let selection = sampleNumSelect.val();
+              item.numSamples = +selection;
+            });
+            div.append(sampleNumSelect);
+            if (item.hasColor) {
+              var colorPicker = $("<input type=\"color\" style='width:20px; height:20px;border: none;' value=\"" + item.color + "\">");
+              colorPicker.change(function () {
+                item.color = colorPicker.val();
+              });
+              div.append(colorPicker);
+            }
             $("#samplingMethods").append(div);
           });
         }
@@ -354,7 +397,7 @@
                 var s = samples[i];
                 for (var j = 0; j < s.params.samples.length; j++) {
                   if (s.data.samples) {
-                    sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen, color: s.color});
+                    sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen, color: s.color, hover: s.hover});
                   }
                 }
               }
@@ -367,12 +410,11 @@
         function createSample(model, name, sampleName, params, samplingMethod) {    
                 var p = JSON.parse(JSON.stringify(params));
                 model.create(p).then(function(sample) { 
-                    createNum--;
-                    if (createNum > 0) {
-                      createNewSample(samplingMethod);
-                    }
-                    sample.color = samplingMethod.color;
+                    samplingMethod.createNum--;
+                    sample.color = "" + samplingMethod.color;
+                    console.log(sample.color);
                     sample.name = name;
+                    sample.sampleName = sampleName;
                     sample.nav.t = 10.0;
                     sample.id = samples.length;
                     samples.push(sample);
@@ -381,7 +423,7 @@
                     var div = $("<div class='sample'></div>");
                     var tempParams = JSON.parse(JSON.stringify(params));
                     delete tempParams[".metadata"];
-                    var checkbox = $("<input type='checkbox' class='sample-checkbox'>");
+                    var checkbox = $("<input type='checkbox' class='sample-checkbox' id='sample-checkbox-"+sample.id+"'>");
                     var currentSample = samples.length-1;
                     checkbox.change(function () {
                       if(checkbox.is(':checked')){
@@ -399,13 +441,16 @@
                     div.append(sampleName + ": " + JSON.stringify(tempParams));
                     $("#samples").append(div);
                     
+                    if (samplingMethod.createNum > 0) {
+                      createNewSample(samplingMethod);
+                    }
+
                     updateSample(sample);
                 });
         }
 
-        function interpolate(a, b, num) {
+        function interpolate(a, b, num, i) {
           //for (var i = 1; i < num-1; i++) {
-            var i = num-createNum;
             var percent = 1.0*(i%num)/(num-1);
             //percent = 0.5;
             console.log(percent);
@@ -442,9 +487,26 @@
           }
         //}
 
-        var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow");
-        var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction");
-        var lineChart3 = new DynamicLineChart("my_dataviz3", "Substrate Stiffness", "Mean RMC");
+        function lineHover(d) {
+          if (d) {
+            samples[+d.key].hover = true;
+          }
+          else {
+            for (var i = 0; i < samples.length; i++) {
+              samples[i].hover = false;
+            }
+          }
+        }
+
+        function lineClick(d) {
+          var checkbox = $("#" + "sample-checkbox-"+d.key);
+          checkbox.prop('checked', !checkbox.is(':checked'));
+          checkbox.trigger("change");
+        }
+
+        var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow", lineHover, lineClick);
+        var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction", lineHover, lineClick);
+        var lineChart3 = new DynamicLineChart("my_dataviz3", "Substrate Stiffness", "Mean RMC", lineHover, lineClick);
         
         </script>
 </html>
