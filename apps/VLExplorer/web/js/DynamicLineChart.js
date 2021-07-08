@@ -1,8 +1,8 @@
 function DynamicLineChart(container, xlabel, ylabel, lineHover, lineClick) {
         // set the dimensions and margins of the graph
         this.margin = {top: 10, right: 30, bottom: 30, left: 60},
-        this.width = 460 - this.margin.left - this.margin.right,
-        this.height = 400 - this.margin.top - this.margin.bottom;
+        this.width = $("#" + container).width() - this.margin.left - this.margin.right,
+        this.height = $("#" + container).height() - this.margin.top - this.margin.bottom;
 
         this.lineHover = lineHover;
         this.lineClick = lineClick;
@@ -169,6 +169,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
           .data(sumstat)
           //.style("opacity", function(d) { return +d.values[0].chosen > 0 ? 0 : 1; })
           .attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
+          .attr("stroke", function(d){ return colorKey(d) })
           .attr("d", function(d){
               return d3.line()
                 .x(function(d) { return x(xKey(d)); })
@@ -179,6 +180,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
       this.svg.selectAll(".hoverline")
             .data(sumstat)
             //.style("opacity", function(d) { return +d.values[0].chosen > 0 ? 0 : 1; })
+            .attr("stroke", function(d){ return colorKey(d) })
             .style("opacity", function(d) { return d.values[0].hover ? 0.5 : 0.0; })
             .attr("d", function(d){
                 return d3.line()

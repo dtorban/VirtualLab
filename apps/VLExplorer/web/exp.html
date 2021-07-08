@@ -6,7 +6,8 @@
         position: relative;
         float:left;
         margin-left: 0;
-        width: 33%;
+        width: 20%;
+        height: 30%;
       }
       .popup {
         position: absolute;
@@ -104,6 +105,8 @@
       <div id="my_dataviz" class="lineChart"></div>
       <div id="my_dataviz2" class="lineChart"></div>
       <div id="my_dataviz3" class="lineChart"></div>
+      <div id="my_dataviz4" class="lineChart"></div>
+      <div id="my_dataviz5" class="lineChart"></div>
     </div>
 
     <div class="nav">
@@ -205,12 +208,6 @@
                   callback($("#adhoc-name").val());
                 }
               }));
-              samplingMethods.push(new SamplingStrategy(params, "Low"));
-              samplingMethods.push(new SamplingStrategy(params, "High", function(params, callback) {
-                  params.mpool = 10000;
-                  params.cpool = 7500;
-                  callback();
-              }));
               samplingMethods.push(new SamplingStrategy(params, "Random", function(params, callback) {
                 //var p = JSON.parse(JSON.stringify(interpolate(samples[0].params,samples[1].params, 10)));
                 Object.keys(params).forEach(function(key, index) {
@@ -272,17 +269,23 @@
                 });
                 callback();
               }));
+              samplingMethods.push(new SamplingStrategy(params, "Low"));
+              samplingMethods.push(new SamplingStrategy(params, "High", function(params, callback) {
+                  params.mpool = 10000;
+                  params.cpool = 7500;
+                  callback();
+              }));
               //'#e41a1c','#377eb8','g#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'
               samplingMethods[0].color = "#ff7f00";
-              samplingMethods[1].color = "#e41a1c";
-              samplingMethods[2].color = "#377eb8";
-              samplingMethods[3].color = "#984ea3";
-              samplingMethods[4].color = "#9E9E9E";
-              samplingMethods[4].numSamples = 10;
-              samplingMethods[4].hasColor = false;
-              samplingMethods[5].color = "#9E9E9E";
-              samplingMethods[5].hasColor = false;
-              samplingMethods[5].numSamples = 10;
+              samplingMethods[1].color = "#984ea3";
+              samplingMethods[2].color = "#9E9E9E";
+              samplingMethods[2].numSamples = 10;
+              samplingMethods[2].hasColor = false;
+              samplingMethods[3].color = "#9E9E9E";
+              samplingMethods[3].hasColor = false;
+              samplingMethods[3].numSamples = 10;
+              samplingMethods[4].color = "#e41a1c";
+              samplingMethods[5].color = "#377eb8";
               updateSamplingMethods();
             });
           });
@@ -392,7 +395,12 @@
                 sample.delete();
                 //createNewSample();
               }
-              var sampleData = [];
+              updateLineCharts();
+           });
+        }
+
+        function updateLineCharts() {
+          var sampleData = [];
               for (var i = 0; i < samples.length; i++) {
                 var s = samples[i];
                 for (var j = 0; j < s.params.samples.length; j++) {
@@ -404,7 +412,9 @@
               lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;}, function(d) {return d.values[0].color;});
               lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;}, function(d) {return d.values[0].color;});
               lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.values[0].color;});
-          });
+              lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.values[0].color;});
+              lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.values[0].color;});
+
         }
 
         function createSample(model, name, sampleName, params, samplingMethod) {    
@@ -496,6 +506,7 @@
               samples[i].hover = false;
             }
           }
+          updateLineCharts();
         }
 
         function lineClick(d) {
@@ -507,6 +518,8 @@
         var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow", lineHover, lineClick);
         var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction", lineHover, lineClick);
         var lineChart3 = new DynamicLineChart("my_dataviz3", "Substrate Stiffness", "Mean RMC", lineHover, lineClick);
+        var lineChart4 = new DynamicLineChart("my_dataviz4", "Substrate Stiffness", "Mean RMC", lineHover, lineClick);
+        var lineChart5 = new DynamicLineChart("my_dataviz5", "Substrate Stiffness", "Mean RMC", lineHover, lineClick);
         
         </script>
 </html>
