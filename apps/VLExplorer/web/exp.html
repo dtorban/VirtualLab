@@ -399,21 +399,86 @@
            });
         }
 
+        function calcStatistics(key, group, sampleIndex) {
+          var mean = 0.0;
+          var N = group.length;
+
+          for (var i = 0; i < group.length; i++) {
+            if (group[i].data.samples) {
+              mean += group[i].data.samples[sampleIndex][key];
+            }
+            else {
+              N--;
+            }
+          }
+          if (N > 0) {
+            mean = mean/N;
+          }
+
+          var sum = 0.0;
+          for (var i = 0; i < N; i++) {
+            if (group[i].data.samples) {
+              var diff = group[i].data.samples[sampleIndex][key]-mean;
+              sum += diff*diff;
+            }
+          }
+
+          var s = 0;
+          if (N > 1) {
+           s = Math.sqrt(sum/(N-1));
+          }
+
+          return {mean: mean, std: s, sem: s/Math.sqrt(N)};
+        }
+
         function updateLineCharts() {
           var sampleData = [];
-              for (var i = 0; i < samples.length; i++) {
-                var s = samples[i];
-                for (var j = 0; j < s.params.samples.length; j++) {
-                  if (s.data.samples) {
-                    sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen, color: s.color, hover: s.hover});
-                  }
-                }
+          for (var i = 0; i < samples.length; i++) {
+            var s = samples[i];
+            for (var j = 0; j < s.params.samples.length; j++) {
+              if (s.data.samples) {
+                //sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen, color: s.color, hover: s.hover});
               }
-              lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;}, function(d) {return d.values[0].color;});
-              lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;}, function(d) {return d.values[0].color;});
-              lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.values[0].color;});
-              lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aspect;}, function(d) { return d.values[0].color;});
-              lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_area;}, function(d) { return d.values[0].color;});
+            }
+          }
+          var groups = d3.nest() // nest function allows to group the calculation per level of a factor
+            .key(function(d) { return d.sampleName;})
+            .entries(samples);
+
+          for (var i = 0; i < groups.length; i++) {
+            var g = groups[i];
+            var s = g.values[0];
+            for (var j = 0; j < s.params.samples.length; j++) {
+              if (s.data.samples) {
+                var aflow = calcStatistics("mean_aflow",g.values,j);
+                var traction = calcStatistics("mean_traction",g.values,j);
+                var rmc = calcStatistics("rmc",g.values,j);
+                var aspect = calcStatistics("mean_aspect",g.values,j);
+                var area = calcStatistics("mean_area",g.values,j);
+                var data = {
+                  mean_aflow: aflow.mean,
+                  sem_aflow: aflow.sem,
+                  mean_traction: traction.mean,
+                  sem_traction: traction.sem,
+                  rmc: rmc.mean,
+                  sem_rmc: rmc.sem,
+                  mean_aspect: aspect.mean,
+                  sem_aspect: aspect.sem,
+                  mean_area: area.mean,
+                  sem_area: area.sem
+                }
+                sampleData.push({name: g.key, params: s.params.samples[j], data: data, chosen: s.chosen, color: s.color, hover: s.hover});
+              }
+            }
+          }
+
+          //console.log(sampleData);
+
+          lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;}, function(d) {return d.color;}, function(d) {return d.data.sem_aflow;});
+          lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;}, function(d) {return d.color;}, function(d) {return d.data.sem_traction;});
+          lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.color;}, function(d) {return d.data.sem_rmc;});
+          lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aspect;}, function(d) { return d.color;}, function(d) {return d.data.sem_aspect;});
+          lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_area;}, function(d) { return d.color;}, function(d) {return d.data.sem_area;});
 
         }
 

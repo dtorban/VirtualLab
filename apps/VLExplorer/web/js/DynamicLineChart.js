@@ -39,7 +39,7 @@ function DynamicLineChart(container, xlabel, ylabel, lineHover, lineClick) {
 
 }
 
-DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, colorKey) {
+DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, colorKey, errorKey) {
     var self = this;
     var data = samples;
     //var data = [{year:1234, name:"toast", n:1234}, {year:1235, name:"toast", n:2346}, {year:1235, name:"abc", n:200}, {year:1234, name:"abc", n:300}];
@@ -169,7 +169,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
           .data(sumstat)
           //.style("opacity", function(d) { return +d.values[0].chosen > 0 ? 0 : 1; })
           .attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
-          .attr("stroke", function(d){ return colorKey(d) })
+          .attr("stroke", function(d){ return colorKey(d.values[0]) })
           .attr("d", function(d){
               return d3.line()
                 .x(function(d) { return x(xKey(d)); })
@@ -180,7 +180,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
       this.svg.selectAll(".hoverline")
             .data(sumstat)
             //.style("opacity", function(d) { return +d.values[0].chosen > 0 ? 0 : 1; })
-            .attr("stroke", function(d){ return colorKey(d) })
+            .attr("stroke", function(d){ return colorKey(d.values[0]) })
             .style("opacity", function(d) { return d.values[0].hover ? 0.5 : 0.0; })
             .attr("d", function(d){
                 return d3.line()
@@ -188,6 +188,32 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
                   .y(function(d) { return y(+yKey(d)); })
                   (d.values)
               });
+
+        var points = this.svg.selectAll('circle.point')
+          .data(data);
+          
+        points.enter()
+          .append('circle')
+          .attr('class', 'point')
+          .attr('r', 2)
+          .attr("stroke", function(d){ return colorKey(d) })
+        .merge( points )
+            .attr('cx', function(d) { return x(xKey(d)); })
+            .attr('cy', function(d) { return y(+yKey(d)); });
+      
+        var lines = this.svg.selectAll('line.error')
+          .data(data);
+      
+        lines.enter()
+          .append('line')
+          .attr('class', 'error')
+          .attr("stroke-width", function(d) { return +d.chosen*2.0 + 1.5; })
+          .attr("stroke", function(d){ return colorKey(d) })
+        .merge(lines)
+          .attr('x1', function(d) { return x(xKey(d)); })
+          .attr('x2', function(d) { return x(xKey(d)); })
+          .attr('y1', function(d) { var error = errorKey(d);  return y(+yKey(d) + (error ? error : 0)); })
+          .attr('y2', function(d) { var error = errorKey(d);  return y(+yKey(d) - (error ? error : 0)); });
   }
 
 
