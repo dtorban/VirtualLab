@@ -448,6 +448,79 @@ private:
     int size;
 };
 
+class AspectRatioAreaValue : public ICalculatedValue {
+public:
+    AspectRatioAreaValue(const std::string& aspectOutput, const std::string& areaOutput) : aspectOutput(aspectOutput), areaOutput(areaOutput) {}
+    virtual ~AspectRatioAreaValue() {
+    }
+
+    ICalculatedState* createState() { return NULL; }
+
+    virtual void update(IModelSample& sample, DataObject& data, ICalculatedState* state) const  {
+        const vl::Array& modules = data["m"].get<vl::Array>();
+
+        if (modules.size() <= 1) {
+            data[aspectOutput] = DoubleDataValue(0);
+            data[areaOutput] = DoubleDataValue(0);
+            return;
+        }
+
+        double modMaxLength = 0;
+        double cellx = data["x"].get<double>();
+        double celly = data["y"].get<double>();
+        double maxModX, maxModY;
+
+        for (int i = 0; i < modules.size(); i++) {
+            double x = modules[i].get<vl::Object>().find("x")->second.get<double>();
+            double y = modules[i].get<vl::Object>().find("y")->second.get<double>();
+            double length = std::sqrt(std::pow(x-cellx, 2) + std::pow(y-celly, 2));
+            if (length > modMaxLength) {
+                modMaxLength = length;
+                maxModX = x;
+                maxModY = y;
+            }
+        }
+
+        double Q[2][2];
+        double unitx = (maxModX-cellx)/modMaxLength;
+        double unity = (maxModY-celly)/modMaxLength;
+        Q[0][0] = unitx;Q[0][1] = unity;Q[1][0] = -unity;Q[1][1] = unitx;
+        
+        double aspect_step = 0.1, aspect, a = modMaxLength, b;
+        double diff_min = 1e6, aspect_min;
+        for (int i=0; i<50; i++) {
+            aspect = 1+aspect_step*i;
+            b = a/aspect;
+            
+            double diff = 0;
+            for (int i = 0; i < modules.size(); i++) {
+
+                double x = modules[i].get<vl::Object>().find("x")->second.get<double>();
+                double y = modules[i].get<vl::Object>().find("y")->second.get<double>();
+                double vecx = x - cellx;
+                double vecy = y - celly;
+                double length = std::sqrt(std::pow(vecx, 2) + std::pow(vecy, 2));
+                double vecxR = Q[0][0]*vecx+Q[0][1]*vecy;
+                double vecyR = Q[1][0]*vecx+Q[1][1]*vecy;
+                double k = vecyR/vecxR;
+                double ellip_len = std::sqrt((1+std::pow(k,2))/(std::pow(1./a,2)+std::pow(k/b,2)));
+                diff += abs(ellip_len-length);
+            }
+            
+            if (diff < diff_min) {
+                diff_min = diff;
+                aspect_min = aspect;
+            }
+        }
+        data[aspectOutput] = DoubleDataValue(aspect_min);
+        data[areaOutput] = DoubleDataValue(M_PI*a*a/aspect_min/1.0e6);
+    }
+
+private:
+    std::string aspectOutput;
+    std::string areaOutput;
+};
+
 class NSampleMeanValue : public ICalculatedValue {
 public:
     struct State : public ICalculatedState {
@@ -531,6 +604,9 @@ ExtendedModel* createExtendedModel() {
     extendedModel->addCalculatedValue(new SimpleCalculatedValue(new MagnitudeCalculation(new KeyCalculation("fx"), new KeyCalculation("fx")), "fmag"));
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("f"), "mean_traction"));
     extendedModel->addCalculatedValue(new RandomMotilityCoefficentValue(new KeyCalculation("x"),new KeyCalculation("y"),new KeyCalculation("t"), "rmc"));
+    extendedModel->addCalculatedValue(new AspectRatioAreaValue("aspect", "area"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aspect"), "mean_aspect"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("area"), "mean_area"));
     return extendedModel;
 }
 
@@ -595,6 +671,8 @@ int main(int argc, char* argv[]) {
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aspect"), "mean_aspect"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_area"), "mean_area"));
         extendedModel = ext;
         //extendedModel = new SampledModel(ext, new RandomSampler("num"));
         api.registerModel(extendedModel);

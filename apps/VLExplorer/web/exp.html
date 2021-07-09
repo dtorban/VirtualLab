@@ -412,8 +412,8 @@
               lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;}, function(d) {return d.values[0].color;});
               lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;}, function(d) {return d.values[0].color;});
               lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.values[0].color;});
-              lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.values[0].color;});
-              lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.values[0].color;});
+              lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aspect;}, function(d) { return d.values[0].color;});
+              lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_area;}, function(d) { return d.values[0].color;});
 
         }
 
@@ -517,9 +517,9 @@
 
         var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow", lineHover, lineClick);
         var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction", lineHover, lineClick);
-        var lineChart3 = new DynamicLineChart("my_dataviz3", "Substrate Stiffness", "Mean RMC", lineHover, lineClick);
-        var lineChart4 = new DynamicLineChart("my_dataviz4", "Substrate Stiffness", "Mean RMC", lineHover, lineClick);
-        var lineChart5 = new DynamicLineChart("my_dataviz5", "Substrate Stiffness", "Mean RMC", lineHover, lineClick);
+        var lineChart3 = new DynamicLineChart("my_dataviz3", "Substrate Stiffness", "RMC", lineHover, lineClick);
+        var lineChart4 = new DynamicLineChart("my_dataviz4", "Substrate Stiffness", "Mean Aspect", lineHover, lineClick);
+        var lineChart5 = new DynamicLineChart("my_dataviz5", "Substrate Stiffness", "Mean Area", lineHover, lineClick);
         
         </script>
 </html>
