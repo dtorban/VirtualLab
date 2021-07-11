@@ -133,6 +133,8 @@
         <div id="samples">
         </div>
         <input type="checkbox" onchange="groupSamples = !groupSamples;" checked>Group Samples
+        <input type="button" value="Select All" onclick="selectAll()">
+        <input type="button" value="Delete Samples" onclick="deleteSamples()">
         <!--input type="button" value="Create Template"><input type="button" value="Interpolate" onclick="interpolate(samples[0].params, samples[1].params, 3);"-->
       </div>
 
@@ -149,6 +151,7 @@
 	</body>
 	<script>
         var samples = [];
+        var sampleIndexLookup = {};
         var modelList = null;
         var currentNum = 0;
         var simulations = 0;
@@ -343,6 +346,36 @@
           });
         }
 
+        function selectAll() {
+          var newSamples = [];
+          for (var i = 0; i < samples.length; i++) {
+            var checkbox = $("#" + "sample-checkbox-"+samples[i].id);
+            checkbox.prop('checked', true);
+            checkbox.trigger("change");
+          }
+        }
+
+        function deleteSamples() {
+          var newSamples = [];
+          for (var i = 0; i < samples.length; i++) {
+            if (samples[i].chosen == 1) {
+              samples[i].delete();
+              $( "#sample-info-"+samples[i].id ).remove();
+            }
+            else {
+              newSamples.push(samples[i]);
+            }
+          }
+
+          samples = newSamples;
+
+          for (var i = 0; i < samples.length; i++) {
+            sampleIndexLookup[samples[i].id] = i;
+          }
+
+          updateLineCharts();
+        }
+
         function createNewSample(samplingMethod) {
           if (!running) {
             return;
@@ -530,22 +563,22 @@
                     sample.name = name;
                     sample.sampleName = sampleName;
                     sample.nav.t = 10.0;
-                    sample.id = samples.length;
+                    sample.id = currentNum;
+                    sampleIndexLookup[sample.id] = samples.length;
                     samples.push(sample);
                     currentNum++;
                     console.log("Sample Created");
-                    var div = $("<div class='sample'></div>");
+                    var div = $("<div class='sample' id='sample-info-"+sample.id+"'></div>");
                     var tempParams = JSON.parse(JSON.stringify(params));
                     delete tempParams[".metadata"];
                     var checkbox = $("<input type='checkbox' class='sample-checkbox' id='sample-checkbox-"+sample.id+"'>");
                     var currentSample = samples.length-1;
                     checkbox.change(function () {
                       if(checkbox.is(':checked')){
-                          samples[currentSample].chosen = 1;
+                        sample.chosen = 1;
                       } else {
-                          samples[currentSample].chosen = 0;
+                        sample.chosen = 0;
                       }
-                      console.log(currentSample, samples[currentSample].chosen);
                     });
                     checkbox.css('outline-color', sample.color);
                     checkbox.css('outline-style', 'solid');
@@ -603,7 +636,7 @@
 
         function lineHover(id) {
           if (id != null) {
-            samples[id].hover = true;
+            samples[sampleIndexLookup[id]].hover = true;
           }
           else {
             for (var i = 0; i < samples.length; i++) {

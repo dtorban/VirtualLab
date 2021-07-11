@@ -68,7 +68,13 @@ public:
 	}
 
 	IModelSample* getSample(int id) {
-		return samples[id];
+		std::map<int, IModelSample*>::iterator it = samples.find(id);
+		if (it != samples.end()) {
+			return it->second;
+		}
+		else {
+			return NULL;
+		}
 	}
 
 	int addSample(IModelSample* sample) {
@@ -138,20 +144,24 @@ public:
 		double sampleId = command.get<picojson::object>()["sampleId"].get<double>();
 
 		IModelSample* sample = session->getSample(sampleId);
-		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["nav"], sample->getNavigation());
-		//std::cout << JSONSerializer::instance().serializeJSON(sample->getNavigation()) << std::endl;
-		// TODO: fix synchrounous update
-		//sample->update();
-		//UpdateCallback cb(data, session, sample);
-		//cb.onComplete();
-		sample->update(new UpdateCallback(data, session, sample));
+		if (sample) {
 
-		/*data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
-		data["data"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getData()));
-		std::cout << JSONSerializer::instance().serializeJSON(sample->getData()) << std::endl;
+			JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["nav"], sample->getNavigation());
+			//std::cout << JSONSerializer::instance().serializeJSON(sample->getNavigation()) << std::endl;
+			// TODO: fix synchrounous update
+			//sample->update();
+			//UpdateCallback cb(data, session, sample);
+			//cb.onComplete();
+			sample->update(new UpdateCallback(data, session, sample));
 
-		picojson::value ret(data);
-		session->sendJSON(ret);*/
+			/*data["nav"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getNavigation()));
+			data["data"] = picojson::value(JSONSerializer::instance().serializeJSON(sample->getData()));
+			std::cout << JSONSerializer::instance().serializeJSON(sample->getData()) << std::endl;
+
+			picojson::value ret(data);
+			session->sendJSON(ret);*/
+
+		}
 
 	}
 

@@ -198,6 +198,9 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
         var points = this.svg.selectAll('circle.point')
           .data(data);
           
+        points.exit()
+          .remove()
+
         points.enter()
           .append('circle')
           .attr('class', 'point')
@@ -212,11 +215,12 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
         var lines = this.svg.selectAll('line.error')
           .data(data);
       
+        lines.exit()
+          .remove()
+
         lines.enter()
           .append('line')
           .attr('class', 'error')
-        .exit()
-          .remove()
         .merge(lines)
           .attr("stroke-width", function(d) { return +d.chosen*2.0 + 1.5; })
           .attr("stroke", function(d){ return colorKey(d) })

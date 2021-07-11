@@ -519,12 +519,15 @@ void Server::service() {
                 reader.readData(modelSampleId);
                 std::string nav;
                 reader.readString(nav);
-                IModelSample* sample = serverModelSamples[modelSampleId];
-                //std::cout << "Update sample on server " << sample << std::endl;
-                serializer.deserialize(nav, sample->getNavigation());
-                delete[] bytes;
+                std::map<int, IModelSample*>::iterator it = serverModelSamples.find(modelSampleId);
+                if (it != serverModelSamples.end() && it->second != NULL) {
+                    IModelSample* sample = it->second;
+                    //std::cout << "Update sample on server " << sample << std::endl;
+                    serializer.deserialize(nav, sample->getNavigation());
+                    delete[] bytes;
 
-                sample->update(new ServerUpdateCallback(this, sd, sample, modelSampleId, asyncMutex));
+                    sample->update(new ServerUpdateCallback(this, sd, sample, modelSampleId, asyncMutex));
+                }
 
                 /*sample->update();
 
