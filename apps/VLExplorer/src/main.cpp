@@ -179,6 +179,56 @@ public:
 	}
 };
 
+class SampleCommand : public VLWebServerCommand {
+public:
+	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
+		picojson::object data = command.get<picojson::object>();
+		DataObject samplerParams;
+		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["samplerParams"], samplerParams);
+		DataObject params;
+		JSONSerializer::instance().deserializeJSON(command.get<picojson::object>()["params"], params);
+
+		CompositeSampler localSampler;
+		LatinHypercubeSampler latinSampler(5);
+		IModelSampler* sampler = NULL;
+
+		//std::cout << samplerParams["sampler"].get<std::string>() << std::endl;
+
+		if (samplerParams["sampler"].get<std::string>() == "neighbor") {
+			for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
+				if (it->second.isType<double>() && it->first != "N") {
+					localSampler.addSampler(new LocalRandomSampler(it->first, samplerParams["closeness"].get<double>()));
+				}
+			}
+			sampler = &localSampler;
+		}
+		else if (samplerParams["sampler"].get<std::string>() == "latin") {
+			
+			for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
+				if (it->second.isType<double>() && it->first != "N") {
+					latinSampler.addParameter(it->first);
+				}
+			}
+			sampler = &latinSampler;
+		}
+
+		if (sampler) {
+			if (!sampler->hasNext()) {
+				sampler->reset();
+			}
+			sampler->sample(params);
+			sampler->next();
+		}
+
+
+		data["params"] = picojson::value(JSONSerializer::instance().serializeJSON(params));
+		
+		picojson::value ret(data);
+		session->sendJSON(ret);
+
+	}
+};
+
 class GetParametersCommand : public VLWebServerCommand {
 public:
 	void execute(VLWebServerSession* session, picojson::value& command, VLWebServerSessionState* state) {
@@ -253,6 +303,7 @@ int main(int argc, char**argv) {
 		state.commands["createSample"] = new CreateSampleCommand();
 		state.commands["updateSample"] = new UpdateSampleCommand();
 		state.commands["deleteSample"] = new DeleteSampleCommand();
+		state.commands["sample"] = new SampleCommand();
 		state.api = api;
 		//state.models = api->getModels();
 		WebServerWithState<VLWebServerSession, VLWebServerSessionState> server(state,port, webDir);

@@ -270,9 +270,28 @@
                     params[key] = p[key];
                   }
                 });
-                callback("Interp-"+(numSamples-samplingMethod.createNum));
+                callback("Interp("+samplingMethod.sampleA.sampleName + "," + samplingMethod.sampleB.sampleName+","+numSamples+")");
               }));
-              samplingMethods.push(new SamplingStrategy(params, "Neighbor"));
+              samplingMethods.push(new SamplingStrategy(params, "Neighbor", function(params, callback, samplingMethod) {
+                for (var i = 0; i < samples.length; i++) {
+                  if (samples[i].chosen == 1) {
+                    samplingMethod.selectedSample = samples[i];
+                    //samplingMethod.color = samples[i].color;
+                    break;
+                  }
+                }
+
+                var p = JSON.parse(JSON.stringify(samplingMethod.selectedSample.params));
+                delete p["samples"];
+
+                api.sample({sampler:"neighbor", closeness:0.1}, p).then(function(p) {
+                  Object.keys(p).forEach(function(key, index) {
+                      params[key] = p[key];
+                  });
+                  callback("Neighbor(" + samplingMethod.selectedSample.sampleName + ")");
+                });
+
+              }));
               samplingMethods.push(new SamplingStrategy(params, "Low"));
               samplingMethods.push(new SamplingStrategy(params, "High", function(params, callback) {
                   params.mpool = 10000;
@@ -289,8 +308,8 @@
               samplingMethods[4].color = "#9E9E9E";
               samplingMethods[4].hasColor = false;
               samplingMethods[4].numSamples = 10;
-              samplingMethods[5].hasColor = false;
-              samplingMethods[5].numSamples = 10;
+              samplingMethods[5].color = "#f781bf";
+              samplingMethods[5].numSamples = 5;
               samplingMethods[6].color = "#e41a1c";
               samplingMethods[7].color = "#377eb8";
               updateSamplingMethods();
@@ -457,7 +476,8 @@
 
             for (var i = 0; i < groups.length; i++) {
               var g = groups[i];
-              var s = g.values[0];
+//              var s = g.values[0];
+              var s = g.values[Math.floor(g.values.length/2)];
               for (var j = 0; j < s.params.samples.length; j++) {
                 if (s.data.samples) {
                   var aflow = calcStatistics("mean_aflow",g.values,j);
@@ -576,7 +596,7 @@
         //}
 
         function lineHover(id) {
-          if (id) {
+          if (id != null) {
             samples[id].hover = true;
           }
           else {

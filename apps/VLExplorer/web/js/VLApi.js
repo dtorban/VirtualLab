@@ -94,6 +94,13 @@ VLApi.prototype.getModels = function() {
     return this.modelsPromise;
 };
 
+VLApi.prototype.sample = function(samplerParams, params) {
+    let self = this;
+    return this.sendCommand({command: "sample", index: this.index, samplerParams: samplerParams, params: params}, function(data) {
+        return data.params;
+    });
+};
+
 VLApi.prototype.sendCommand = function(cmd, calcVal) {
     let self = this;
     cmd.id = this.requestId;

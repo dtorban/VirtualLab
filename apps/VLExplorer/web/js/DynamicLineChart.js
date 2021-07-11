@@ -123,6 +123,11 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
               //.attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
             });*/
 
+      this.svg.selectAll(".hoverline")
+        .data(sumstat)
+        .exit()
+        .remove();
+
       // Draw the line
       this.svg.selectAll(".hoverline")
         .data(sumstat)
@@ -131,7 +136,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
           .attr("class","hoverline")
           .attr("fill", "none")
           .attr("stroke", function(d){ return colorKey(d) })
-          .style("opacity","0.0")
+          .style("opacity","1.0")
           .style("stroke-width","15px")
           .attr("d", function(d){
             return d3.line()
@@ -146,6 +151,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
               .style("opacity","0.5")
             //.attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
             if (self.lineHover) {
+              console.log("enter", d.values[0].id );
               self.lineHover(d.values[0].id);
             }
           })
@@ -195,6 +201,8 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
         points.enter()
           .append('circle')
           .attr('class', 'point')
+        .exit()
+          .remove()
         .merge( points )
             .attr("stroke", function(d){ return colorKey(d) })
             .attr('r', function(d) { return errorKey(d) ? 2 : 0;})
@@ -207,6 +215,8 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
         lines.enter()
           .append('line')
           .attr('class', 'error')
+        .exit()
+          .remove()
         .merge(lines)
           .attr("stroke-width", function(d) { return +d.chosen*2.0 + 1.5; })
           .attr("stroke", function(d){ return colorKey(d) })
