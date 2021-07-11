@@ -132,7 +132,8 @@
         <div class="section-title">Samples</div>
         <div id="samples">
         </div>
-        <input type="button" value="Create Template"><input type="button" value="Interpolate" onclick="interpolate(samples[0].params, samples[1].params, 3);">
+        <input type="checkbox" onchange="groupSamples = !groupSamples;" checked>Group Samples
+        <!--input type="button" value="Create Template"><input type="button" value="Interpolate" onclick="interpolate(samples[0].params, samples[1].params, 3);"-->
       </div>
 
     </div>
@@ -154,6 +155,7 @@
         var running = true;
         var samplingMethods = [];
         var model = null;
+        var groupSamples = true;
 
         var color = d3.scaleLinear().domain([0,1])
           .range(["#b8c1f5", "blue"])
@@ -218,6 +220,7 @@
                 });
                 callback();
               }));
+              samplingMethods.push(new SamplingStrategy(params, "Search"));
               samplingMethods.push(new SamplingStrategy(params, "More", function(params, callback, samplingMethod) {
                 if (samplingMethod.createNum == samplingMethod.numSamples) {
                   for (var i = 0; i < samples.length; i++) {
@@ -267,25 +270,29 @@
                     params[key] = p[key];
                   }
                 });
-                callback();
+                callback("Interp-"+(numSamples-samplingMethod.createNum));
               }));
+              samplingMethods.push(new SamplingStrategy(params, "Neighbor"));
               samplingMethods.push(new SamplingStrategy(params, "Low"));
               samplingMethods.push(new SamplingStrategy(params, "High", function(params, callback) {
                   params.mpool = 10000;
-                  params.cpool = 7500;
+                  params.cpool = 2000;
+                  //params.cpool = 7500;
                   callback();
               }));
               //'#e41a1c','#377eb8','g#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'
               samplingMethods[0].color = "#ff7f00";
               samplingMethods[1].color = "#984ea3";
-              samplingMethods[2].color = "#9E9E9E";
-              samplingMethods[2].numSamples = 10;
-              samplingMethods[2].hasColor = false;
-              samplingMethods[3].color = "#9E9E9E";
-              samplingMethods[3].hasColor = false;
+              samplingMethods[2].color = "#4daf4a";
               samplingMethods[3].numSamples = 10;
-              samplingMethods[4].color = "#e41a1c";
-              samplingMethods[5].color = "#377eb8";
+              samplingMethods[3].hasColor = false;
+              samplingMethods[4].color = "#9E9E9E";
+              samplingMethods[4].hasColor = false;
+              samplingMethods[4].numSamples = 10;
+              samplingMethods[5].hasColor = false;
+              samplingMethods[5].numSamples = 10;
+              samplingMethods[6].color = "#e41a1c";
+              samplingMethods[7].color = "#377eb8";
               updateSamplingMethods();
             });
           });
@@ -433,44 +440,50 @@
 
         function updateLineCharts() {
           var sampleData = [];
-          for (var i = 0; i < samples.length; i++) {
-            var s = samples[i];
-            for (var j = 0; j < s.params.samples.length; j++) {
-              if (s.data.samples) {
-                //sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen, color: s.color, hover: s.hover});
-              }
-            }
-          }
-          var groups = d3.nest() // nest function allows to group the calculation per level of a factor
-            .key(function(d) { return d.sampleName;})
-            .entries(samples);
-
-          for (var i = 0; i < groups.length; i++) {
-            var g = groups[i];
-            var s = g.values[0];
-            for (var j = 0; j < s.params.samples.length; j++) {
-              if (s.data.samples) {
-                var aflow = calcStatistics("mean_aflow",g.values,j);
-                var traction = calcStatistics("mean_traction",g.values,j);
-                var rmc = calcStatistics("rmc",g.values,j);
-                var aspect = calcStatistics("mean_aspect",g.values,j);
-                var area = calcStatistics("mean_area",g.values,j);
-                var data = {
-                  mean_aflow: aflow.mean,
-                  sem_aflow: aflow.sem,
-                  mean_traction: traction.mean,
-                  sem_traction: traction.sem,
-                  rmc: rmc.mean,
-                  sem_rmc: rmc.sem,
-                  mean_aspect: aspect.mean,
-                  sem_aspect: aspect.sem,
-                  mean_area: area.mean,
-                  sem_area: area.sem
+          if (!groupSamples) {
+            for (var i = 0; i < samples.length; i++) {
+              var s = samples[i];
+              for (var j = 0; j < s.params.samples.length; j++) {
+                if (s.data.samples) {
+                  sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen, color: s.color, hover: s.hover, id: s.id});
                 }
-                sampleData.push({name: g.key, params: s.params.samples[j], data: data, chosen: s.chosen, color: s.color, hover: s.hover});
               }
             }
           }
+          else {
+            var groups = d3.nest() // nest function allows to group the calculation per level of a factor
+              .key(function(d) { return d.sampleName;})
+              .entries(samples);
+
+            for (var i = 0; i < groups.length; i++) {
+              var g = groups[i];
+              var s = g.values[0];
+              for (var j = 0; j < s.params.samples.length; j++) {
+                if (s.data.samples) {
+                  var aflow = calcStatistics("mean_aflow",g.values,j);
+                  var traction = calcStatistics("mean_traction",g.values,j);
+                  var rmc = calcStatistics("rmc",g.values,j);
+                  var aspect = calcStatistics("mean_aspect",g.values,j);
+                  var area = calcStatistics("mean_area",g.values,j);
+                  var data = {
+                    mean_aflow: aflow.mean,
+                    sem_aflow: aflow.sem,
+                    mean_traction: traction.mean,
+                    sem_traction: traction.sem,
+                    rmc: rmc.mean,
+                    sem_rmc: rmc.sem,
+                    mean_aspect: aspect.mean,
+                    sem_aspect: aspect.sem,
+                    mean_area: area.mean,
+                    sem_area: area.sem
+                  }
+                  sampleData.push({name: g.key, params: s.params.samples[j], data: data, chosen: s.chosen, color: s.color, hover: s.hover, id: s.id});
+                }
+              }
+            }
+          }
+          
+          
 
           //console.log(sampleData);
 
@@ -562,9 +575,9 @@
           }
         //}
 
-        function lineHover(d) {
-          if (d) {
-            samples[+d.key].hover = true;
+        function lineHover(id) {
+          if (id) {
+            samples[id].hover = true;
           }
           else {
             for (var i = 0; i < samples.length; i++) {
@@ -574,8 +587,8 @@
           updateLineCharts();
         }
 
-        function lineClick(d) {
-          var checkbox = $("#" + "sample-checkbox-"+d.key);
+        function lineClick(id) {
+          var checkbox = $("#" + "sample-checkbox-"+id);
           checkbox.prop('checked', !checkbox.is(':checked'));
           checkbox.trigger("change");
         }

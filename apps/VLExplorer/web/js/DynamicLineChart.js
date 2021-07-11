@@ -146,7 +146,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
               .style("opacity","0.5")
             //.attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
             if (self.lineHover) {
-              self.lineHover(d);
+              self.lineHover(d.values[0].id);
             }
           })
           .on("mouseleave", function(d) {
@@ -161,7 +161,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
           })
           .on("mousedown", function(d) {
             if (self.lineClick) {
-              self.lineClick(d);
+              self.lineClick(d.values[0].id);
             }
           });;
 
@@ -195,9 +195,9 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
         points.enter()
           .append('circle')
           .attr('class', 'point')
-          .attr('r', 2)
-          .attr("stroke", function(d){ return colorKey(d) })
         .merge( points )
+            .attr("stroke", function(d){ return colorKey(d) })
+            .attr('r', function(d) { return errorKey(d) ? 2 : 0;})
             .attr('cx', function(d) { return x(xKey(d)); })
             .attr('cy', function(d) { return y(+yKey(d)); });
       
@@ -207,9 +207,9 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
         lines.enter()
           .append('line')
           .attr('class', 'error')
+        .merge(lines)
           .attr("stroke-width", function(d) { return +d.chosen*2.0 + 1.5; })
           .attr("stroke", function(d){ return colorKey(d) })
-        .merge(lines)
           .attr('x1', function(d) { return x(xKey(d)); })
           .attr('x2', function(d) { return x(xKey(d)); })
           .attr('y1', function(d) { var error = errorKey(d);  return y(+yKey(d) + (error ? error : 0)); })
