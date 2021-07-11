@@ -478,6 +478,12 @@
               var g = groups[i];
 //              var s = g.values[0];
               var s = g.values[Math.floor(g.values.length/2)];
+              for (var j = 0; j < g.values.length; j++) {
+                if (g.values[j].chosen) {
+                  s = g.values[j];
+                  break;
+                }
+              }
               for (var j = 0; j < s.params.samples.length; j++) {
                 if (s.data.samples) {
                   var aflow = calcStatistics("mean_aflow",g.values,j);
