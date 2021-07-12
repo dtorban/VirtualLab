@@ -1,5 +1,8 @@
-function PCChart(container) {
+function PCChart(container, lineHover, lineClick) {
     var self = this;
+
+	this.lineHover = lineHover;
+	this.lineClick = lineClick;
 
 	// set the dimensions and margins of the graph
 	this.margin = {top: 30, right: 10, bottom: 30, left: 0};
@@ -33,18 +36,26 @@ PCChart.prototype.updateData = function(data) {
     var self = this;
 
     // Extract the list of dimensions we want to keep in the plot. Here I keep all except the column called Species
-	  dimensions = d3.keys(data[0]).filter(function(d) { return isNumber(data[0][d]) && d != "fx" && d != "fy" && d != "x" && d != "y"; })
+	var dimensions;
+	if (data.length <= 0) {
+		dimensions = [];
+	}
+	else {
+		dimensions = d3.keys(data[0].data).filter(function(d) { return isNumber(data[0].data[d]) && d != "fx" && d != "fy" && d != "x" && d != "y"; })
+	}
+
+
 	
 	  // For each dimension, I build a linear scale. I store all in a y object
 	  for (i in dimensions) {
 		var name = dimensions[i];
         if (!(name in this.y)) {
           this.y[name] = d3.scaleLinear()
-            .domain( d3.extent(data, function(d) { return +d[name]; }) )
+            .domain( d3.extent(data, function(d) { return +d.data[name]; }) )
             .range([this.height, 0])
         }
         else {
-            var ext = d3.extent(data, function(d) { return +d[name]; });
+            var ext = d3.extent(data, function(d) { return +d.data[name]; });
             ext = ext.concat(this.y[name].domain());
             this.y[name].domain( d3.extent(ext) );
         }
@@ -55,7 +66,7 @@ PCChart.prototype.updateData = function(data) {
 	
 	  // The path function take a row of the csv as input, and return x and y coordinates of the line to draw for this raw.
 	  function path(d) {
-		  return d3.line()(dimensions.map(function(p) { return [self.x(p), self.y[p](d[p])]; }));
+		  return d3.line()(dimensions.map(function(p) { return [self.x(p), self.y[p](d.data[p])]; }));
 	  }
 	
       this.svg
@@ -74,9 +85,48 @@ PCChart.prototype.updateData = function(data) {
 		.style("fill", "none")
 		.style("stroke", "#69b3a2")
 		.style("opacity", 0.5)
+		.attr("stroke-width", function(d) { return +d.chosen*2.0 + 1.5; })
 
     this.svg
 		.selectAll(".myPath")
+		.attr("stroke-width", function(d) { return +d.chosen*2.0 + 1.5; })
+		.style("stroke", function(d) {return d.color;})
+		.attr("d",  path)
+
+	  // Draw the lines
+	  this.svg
+		.selectAll(".myHoverPath")
+		.data(data)
+		.enter().append("path")
+        .attr("class","myHoverPath")
+		.attr("d",  path)
+		.style("fill", "none")
+		.style("stroke", "#69b3a2")
+		.style("opacity", 0.0)
+		.style("stroke-width","15px")
+		.on("mouseenter", function(d) {
+            d3.select(d3.event.target)
+            if (self.lineHover) {
+              self.lineHover(d.id);
+            }
+          })
+          .on("mouseleave", function(d) {
+            //console.log(+d.key,);
+            d3.select(d3.event.target)
+            if (self.lineHover) {
+              self.lineHover(null);
+            }
+          })
+          .on("mousedown", function(d) {
+            if (self.lineClick) {
+              self.lineClick(d.id);
+            }
+          });;
+
+	this.svg
+		.selectAll(".myHoverPath")
+		.style("opacity", function(d) {return d.hover ? 0.5 : 0.0; })
+		.style("stroke", function(d) {return d.color;})
 		.attr("d",  path)
 
       this.svg.selectAll(".myAxis")

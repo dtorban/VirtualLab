@@ -44,57 +44,33 @@
 				width: 30px;
 				margin-right: 10px;
 			}
+      #pcc {
+				width: 100%;
+				height: 25%;
+			}
 		</style>
 		<script src="js/d3.v4.js"></script>
 		<script src="js/jquery-3.5.1.min.js"></script>
 		<script src="js/VLApi.js"></script>
 		<script src="js/DynamicLineChart.js"></script>
 		<script src="js/SamplingStrategy.js"></script>
+		<script src="js/pcc.js"></script>
 	</head>
 	<body>
     <div id="header">
       <ul id="menu">
         <li class="parent"><a href="#">File</a>
         <ul class="child">
-          <li class="parent"><a href="#">Video Games <span class="expand">&gt;</span></a>
+          <li class="parent"><a href="#">Export <span class="expand">&gt;</span></a>
             <ul class="child">
-            <li><a href="#">Car</a></li>
-            <li><a href="#">Bike Race</a></li>
-            <li><a href="#">Fishing</a></li>
+            <li><a href="#" onclick="exportCSV()">CSV</a></li>
             </ul>
           </li>
-          <li><a href="#">Barbies</a></li>
-          <li><a href="#">Teddy Bear</a></li>
-          <li><a href="#">Golf Set</a></li>
         </ul>
         </li>
         <li class="parent"><a href="#">View</a>
-        <ul class="child">			
-          <li><a href="#">Yoyo</a></li>
-          <li><a href="#">Doctor Kit</a></li>
-          <li class="parent"><a href="#">Fun Puzzle<span class="expand">&gt;</span></a>
-            <ul class="child">
-            <li><a href="#" nowrap>Cards</a></li>
-            <li><a href="#" nowrap>Numbers</a></li>
-            </ul>
-          </li>
-          <li><a href="#">Uno Cards</a></li>
-        </ul>
         </li>
         <li class="parent"><a href="#">Window</a>
-        <ul class="child">			
-          <li><a href="#">Battery Toys</a></li>
-          <li class="parent"><a href="#">Remote Toys <span class="expand">&gt;</span></a>
-            <ul class="child">
-            <li><a href="#">Cars</a></li>
-            <li><a href="#">Aeroplane</a></li>
-            <li><a href="#">Helicopter</a></li>
-            </ul>
-          </li>
-          <li><a href="#">Soft Toys</a>
-          </li>
-          <li><a href="#">Magnet Toys</a></li>
-        </ul>
         </li>
       </ul>
     </div>
@@ -102,6 +78,7 @@
 
 
     <div class="workarea">
+			<div id="pcc"></div>
       <div id="my_dataviz" class="lineChart"></div>
       <div id="my_dataviz2" class="lineChart"></div>
       <div id="my_dataviz3" class="lineChart"></div>
@@ -440,8 +417,8 @@
                 updateSample(sample);
               }
               else {
-                /*if (sample.data.mean_aflow < 40 || sample.data.mean_aflow > 100 || 
-                 sample.data.mean_traction < 200 || sample.data.mean_traction > 800
+                /*if (sample.data.aflow < 40 || sample.data.aflow > 100 || 
+                 sample.data.traction < 200 || sample.data.traction > 800
                 ) {
                   const index = samples.indexOf(sample);
                   if (index > -1) {
@@ -519,22 +496,22 @@
               }
               for (var j = 0; j < s.params.samples.length; j++) {
                 if (s.data.samples) {
-                  var aflow = calcStatistics("mean_aflow",g.values,j);
-                  var traction = calcStatistics("mean_traction",g.values,j);
+                  var aflow = calcStatistics("aflow_mean",g.values,j);
+                  var traction = calcStatistics("traction_mean",g.values,j);
                   var rmc = calcStatistics("rmc",g.values,j);
-                  var aspect = calcStatistics("mean_aspect",g.values,j);
-                  var area = calcStatistics("mean_area",g.values,j);
+                  var aspect = calcStatistics("aspect_mean",g.values,j);
+                  var area = calcStatistics("area_mean",g.values,j);
                   var data = {
-                    mean_aflow: aflow.mean,
-                    sem_aflow: aflow.sem,
-                    mean_traction: traction.mean,
-                    sem_traction: traction.sem,
+                    aflow_mean: aflow.mean,
+                    aflow_sem: aflow.sem,
+                    traction_mean: traction.mean,
+                    traction_sem: traction.sem,
                     rmc: rmc.mean,
-                    sem_rmc: rmc.sem,
-                    mean_aspect: aspect.mean,
-                    sem_aspect: aspect.sem,
-                    mean_area: area.mean,
-                    sem_area: area.sem
+                    rmc_sem: rmc.sem,
+                    aspect_mean: aspect.mean,
+                    aspect_sem: aspect.sem,
+                    area_mean: area.mean,
+                    area_sem: area.sem
                   }
                   sampleData.push({name: g.key, params: s.params.samples[j], data: data, chosen: s.chosen, color: s.color, hover: s.hover, id: s.id});
                 }
@@ -546,12 +523,17 @@
 
           //console.log(sampleData);
 
-          lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aflow;}, function(d) {return d.color;}, function(d) {return d.data.sem_aflow;});
-          lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_traction;}, function(d) {return d.color;}, function(d) {return d.data.sem_traction;});
-          lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.color;}, function(d) {return d.data.sem_rmc;});
-          lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_aspect;}, function(d) { return d.color;}, function(d) {return d.data.sem_aspect;});
-          lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.mean_area;}, function(d) { return d.color;}, function(d) {return d.data.sem_area;});
+          lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.aflow_mean;}, function(d) {return d.color;}, function(d) {return d.data.aflow_sem;});
+          lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.traction_mean;}, function(d) {return d.color;}, function(d) {return d.data.traction_sem;});
+          lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.color;}, function(d) {return d.data.rmc_sem;});
+          lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.aspect_mean;}, function(d) { return d.color;}, function(d) {return d.data.aspect_sem;});
+          lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.area_mean;}, function(d) { return d.color;}, function(d) {return d.data.area_sem;});
 
+          var pccData = [];
+          for (var i = 0; i < samples.length; i++) {
+              pccData.push({data: samples[i].data, id:samples[i].id, color: samples[i].color, hover: samples[i].hover, chosen: samples[i].chosen});
+          }
+          pcc.updateData(pccData, function(d) {return d.data; }, function(d) {return d.color; });
         }
 
         function createSample(model, name, sampleName, params, samplingMethod) {    
@@ -652,11 +634,66 @@
           checkbox.trigger("change");
         }
 
+        function exportCSV() {
+          var rows = [];
+
+          for (var i = 0; i < samples.length; i++) {
+            if (i == 0) {
+              var headers = [];
+              headers.push("name");
+              Object.keys(samples[i].params).forEach(function(key) {
+              if (!(typeof samples[i].params[key] === 'object')) {
+                headers.push(key);
+              }
+              });
+              Object.keys(samples[i].data).forEach(function(key) {
+                if (!(typeof samples[i].data[key] === 'object')) {
+                  headers.push(key);
+                }
+              });
+
+              rows.push(headers);
+            }
+
+            var row = [];
+            row.push("\"" + samples[i].sampleName + "\"" );
+            Object.keys(samples[i].params).forEach(function(key) {
+              if (!(typeof samples[i].params[key] === 'object')) {
+                row.push(samples[i].params[key]);
+              }
+            });
+            Object.keys(samples[i].data).forEach(function(key) {
+              if (!(typeof samples[i].data[key] === 'object')) {
+                if (isNaN(parseFloat(samples[i].data[key]))) {
+                  row.push("\"" + samples[i].data[key].replace("#","") + "\"" );
+                }
+                else {
+                  row.push(samples[i].data[key]);
+                }
+              }
+            });
+            rows.push(row);
+          }
+          /*const rows = [
+              ["name1", "city1", "some other info"],
+              ["name2", "city2", "more info"]
+          ];*/
+
+          let csvContent = "data:text/csv;charset=utf-8," 
+              + rows.map(e => e.join(",")).join("\n");
+          var encodedUri = encodeURI(csvContent);
+          window.open(encodedUri);
+        }
+
+
+
         var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow", lineHover, lineClick);
         var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction", lineHover, lineClick);
         var lineChart3 = new DynamicLineChart("my_dataviz3", "Substrate Stiffness", "RMC", lineHover, lineClick);
         var lineChart4 = new DynamicLineChart("my_dataviz4", "Substrate Stiffness", "Mean Aspect", lineHover, lineClick);
         var lineChart5 = new DynamicLineChart("my_dataviz5", "Substrate Stiffness", "Mean Area", lineHover, lineClick);
+        var pcc = new PCChart("pcc", lineHover, lineClick);
+
         
         </script>
 </html>

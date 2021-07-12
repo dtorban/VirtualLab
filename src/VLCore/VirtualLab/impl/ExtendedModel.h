@@ -100,6 +100,18 @@ private:
     std::string key;
 };
 
+class ParamCalculation : public IDoubleCalculation {
+public:
+    ParamCalculation(const std::string& key) : key(key) {}
+    virtual ~ParamCalculation() {}
+    virtual double calculate(const IModelSample& sample, const DataObject& data) const {
+        return sample.getParameters()[key].get<double>();
+    }
+
+private:
+    std::string key;
+};
+
 class MagnitudeCalculation : public IDoubleCalculation {
 public:
     MagnitudeCalculation(IDoubleCalculation* a, IDoubleCalculation* b) : a(a), b(b) {}

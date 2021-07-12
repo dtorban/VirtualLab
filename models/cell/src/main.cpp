@@ -249,8 +249,8 @@ public:
             samples[i]->update();
         }
 
-        int simIndex = nav["sim"].get<double>();
-        data.set<Object>(samples[simIndex]->getData().get<Object>());
+        //int simIndex = nav["sim"].get<double>();
+        //data.set<Object>(samples[simIndex]->getData().get<Object>());
 
         DataArray sampleData;
         for (int i = 0; i < samples.size(); i++) {
@@ -521,7 +521,7 @@ private:
     std::string areaOutput;
 };
 
-class NSampleMeanValue : public ICalculatedValue {
+class NSampleValue : public ICalculatedValue {
 public:
     struct State : public ICalculatedState {
         State() : sample(NULL), init(false) {}
@@ -529,10 +529,8 @@ public:
         bool init;
     };
 
-    NSampleMeanValue(IDoubleCalculation* valCalc, const std::string& output) : valCalc(valCalc), output(output) {}
-    virtual ~NSampleMeanValue() {
-        delete valCalc;
-    }
+    NSampleValue() {}
+    virtual ~NSampleValue() {}
 
     ICalculatedState* createState() {
         return new State();
@@ -551,14 +549,31 @@ public:
         }
 
         if (updateState.sample) {
-            const std::vector<IModelSample*>& samples = updateState.sample->getSamples();
-            double val = 0.0;
-            for (int i = 0; i < samples.size(); i++) {
-                val += valCalc->calculate(*samples[i], samples[i]->getData());
-            }
-
-            data[output] = DoubleDataValue(val/samples.size());
+            updateValue(*updateState.sample, data, state);
         }
+    }
+
+protected:
+    virtual void updateValue(NSample& sample, DataObject& data, ICalculatedState* state) const = 0;
+};
+
+class NSampleMeanValue : public NSampleValue {
+public:
+    NSampleMeanValue(IDoubleCalculation* valCalc, const std::string& output) : NSampleValue(), valCalc(valCalc), output(output) {}
+    virtual ~NSampleMeanValue() {
+        delete valCalc;
+    }
+
+protected:
+    virtual void updateValue(NSample& sample, DataObject& data, ICalculatedState* state) const  {
+        const std::vector<IModelSample*>& samples = sample.getSamples();
+        double val = 0.0;
+        for (int i = 0; i < samples.size(); i++) {
+            val += valCalc->calculate(*samples[i], samples[i]->getData());
+        }
+
+        data[output] = DoubleDataValue(val/samples.size());
+
     }
 
 private:
@@ -566,47 +581,51 @@ private:
     std::string output;
 };
 
-/*double sqr_diff[analysis_count];
-    int num_diff;
-    double std;
-    
-    for (int i=0; i<analysis_count-2; i++) {
-        num_diff = analysis_count-1-i;
-        data_dt[i] = data_time[0+i+1]-data_time[0];
-        data_msd[i]=0;
-        for (int j=0; j<num_diff; j++) {
-            sqr_diff[j] = SQR(data_cell_pos[j+i+1][0]-data_cell_pos[j][0])+SQR(data_cell_pos[j+i+1][1]-data_cell_pos[j][1]);
-            data_msd[i] += sqr_diff[j];
-        }
-        data_msd[i] = data_msd[i]/num_diff;
-        std = 0;
-        for (int j=0; j<num_diff; j++) {
-            std += SQR(sqr_diff[j]-data_msd[i]);
-        }
-        std = sqrt(std/(num_diff-1));
-        data_msd_sem[i] = std/sqrt(num_diff);
+class NSampleMaxValue : public NSampleValue {
+public:
+    NSampleMaxValue(IDoubleCalculation* xCalc, IDoubleCalculation* yCalc, const std::string& xOutput, const std::string& yOutput) : NSampleValue(), xCalc(xCalc), yCalc(yCalc), xOutput(xOutput), yOutput(yOutput) {}
+    virtual ~NSampleMaxValue() {
+        delete xCalc;
+        delete yCalc;
     }
-    
-    double cov11, chisq;
-    int rmc_count = int((analysis_count-2)/2);
-    
-    gsl_fit_wmul (data_dt, 1, data_msd_sem, 1, data_msd, 1, rmc_count,&data_rmc, &cov11,
-                  &chisq);
-    
-    data_rmc = data_rmc/4.0;
-    //end//
-*/
+
+protected:
+    virtual void updateValue(NSample& sample, DataObject& data, ICalculatedState* state) const  {
+        const std::vector<IModelSample*>& samples = sample.getSamples();
+        double maxX = 0;
+        double maxY = 0;
+        for (int i = 0; i < samples.size(); i++) {
+            double x = xCalc->calculate(*samples[i], samples[i]->getData());
+            double y = yCalc->calculate(*samples[i], samples[i]->getData());
+            if (i == 0 || y > maxY) {
+                maxX = x;
+                maxY = y;
+            }
+        }
+
+        data[xOutput] = DoubleDataValue(maxX);
+        data[yOutput] = DoubleDataValue(maxY);
+    }
+
+private:
+    IDoubleCalculation* xCalc;
+    IDoubleCalculation* yCalc;
+    std::string xOutput;
+    std::string yOutput;
+};
 
 ExtendedModel* createExtendedModel() {
     ExtendedModel* extendedModel = new ExtendedModel("Extended Cell", new CellModel("Cell"));
-    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aflow"), "mean_aflow"));
-    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("nm"), "mean_nm"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aflow"), "aflow_mean"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("nm"), "nm_mean"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("en"), "en_mean"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("motors"), "motors_mean"));
     extendedModel->addCalculatedValue(new SimpleCalculatedValue(new MagnitudeCalculation(new KeyCalculation("fx"), new KeyCalculation("fx")), "fmag"));
-    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("f"), "mean_traction"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("f"), "traction_mean"));
     extendedModel->addCalculatedValue(new RandomMotilityCoefficentValue(new KeyCalculation("x"),new KeyCalculation("y"),new KeyCalculation("t"), "rmc"));
     extendedModel->addCalculatedValue(new AspectRatioAreaValue("aspect", "area"));
-    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aspect"), "mean_aspect"));
-    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("area"), "mean_area"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aspect"), "aspect_mean"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("area"), "area_mean"));
     return extendedModel;
 }
 
@@ -626,18 +645,18 @@ int main(int argc, char* argv[]) {
         api.registerModel(new SampledModel(createExtendedModel(), sampler));
 
         ExtendedModel* extendedNCell = new ExtendedModel("Extended N-Cell", new NModel("N-Cell", createExtendedModel()));
-        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
-        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
-        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "rmc_mean"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aflow_mean"), "aflow_mean"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("traction_mean"), "traction_mean"));
         api.registerModel(extendedNCell);
 
         sampler = new CompositeSampler();
         sampler->addSampler(new RandomSampler("num"));
         sampler->addSampler(new RandomBinSampler("substrate_k", "N"));
         extendedNCell = new ExtendedModel("Cell Substrate", new NModel("N-Cell", createExtendedModel(), sampler));
-        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
-        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
-        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "rmc_mean"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aflow_mean"), "aflow_mean"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("traction_mean"), "traction_mean"));
 
         CompositeSampler* localSampler = new CompositeSampler();
         for (DataObject::const_iterator it = extendedNCell->getParameters().begin(); it != extendedNCell->getParameters().end(); it++) {
@@ -662,22 +681,26 @@ int main(int argc, char* argv[]) {
         IModel* extendedModel = createExtendedModel();
         /*extendedModel = new NModel("N-Cell", extendedModel, new IterationSampler("num","N"));
         ExtendedModel* ext = new ExtendedModel("Experiment", extendedModel);
-        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
-        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
-        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "rmc_mean"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aflow_mean"), "aflow_mean"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("traction_mean"), "traction_mean"));
         extendedModel = ext;*/
         extendedModel = new NModel("Substate Model", extendedModel, new RandomBinSampler("substrate_k", "N"));
         ExtendedModel* ext = new ExtendedModel("Experiment", extendedModel);
-        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "mean_rmc"));
-        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aflow"), "mean_aflow"));
-        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_traction"), "mean_traction"));
-        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_aspect"), "mean_aspect"));
-        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("mean_area"), "mean_area"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "rmc_mean"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aflow_mean"), "aflow_mean"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("traction_mean"), "traction_mean"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aspect_mean"), "aspect_mean"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("area_mean"), "area_mean"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("nm_mean"), "nm_mean"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("en_mean"), "en_mean"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("motors_mean"), "motors_mean"));
+        ext->addCalculatedValue(new NSampleMaxValue(new ParamCalculation("substrate_k"), new KeyCalculation("rmc"), "opt_stiffness", "rmc_max"));
         extendedModel = ext;
         //extendedModel = new SampledModel(ext, new RandomSampler("num"));
         api.registerModel(extendedModel);
 
-        //api.registerModel(new SampledModel(new OptimizedModel(extendedNCell,new DoubleValueDistance("mean_traction",100), 0.01, 20), localSampler));
+        //api.registerModel(new SampledModel(new OptimizedModel(extendedNCell,new DoubleValueDistance("traction_mean",100), 0.01, 20), localSampler));
         
 
         while(true) {
