@@ -44,21 +44,20 @@ PCChart.prototype.updateData = function(data) {
 		dimensions = d3.keys(data[0].data).filter(function(d) { return isNumber(data[0].data[d]) && d != "fx" && d != "fy" && d != "x" && d != "y"; })
 	}
 
-
 	
 	  // For each dimension, I build a linear scale. I store all in a y object
 	  for (i in dimensions) {
 		var name = dimensions[i];
-        if (!(name in this.y)) {
+        //if (!(name in this.y)) {
           this.y[name] = d3.scaleLinear()
             .domain( d3.extent(data, function(d) { return +d.data[name]; }) )
             .range([this.height, 0])
-        }
-        else {
+        //}
+        /*else {
             var ext = d3.extent(data, function(d) { return +d.data[name]; });
             ext = ext.concat(this.y[name].domain());
             this.y[name].domain( d3.extent(ext) );
-        }
+        }*/
 	  }
 	
 	  // Build the X scale -> it find the best position for each Y axis
@@ -84,7 +83,7 @@ PCChart.prototype.updateData = function(data) {
 		.attr("d",  path)
 		.style("fill", "none")
 		.style("stroke", "#69b3a2")
-		.style("opacity", 0.5)
+		.style("opacity", 0.75)
 		.attr("stroke-width", function(d) { return +d.chosen*2.0 + 1.5; })
 
     this.svg
@@ -92,6 +91,12 @@ PCChart.prototype.updateData = function(data) {
 		.attr("stroke-width", function(d) { return +d.chosen*2.0 + 1.5; })
 		.style("stroke", function(d) {return d.color;})
 		.attr("d",  path)
+
+	this.svg
+        .selectAll(".myHoverPath")
+        .data(data)
+        .exit()
+        .remove();
 
 	  // Draw the lines
 	  this.svg
@@ -146,6 +151,7 @@ PCChart.prototype.updateData = function(data) {
 		.each(function(d) { d3.select(this).call(d3.axisLeft().scale(self.y[d])); })
 		// Add axis title
 		.append("text")
+		  .attr("class","axis-label")
 		  .style("text-anchor", "middle")
 		  .attr("y", -9)
 		  .text(function(d) { return d; })
@@ -156,6 +162,10 @@ PCChart.prototype.updateData = function(data) {
           .attr("transform", function(d) { return "translate(" + self.x(d) + ")"; })
           // And I build the axis with the call function
           .each(function(d) { d3.select(this).call(d3.axisLeft().scale(self.y[d]).tickFormat(d3.format(",.2f"))); })
+
+	
+	  this.svg.selectAll(".myAxis")
+	  	.each(function(d) { d3.select(this).select(".axis-label").text(function(d) { return d.replace("_mean",""); }); })
 
 
 }

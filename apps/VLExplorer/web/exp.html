@@ -7,7 +7,7 @@
         float:left;
         margin-left: 0;
         width: 20%;
-        height: 30%;
+        height: 25%;
       }
       .popup {
         position: absolute;
@@ -46,7 +46,7 @@
 			}
       #pcc {
 				width: 100%;
-				height: 25%;
+				height: 20%;
 			}
 		</style>
 		<script src="js/d3.v4.js"></script>
@@ -530,9 +530,36 @@
           lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.area_mean;}, function(d) { return d.color;}, function(d) {return d.data.area_sem;});
 
           var pccData = [];
+          var params = {};
           for (var i = 0; i < samples.length; i++) {
-              pccData.push({data: samples[i].data, id:samples[i].id, color: samples[i].color, hover: samples[i].hover, chosen: samples[i].chosen});
+            if (i == 0) {
+              params = Object.assign(params, samples[i].params, samples[i].nav);
+            }
+            else {
+              Object.keys(samples[i].params).forEach(function(key) {
+                params[key] += (+samples[i].params[key]);
+              });
+              Object.keys(samples[i].nav).forEach(function(key) {
+                params[key] += (+samples[i].nav[key]);
+              });
+            }
+            var data = {};
+            var data = Object.assign(data, samples[i].params, samples[i].nav);
+            data = Object.assign(data, samples[i].data);
+            delete data["N"];
+            delete data["num"];
+            delete data["substrate_k"];
+            pccData.push({data: data, id:samples[i].id, color: samples[i].color, hover: samples[i].hover, chosen: samples[i].chosen});
           }
+
+          if (samples.length > 0) {
+            Object.keys(params).forEach(function(key) {
+                if (Math.abs((+params[key])/samples.length - samples[0].params[key]) < 0.001 || Math.abs((+params[key])/samples.length - samples[0].nav[key]) < 0.001) {
+                  delete pccData[0].data[key];
+                }
+            });
+          }
+
           pcc.updateData(pccData, function(d) {return d.data; }, function(d) {return d.color; });
         }
 
@@ -587,6 +614,7 @@
             var params = JSON.parse(JSON.stringify(a));
 
             Object.keys(params).forEach(function(key, index) {
+              var p = percent;
               if (!(typeof params[key] === 'object')) {
                 var aVal = a[key];
                 var bVal = b[key];
@@ -594,10 +622,13 @@
                   var temp = bVal;
                   bVal = aVal;
                   aVal = temp;
-                  percent = 1-percent;
+                  p = 1-p;
                 }
+                /*else {
+                  percent = 1-percent;
+                }*/
                 if (bVal-aVal > 0.0001) {
-                  params[key] = lerpParamMetaData(params, key, aVal, bVal, percent);
+                  params[key] = lerpParamMetaData(params, key, aVal, bVal, p);
                 }
                 console.log(key, params[key]);
               }
