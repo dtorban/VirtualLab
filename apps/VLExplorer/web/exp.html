@@ -7,7 +7,7 @@
         float:left;
         margin-left: 0;
         width: 20%;
-        height: 25%;
+        height: 100%;
       }
       .popup {
         position: absolute;
@@ -22,7 +22,7 @@
       .nav {position: relative; float: left; padding: 10px; width: 10%;}
       .toolbar {margin: 10px; text-align: center; width: 50px; border: 1px solid; padding: 10px;}
       .tool {background-color: rgb(79, 89, 90); width: 30px; height: 30px;margin: auto;margin-top: 10px;}
-      .workarea {position: relative; float: left; margin: 10px; width: 85%;}
+      .workarea {position: relative; float: left; margin: 10px; width: 85%; height: 90%;}
       .parent {display: block;position: relative;float: left;line-height: 30px;background-color: #4FA0D8;border-right:#CCC 1px solid;}
       .parent a{margin: 10px;color: #FFFFFF;text-decoration: none;}
       .parent:hover > ul {display:block;position:absolute;}
@@ -57,6 +57,15 @@
           padding: 0px 12px;
           z-index: 1;
           cursor: pointer;
+      }
+      .data-view {
+          width: 100%;
+          height: 25%;
+      }
+      .spatial {
+          width: 100%;
+          height: 55%;
+          overflow-y: auto;
       }
 		</style>
 		<script src="js/d3.v4.js"></script>
@@ -96,11 +105,14 @@
 
     <div class="workarea">
 			<div id="pcc"></div>
-      <div id="my_dataviz" class="lineChart"></div>
-      <div id="my_dataviz2" class="lineChart"></div>
-      <div id="my_dataviz3" class="lineChart"></div>
-      <div id="my_dataviz4" class="lineChart"></div>
-      <div id="my_dataviz5" class="lineChart"></div>
+      <div class="data-view">
+        <div id="my_dataviz" class="lineChart"></div>
+        <div id="my_dataviz2" class="lineChart"></div>
+        <div id="my_dataviz3" class="lineChart"></div>
+        <div id="my_dataviz4" class="lineChart"></div>
+        <div id="my_dataviz5" class="lineChart"></div>
+      </div>
+      <div id="spatial" class="spatial"></div>
     </div>
 
     <div class="nav">
@@ -127,7 +139,11 @@
         <div id="samples">
         </div>
         <input type="checkbox" onchange="groupSamples = !groupSamples;" checked>Group Samples
-        <input type="button" value="Select All" onclick="selectAll()">
+        <input type="button" value="Clear" onclick="selectAll(false)">
+        <input type="button" value="Select All" onclick="selectAll(true)">
+        <input type="button" value="Invert" onclick="invertSelect()">
+        <input type="button" value="Select Range" onclick="selectRange()"><br>
+        <input type="button" value="Interpolate Color" onclick="interpColor()"><br>
         <input type="button" value="Delete Samples" onclick="deleteSamples()">
         <!--input type="button" value="Create Template"><input type="button" value="Interpolate" onclick="interpolate(samples[0].params, samples[1].params, 3);"-->
       </div>
@@ -144,6 +160,16 @@
 
 	</body>
 	<script>
+      d3.rgb.prototype.toHex = function() {
+        var r = Math.round(this.r).toString(16);
+        var g = Math.round(this.g).toString(16);
+        var b = Math.round(this.b).toString(16);
+        if(this.r < 16) r = "0" + r;
+        if(this.g < 16) g = "0" + g;
+        if(this.b < 16) b = "0" + b;
+        return "#"+r+g+b;
+      }
+
         var samples = [];
         var sampleIndexLookup = {};
         var modelList = null;
@@ -267,7 +293,7 @@
                     params[key] = p[key];
                   }
                 });
-                callback("Interp("+samplingMethod.sampleA.sampleName + "," + samplingMethod.sampleB.sampleName+","+numSamples+")");
+                callback("Interp("+samplingMethod.sampleA.sampleName + "," + samplingMethod.sampleB.sampleName+","+numSamples+","+samplingMethod.sampleA.id+","+samplingMethod.sampleB.id+")");
               }));
               samplingMethods.push(new SamplingStrategy(params, "Neighbor", function(params, callback, samplingMethod) {
                 for (var i = 0; i < samples.length; i++) {
@@ -340,13 +366,89 @@
           });
         }
 
-        function selectAll() {
-          var newSamples = [];
+        function selectAll(checked) {
           for (var i = 0; i < samples.length; i++) {
             var checkbox = $("#" + "sample-checkbox-"+samples[i].id);
-            checkbox.prop('checked', true);
+            checkbox.prop('checked', checked);
             checkbox.trigger("change");
           }
+        }
+
+        function selectRange(checked) {
+          var first = -1;
+          var next = -1;
+          for (var i = 0; i < samples.length; i++) {
+            if (samples[i].chosen) {
+              if (first < 0) {
+                first = i;
+              }
+              else {
+                next = i;
+                break;
+              }
+            }
+          }
+
+          if (next < 0) {
+            next = first;
+          }
+
+          if (first >= 0) {
+            for (var i = 0; i < samples.length; i++) {
+              var checkbox = $("#" + "sample-checkbox-"+samples[i].id);
+              checkbox.prop('checked', i >= first && i <= next);
+              checkbox.trigger("change");
+            }
+          }
+        }
+
+        function invertSelect() {
+          for (var i = 0; i < samples.length; i++) {
+            var checkbox = $("#" + "sample-checkbox-"+samples[i].id);
+            checkbox.prop('checked', !checkbox.is(':checked'));
+            checkbox.trigger("change");
+          }
+        }
+
+        function changeColor(color) {
+          for (var i = 0; i < samples.length; i++) {
+            var checkbox = $("#" + "sample-checkbox-"+samples[i].id);
+            checkbox.prop('checked', checked);
+            checkbox.trigger("change");
+          }
+        }
+
+        function interpColor() {
+          var first = null;
+          var last = null;
+          var count = 0;
+          for (var i = 0; i < samples.length; i++) {
+            if (samples[i].chosen) {
+              if (first == null) {
+                first = samples[i].color;
+              }
+
+              last = samples[i].color;
+              count++;
+            }
+          }
+
+          if (first != null && last != null) {
+            var color = d3.scaleLinear().domain([0,count-1])
+              .range([first, last]);
+            count = 0;
+            for (var i = 0; i < samples.length; i++) {
+              if (samples[i].chosen) {
+                samples[i].color = color(count);
+                var colorPicker = $("#" + "sample-color-"+samples[i].id);
+                colorPicker.val(''+d3.color(samples[i].color).rgb().toHex());
+                var checkbox = $("#" + "sample-checkbox-"+samples[i].id);
+                checkbox.css('outline-color', samples[i].color);
+                count++;
+              }
+            }
+          }
+
         }
 
         function deleteSamples() {
@@ -445,7 +547,10 @@
                 else {
                   sample.chosen = 1;
                 }*/
-                sample.delete();
+
+                // Enable delete:
+                //sample.delete();
+
                 //createNewSample();
               }
               updateLineCharts();
@@ -597,6 +702,8 @@
                     var div = $("<div class='sample' id='sample-info-"+sample.id+"'></div>");
                     var tempParams = JSON.parse(JSON.stringify(params));
                     delete tempParams[".metadata"];
+                    var colorPicker = $("<input type=\"color\" style='width:20px; height:20px;border: none;' value=\"" + d3.color(sample.color).rgb().toHex() + "\" id='sample-color-"+sample.id+"'>");
+                    div.append(colorPicker);
                     var checkbox = $("<input type='checkbox' class='sample-checkbox' id='sample-checkbox-"+sample.id+"'>");
                     var currentSample = samples.length-1;
                     checkbox.change(function () {
@@ -609,6 +716,10 @@
                     checkbox.css('outline-color', sample.color);
                     checkbox.css('outline-style', 'solid');
                     checkbox.css('outline-width', 'medium');
+                    colorPicker.change(function () {
+                      sample.color = colorPicker.val();
+                      checkbox.css('outline-color', sample.color);
+                    });
                     div.append(checkbox);
                     div.append("<progress id='progress-"+sample.id+"' value='0' max='100'> 0% </progress>")
                     div.append(sampleName + ": " + JSON.stringify(tempParams));
