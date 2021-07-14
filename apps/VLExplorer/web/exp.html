@@ -48,6 +48,16 @@
 				width: 100%;
 				height: 20%;
 			}
+      input[type="file"] {
+          display: none;
+      }
+      .custom-file-upload {
+          /*border: 1px solid #ccc;*/
+          display: inline-block;
+          padding: 0px 12px;
+          z-index: 1;
+          cursor: pointer;
+      }
 		</style>
 		<script src="js/d3.v4.js"></script>
 		<script src="js/jquery-3.5.1.min.js"></script>
@@ -63,8 +73,15 @@
         <ul class="child">
           <li class="parent"><a href="#">Export <span class="expand">&gt;</span></a>
             <ul class="child">
-            <li><a href="#" onclick="exportCSV()">CSV</a></li>
+              <li><a href="#" onclick="exportCSV()">CSV</a></li>
+              <li><a href="#" onclick="exportJSON()">JSON</a></li>
             </ul>
+          </li>
+          <li>
+            <label class="custom-file-upload">
+              <input type="file" id="files" name="files[]" multiple />
+              <i class="fa fa-cloud-upload parent"></i> Import
+            </label>
           </li>
         </ul>
         </li>
@@ -593,7 +610,7 @@
                     checkbox.css('outline-style', 'solid');
                     checkbox.css('outline-width', 'medium');
                     div.append(checkbox);
-                    div.append("<progress id='progress-"+(samples.length-1)+"' value='0' max='100'> 0% </progress>")
+                    div.append("<progress id='progress-"+sample.id+"' value='0' max='100'> 0% </progress>")
                     div.append(sampleName + ": " + JSON.stringify(tempParams));
                     $("#samples").append(div);
                     
@@ -710,12 +727,42 @@
               ["name2", "city2", "more info"]
           ];*/
 
-          let csvContent = "data:text/csv;charset=utf-8," 
-              + rows.map(e => e.join(",")).join("\n");
+          let csvContent =  
+              rows.map(e => e.join(",")).join("\n");
           var encodedUri = encodeURI(csvContent);
+          window.open("data:text/csv;charset=utf-8,"+encodedUri);
+        }
+
+
+        function exportJSON() {
+          var sampleList = [];
+          samples.forEach(function(item){
+            sampleList.push({params: item.params, nav: item.nav, data: item.data, color: item.color, sampleName: item.sampleName});
+          });
+          console.log(JSON.stringify(sampleList, null, 4));
+          //let csvContent = "data:text/json;charset=utf-8," + JSON.stringify(sampleList, null, 4);
+          let csvContent = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleList, null, 4));
+          var encodedUri = csvContent; //encodeURI(csvContent);
           window.open(encodedUri);
         }
 
+        function handleFileSelect(evt) {
+          var files = evt.target.files; // FileList object
+
+
+          var fileInput = document.getElementById("files");
+
+          var reader = new FileReader();
+          reader.onload = function () {
+              //console.log(reader.result);
+              var letters = d3.csvParse(reader.result);
+              console.log(letters);
+          };
+          // start reading the file. When it is done, calls the onload event defined above.
+          reader.readAsBinaryString(fileInput.files[0]);
+        }
+
+        document.getElementById('files').addEventListener('change', handleFileSelect, false);
 
 
         var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow", lineHover, lineClick);
