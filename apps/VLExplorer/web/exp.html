@@ -9,6 +9,21 @@
         width: 20%;
         height: 100%;
       }
+      .dynamicsChart {
+        width: 50%;
+        height: 150px;
+      }
+      #dynamics-tab {
+        position: absolute;
+          width: 100%;
+          height: 100%;
+          overflow-y: auto;
+      }
+      #data-tab {
+        position: absolute;
+          width: 100%;
+          height: 100%;
+      }
       .popup {
         position: absolute;
         top: 50%;  /* position the top  edge of the element at the middle of the parent */
@@ -98,6 +113,10 @@
         </ul>
         </li>
         <li class="parent"><a href="#">View</a>
+          <ul class="child">
+            <li><a href="#" onclick="setTab(0)">Data / Spatial</a></li>
+            <li><a href="#" onclick="setTab(1)">Dynamics</a></li>
+          </ul>
         </li>
         <li class="parent"><a href="#">Window</a>
         </li>
@@ -107,16 +126,23 @@
 
 
     <div class="workarea">
-			<div id="pcc"></div>
-      <div class="data-view">
-        <div id="my_dataviz" class="lineChart"></div>
-        <div id="my_dataviz2" class="lineChart"></div>
-        <div id="my_dataviz3" class="lineChart"></div>
-        <div id="my_dataviz4" class="lineChart"></div>
-        <div id="my_dataviz5" class="lineChart"></div>
+      <div id="data-tab">
+        <div id="pcc"></div>
+        <div class="data-view">
+          <div id="my_dataviz" class="lineChart"></div>
+          <div id="my_dataviz2" class="lineChart"></div>
+          <div id="my_dataviz3" class="lineChart"></div>
+          <div id="my_dataviz4" class="lineChart"></div>
+          <div id="my_dataviz5" class="lineChart"></div>
+        </div>
+        <div id="spatial" class="spatial"></div>
+        <div id="spatialPath" class="spatial"></div>
+    </div>
+      <div id="dynamics-tab">
+        <div id="param1" class="dynamicsChart"></div>
+        <div id="param2" class="dynamicsChart"></div>
+        <div id="param3" class="dynamicsChart"></div>
       </div>
-      <div id="spatial" class="spatial"></div>
-      <div id="spatialPath" class="spatial"></div>
     </div>
 
     <div class="nav">
@@ -183,6 +209,7 @@
         var samplingMethods = [];
         var model = null;
         var groupSamples = true;
+        var tab = 0;
 
         var color = d3.scaleLinear().domain([0,1])
           .range(["#b8c1f5", "blue"])
@@ -192,6 +219,7 @@
         var api = new VLApi();
         $( document ).ready(function() {
           $('.popup').hide();
+          setTab(0);
 
           api.getModels().then(function(models) {
             console.log(models);
@@ -226,7 +254,7 @@
                     });
                     callback($("#adhoc-name").val());
                     $("#adhoc").hide();
-                    $("#adhoc").unbind();
+                    $("#adhoc-button").unbind();
                   });
                 }
                 else {
@@ -599,117 +627,138 @@
         }
 
         function updateLineCharts() {
-          var sampleData = [];
-          if (!groupSamples) {
-            for (var i = 0; i < samples.length; i++) {
-              var s = samples[i];
-              for (var j = 0; j < s.params.samples.length; j++) {
-                if (s.data.samples) {
-                  sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen, color: s.color, hover: s.hover, id: s.id});
-                }
-              }
-            }
-          }
-          else {
-            var groups = d3.nest() // nest function allows to group the calculation per level of a factor
-              .key(function(d) { return d.sampleName;})
-              .entries(samples);
 
-            for (var i = 0; i < groups.length; i++) {
-              var g = groups[i];
-//              var s = g.values[0];
-              var s = g.values[Math.floor(g.values.length/2)];
-              for (var j = 0; j < g.values.length; j++) {
-                if (g.values[j].chosen) {
-                  s = g.values[j];
-                  break;
-                }
-              }
-              for (var j = 0; j < s.params.samples.length; j++) {
-                if (s.data.samples) {
-                  var aflow = calcStatistics("aflow_mean",g.values,j);
-                  var traction = calcStatistics("traction_mean",g.values,j);
-                  var rmc = calcStatistics("rmc_mean",g.values,j);
-                  var aspect = calcStatistics("aspect_mean",g.values,j);
-                  var area = calcStatistics("area_mean",g.values,j);
-                  var data = {
-                    aflow_mean: aflow.mean,
-                    aflow_sem: aflow.sem,
-                    traction_mean: traction.mean,
-                    traction_sem: traction.sem,
-                    rmc: rmc.mean,
-                    rmc_sem: rmc.sem,
-                    aspect_mean: aspect.mean,
-                    aspect_sem: aspect.sem,
-                    area_mean: area.mean,
-                    area_sem: area.sem
+          if (tab == 0) {
+            var sampleData = [];
+            if (!groupSamples) {
+              for (var i = 0; i < samples.length; i++) {
+                var s = samples[i];
+                for (var j = 0; j < s.params.samples.length; j++) {
+                  if (s.data.samples) {
+                    sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen, color: s.color, hover: s.hover, id: s.id});
                   }
-                  sampleData.push({name: g.key, params: s.params.samples[j], data: data, chosen: s.chosen, color: s.color, hover: s.hover, id: s.id});
                 }
               }
-            }
-          }
-          
-          
-
-          //console.log(sampleData);
-
-          lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.aflow_mean;}, function(d) {return d.color;}, function(d) {return d.data.aflow_sem;});
-          lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.traction_mean;}, function(d) {return d.color;}, function(d) {return d.data.traction_sem;});
-          lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.color;}, function(d) {return d.data.rmc_sem;});
-          lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.aspect_mean;}, function(d) { return d.color;}, function(d) {return d.data.aspect_sem;});
-          lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.area_mean;}, function(d) { return d.color;}, function(d) {return d.data.area_sem;});
-
-          var pccData = [];
-          var params = {};
-          for (var i = 0; i < samples.length; i++) {
-            if (i == 0) {
-              params = Object.assign(params, samples[i].params);//, samples[i].nav);
             }
             else {
-              Object.keys(samples[i].params).forEach(function(key) {
-                params[key] += (+samples[i].params[key]);
-              });
-              Object.keys(samples[i].nav).forEach(function(key) {
-                params[key] += (+samples[i].nav[key]);
-              });
-            }
-            var data = {};
-            var data = Object.assign(data, samples[i].params);//, samples[i].nav);
-            data = Object.assign(data, samples[i].data);
-            delete data["N"];
-            delete data["num"];
-            delete data["substrate_k"];
-            pccData.push({data: data, id:samples[i].id, color: samples[i].color, hover: samples[i].hover, chosen: samples[i].chosen});
-          }
+              var groups = d3.nest() // nest function allows to group the calculation per level of a factor
+                .key(function(d) { return d.sampleName;})
+                .entries(samples);
 
-          if (samples.length > 0) {
-            Object.keys(params).forEach(function(key) {
-                if (Math.abs((+params[key])/samples.length - samples[0].params[key]) < 0.001 || Math.abs((+params[key])/samples.length - samples[0].nav[key]) < 0.001) {
-                  delete pccData[0].data[key];
+              for (var i = 0; i < groups.length; i++) {
+                var g = groups[i];
+  //              var s = g.values[0];
+                var s = g.values[Math.floor(g.values.length/2)];
+                for (var j = 0; j < g.values.length; j++) {
+                  if (g.values[j].chosen) {
+                    s = g.values[j];
+                    break;
+                  }
                 }
-            });
-          }
-
-          pcc.updateData(pccData, function(d) {return d.data; }, function(d) {return d.color; });
-
-          var spatialData = [];
-
-          var chosen = 0;
-
-          if (samples.length > 0) {
-            for (var i = 0; i < samples.length; i++) {
-              if (samples[i].chosen) {
-                for (var j = 0; j < samples[i].lastSpatial.length; j+=2) {
-                  spatialData.push({data: samples[i].lastSpatial[j], color: samples[i].color});
+                for (var j = 0; j < s.params.samples.length; j++) {
+                  if (s.data.samples) {
+                    var aflow = calcStatistics("aflow_mean",g.values,j);
+                    var traction = calcStatistics("traction_mean",g.values,j);
+                    var rmc = calcStatistics("rmc_mean",g.values,j);
+                    var aspect = calcStatistics("aspect_mean",g.values,j);
+                    var area = calcStatistics("area_mean",g.values,j);
+                    var data = {
+                      aflow_mean: aflow.mean,
+                      aflow_sem: aflow.sem,
+                      traction_mean: traction.mean,
+                      traction_sem: traction.sem,
+                      rmc: rmc.mean,
+                      rmc_sem: rmc.sem,
+                      aspect_mean: aspect.mean,
+                      aspect_sem: aspect.sem,
+                      area_mean: area.mean,
+                      area_sem: area.sem
+                    }
+                    sampleData.push({name: g.key, params: s.params.samples[j], data: data, chosen: s.chosen, color: s.color, hover: s.hover, id: s.id});
+                  }
                 }
-                chosen++;
               }
             }
+            
+            
+
+            //console.log(sampleData);
+
+            lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.aflow_mean;}, function(d) {return d.color;}, function(d) {return d.data.aflow_sem;});
+            lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.traction_mean;}, function(d) {return d.color;}, function(d) {return d.data.traction_sem;});
+            lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.color;}, function(d) {return d.data.rmc_sem;});
+            lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.aspect_mean;}, function(d) { return d.color;}, function(d) {return d.data.aspect_sem;});
+            lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.area_mean;}, function(d) { return d.color;}, function(d) {return d.data.area_sem;});
+
+            var pccData = [];
+            var params = {};
+            for (var i = 0; i < samples.length; i++) {
+              if (i == 0) {
+                params = Object.assign(params, samples[i].params);//, samples[i].nav);
+              }
+              else {
+                Object.keys(samples[i].params).forEach(function(key) {
+                  params[key] += (+samples[i].params[key]);
+                });
+                Object.keys(samples[i].nav).forEach(function(key) {
+                  params[key] += (+samples[i].nav[key]);
+                });
+              }
+              var data = {};
+              var data = Object.assign(data, samples[i].params);//, samples[i].nav);
+              data = Object.assign(data, samples[i].data);
+              delete data["N"];
+              delete data["num"];
+              delete data["substrate_k"];
+              pccData.push({data: data, id:samples[i].id, color: samples[i].color, hover: samples[i].hover, chosen: samples[i].chosen});
+            }
+
+            if (samples.length > 0) {
+              Object.keys(params).forEach(function(key) {
+                  if (Math.abs((+params[key])/samples.length - samples[0].params[key]) < 0.001 || Math.abs((+params[key])/samples.length - samples[0].nav[key]) < 0.001) {
+                    delete pccData[0].data[key];
+                  }
+              });
+            }
+
+            pcc.updateData(pccData, function(d) {return d.data; }, function(d) {return d.color; });
+
+            var spatialData = [];
+            var chosen = 0;
+            if (samples.length > 0) {
+              for (var i = 0; i < samples.length; i++) {
+                if (samples[i].chosen) {
+                  for (var j = 0; j < samples[i].lastSpatial.length; j+=2) {
+                    spatialData.push({data: samples[i].lastSpatial[j], color: samples[i].color});
+                  }
+                  chosen++;
+                }
+              }
+            }
+
+            spatialCell.updateData(spatialData,spatialData.length/chosen,chosen);
+            spatialPath.updateData(spatialData,spatialData.length/chosen,chosen);
+          }
+          else if (tab == 1) {
+            var dyanamicsData = [];
+            var index = 0;
+            if (samples.length > 0) {
+              for (var i = 0; i < samples.length; i++) {
+                var s = samples[i];
+                if (s.chosen && s.data.samples) {
+                  for (var j = 0; j < s.data.samples.length; j++) {
+                    dyanamicsData.push({name: '' + j, params: s.params.samples[j], data: s.data.samples[j], chosen: false, color: s.color, hover: s.hover, id: s.id, index: index});
+                  }
+                  index++;
+                }
+              }
+            }
+            param1.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.data.aflow_mean;}, function(d) { return d.color;}, function(d) {return null;});
+            param2.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.data.traction_mean;}, function(d) { return d.color;}, function(d) {return null;});
+            param3.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.params.cpool;}, function(d) { return d.color;}, function(d) {return null;});
+
           }
 
-          spatialCell.updateData(spatialData,spatialData.length/chosen,chosen);
-          spatialPath.updateData(spatialData,spatialData.length/chosen,chosen);
         }
 
         function createSample(model, name, sampleName, params, samplingMethod) {    
@@ -904,6 +953,17 @@
 
         document.getElementById('files').addEventListener('change', handleFileSelect, false);
 
+        function setTab(val) {
+          tab = val;
+          if (tab == 1) {
+            $('#data-tab').hide();
+            $('#dynamics-tab').show();
+          }
+          else {
+            $('#data-tab').show();
+            $('#dynamics-tab').hide();
+          }
+        }
 
         var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow", lineHover, lineClick);
         var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction", lineHover, lineClick);
@@ -914,6 +974,10 @@
         
         var spatialCell = new SpatialCell($("#spatial"), true);
         var spatialPath = new SpatialCell($("#spatialPath"), false);
+
+        var param1 = new DynamicLineChart("param1", "Substrate Stiffness", "Mean Area");
+        var param2 = new DynamicLineChart("param2", "Substrate Stiffness", "Mean Area");
+        var param3 = new DynamicLineChart("param3", "Substrate Stiffness", "Mean Area");
 
         </script>
 </html>

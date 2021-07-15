@@ -52,7 +52,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
         .entries(data);
     
       // Add X axis --> it is a date format
-      var x = d3.scaleLog()
+      var x = d3.scaleLinear()
         .domain(d3.extent(data, function(d) { return +xKey(d); }))
         .range([ 0, this.width ]);
       if (!this.xAxis) {

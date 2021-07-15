@@ -65,6 +65,25 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
       .attr('y2', function(d) {return scale*(d.arm.y-d.y)/50.0 + self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
   }
   else {
+
+    /*var dist = this.svg.selectAll('circle.dist')
+      .data(data);
+      
+      dist.exit()
+      .remove()
+
+      dist.enter()
+      .append('circle')
+      .attr('class', 'dist')
+      .attr("stroke", 'black')
+      .attr("fill", 'none')
+    .exit()
+      .remove()
+    .merge( dist )
+        .attr('cx', function(d) { return x(xKey(d)); })
+        .attr('cy', function(d) { return y(+yKey(d)); });*/
+
+
     var path = [];
     var maxLength = 0;
     for (var i = 0; i < data.length; i++) {
