@@ -63,7 +63,9 @@
           height: 25%;
       }
       .spatial {
-          width: 100%;
+        position: relative;
+        float: left;
+          width: 50%;
           height: 55%;
           overflow-y: auto;
       }
@@ -74,6 +76,7 @@
 		<script src="js/DynamicLineChart.js"></script>
 		<script src="js/SamplingStrategy.js"></script>
 		<script src="js/pcc.js"></script>
+		<script src="js/SpatialCell.js"></script>
 	</head>
 	<body>
     <div id="header">
@@ -113,6 +116,7 @@
         <div id="my_dataviz5" class="lineChart"></div>
       </div>
       <div id="spatial" class="spatial"></div>
+      <div id="spatialPath" class="spatial"></div>
     </div>
 
     <div class="nav">
@@ -530,6 +534,10 @@
 
               //sample.chosen = 0;
               sample.nav.t += 10.0;//10.0*60;
+              if (sample.nav.m == 1) {
+                sample.lastSpatial = JSON.parse(JSON.stringify(sample.data.samples));
+              }
+              sample.nav.m = sample.chosen ? 1 : 0;
               //sample.nav.t += 10.0*60;
               //if (sample.nav.t < 300) {//sample.nav.t < 3600*6) {
               if (sample.nav.t < 3600*6) {
@@ -683,6 +691,24 @@
           }
 
           pcc.updateData(pccData, function(d) {return d.data; }, function(d) {return d.color; });
+
+          var spatialData = [];
+
+          var chosen = 0;
+
+          if (samples.length > 0) {
+            for (var i = 0; i < samples.length; i++) {
+              if (samples[i].chosen) {
+                for (var j = 0; j < samples[i].lastSpatial.length; j+=2) {
+                  spatialData.push({data: samples[i].lastSpatial[j], color: samples[i].color});
+                }
+                chosen++;
+              }
+            }
+          }
+
+          spatialCell.updateData(spatialData,spatialData.length/chosen,chosen);
+          spatialPath.updateData(spatialData,spatialData.length/chosen,chosen);
         }
 
         function createSample(model, name, sampleName, params, samplingMethod) {    
@@ -882,7 +908,9 @@
         var lineChart4 = new DynamicLineChart("my_dataviz4", "Substrate Stiffness", "Mean Aspect", lineHover, lineClick);
         var lineChart5 = new DynamicLineChart("my_dataviz5", "Substrate Stiffness", "Mean Area", lineHover, lineClick);
         var pcc = new PCChart("pcc", lineHover, lineClick);
-
         
+        var spatialCell = new SpatialCell($("#spatial"));
+        var spatialPath = new SpatialCell($("#spatialPath"));
+
         </script>
 </html>
