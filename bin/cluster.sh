@@ -6,7 +6,7 @@ ${ROOTDIR}/bin/build-cse.sh
 #ssh -R 3457:172.21.0.2:3457 -L 172.21.0.1:12342:127.0.0.1:12342 dtorban@csel-kh1250-05.cselabs.umn.edu 'cd /export/scratch/dtorban/VirtualLab; git pull; make -j; cp CellModel /home/dtorban/CellModel'
 
 #ssh -R 3457:172.21.0.2:3457 -L 172.21.0.1:12342:127.0.0.1:12342 dtorban@csel-kh1250-05.cselabs.umn.edu '/home/dtorban/CellModel 12342' &
-ssh -R 3457:172.21.0.2:3457 -L 172.21.0.1:12341:127.0.0.1:12341 dtorban@jimmypage.cs.umn.edu '/home/dtorban/CellModel 12341' &
+#ssh -R 3457:172.21.0.2:3457 -L 172.21.0.1:12341:127.0.0.1:12341 dtorban@jimmypage.cs.umn.edu '/home/dtorban/CellModel 12341' &
 ssh -R 3457:172.21.0.2:3457 -L 172.21.0.1:12342:127.0.0.1:12342 dtorban@csel-kh1250-05.cselabs.umn.edu '/home/dtorban/CellModel 12342' &
 ssh -R 3457:172.21.0.2:3457 -L 172.21.0.1:12343:127.0.0.1:12343 dtorban@csel-kh1250-06.cselabs.umn.edu '/home/dtorban/CellModel 12343' &
 ssh -R 3457:172.21.0.2:3457 -L 172.21.0.1:12344:127.0.0.1:12344 dtorban@csel-kh1250-07.cselabs.umn.edu '/home/dtorban/CellModel 12344' &

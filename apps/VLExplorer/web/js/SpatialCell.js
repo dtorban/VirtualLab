@@ -79,7 +79,7 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
           .attr("class","line")
           .attr("fill", "none")
           .attr("stroke", function(d){ return d.color; })
-          .style("opacity", 0.5)
+          .style("opacity", 1.0)
           //.style("opacity", function(d) { return +d.values[0].chosen > 0 ? 0 : 1; })
           //.attr("stroke-width", function(d) { return +d.values[0].chosen*2.0 + 1.5; })
           .attr("stroke-width", function(d) { return 4; })
@@ -99,8 +99,8 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
           .attr("stroke", function(d){ return d.color; })
       .attr("d", function(d){
         return d3.line()
-          .x(function(d) { return scale*(d.x)*10 + self.width/2/gridWidth + d.gridX*self.width/gridWidth; })
-          .y(function(d) { return scale*(d.y)*10 + self.height/2/gridHeight + d.gridY*self.height/gridHeight; })
+          .x(function(d) { return scale*(d.x)*20 + self.width/2/gridWidth + d.gridX*self.width/gridWidth; })
+          .y(function(d) { return scale*(d.y)*20 + self.height/2/gridHeight + d.gridY*self.height/gridHeight; })
           (d.h)
         })
   }
