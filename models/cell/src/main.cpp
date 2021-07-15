@@ -398,7 +398,7 @@ public:
             updateState.y.push_back(y);
         }
 
-        if (updateState.time.size()>1) {
+        if (updateState.time.size()>2) {
             //data_dt[i] = data_time[0+i+1]-data_time[0];
             double dt = t-updateState.time[0];
 
@@ -434,7 +434,9 @@ public:
             
             data_rmc = data_rmc/4.0;
 
-            data[output] = DoubleDataValue(data_rmc);
+            if (data_rmc >= 0) {
+                data[output] = DoubleDataValue(data_rmc);
+            }
         }
         else {
             data[output] = DoubleDataValue(0);
@@ -639,6 +641,7 @@ ExtendedModel* createExtendedModel() {
     extendedModel->addCalculatedValue(new AspectRatioAreaValue("aspect", "area"));
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aspect"), "aspect_mean"));
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("area"), "area_mean"));
+    extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("rmc"), "rmc_mean"));
     return extendedModel;
 }
 
@@ -658,7 +661,7 @@ int main(int argc, char* argv[]) {
         api.registerModel(new SampledModel(createExtendedModel(), sampler));
 
         ExtendedModel* extendedNCell = new ExtendedModel("Extended N-Cell", new NModel("N-Cell", createExtendedModel()));
-        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "rmc_mean"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc_mean"), "rmc_mean"));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aflow_mean"), "aflow_mean"));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("traction_mean"), "traction_mean"));
         api.registerModel(extendedNCell);
@@ -667,7 +670,7 @@ int main(int argc, char* argv[]) {
         sampler->addSampler(new RandomSampler("num"));
         sampler->addSampler(new RandomBinSampler("substrate_k", "N"));
         extendedNCell = new ExtendedModel("Cell Substrate", new NModel("N-Cell", createExtendedModel(), sampler));
-        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "rmc_mean"));
+        extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc_mean"), "rmc_mean"));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aflow_mean"), "aflow_mean"));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("traction_mean"), "traction_mean"));
 
@@ -700,7 +703,7 @@ int main(int argc, char* argv[]) {
         extendedModel = ext;*/
         extendedModel = new NModel("Substate Model", extendedModel, new RandomBinSampler("substrate_k", "N"));
         ExtendedModel* ext = new ExtendedModel("Experiment", extendedModel);
-        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc"), "rmc_mean"));
+        ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc_mean"), "rmc_mean"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aflow_mean"), "aflow_mean"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("traction_mean"), "traction_mean"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aspect_mean"), "aspect_mean"));
@@ -708,7 +711,8 @@ int main(int argc, char* argv[]) {
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("nm_mean"), "nm_mean"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("en_mean"), "en_mean"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("motors_mean"), "motors_mean"));
-        ext->addCalculatedValue(new NSampleMaxValue(new ParamCalculation("substrate_k"), new KeyCalculation("rmc"), "opt_stiffness", "rmc_max"));
+        ext->addCalculatedValue(new NSampleMaxValue(new ParamCalculation("substrate_k"), new KeyCalculation("rmc_mean"), "opt_stiffness", "rmc_max"));
+        ext->addCalculatedValue(new MeanValue(new KeyCalculation("opt_stiffness"), "opt_stiffness"));
         extendedModel = ext;
         //extendedModel = new SampledModel(ext, new RandomSampler("num"));
         api.registerModel(extendedModel);

@@ -148,7 +148,8 @@ public:
     virtual void update(IModelSample& sample, DataObject& data, ICalculatedState* state) const  {
         State& updateState = *(static_cast<State*>(state));
         updateState.numSamples++;
-        updateState.total += calc->calculate(sample, data);
+        double calculated = calc->calculate(sample, data);
+        updateState.total += calculated;
         data[output] = DoubleDataValue(updateState.total/updateState.numSamples);
     }
 
