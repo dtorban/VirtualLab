@@ -89,6 +89,7 @@ public:
 
         nav["t"] = DoubleDataValue();
         nav["m"] = DoubleDataValue(1);
+        nav["h"] = DoubleDataValue(0);
 
         DataObjectConfig config(params);
         int simulationNumber = params["num"].get<double>();
@@ -437,6 +438,18 @@ public:
         }
         else {
             data[output] = DoubleDataValue(0);
+        }
+
+        if (sample.getNavigation()["h"].get<double>()) {
+            DataArray history;
+            for (int i = 0; i < updateState.time.size(); i++) {
+                DataObject h;
+                h["time"] = DoubleDataValue(updateState.time[i]);
+                h["x"] = DoubleDataValue(updateState.x[i]);
+                h["y"] = DoubleDataValue(updateState.y[i]);
+                history.push_back(h);
+            }
+            data["h"] = history;
         }
     }
 

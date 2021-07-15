@@ -534,10 +534,11 @@
 
               //sample.chosen = 0;
               sample.nav.t += 10.0;//10.0*60;
-              if (sample.nav.m == 1) {
+              if (sample.nav.m == 1 || sample.nav.h == 1) {
                 sample.lastSpatial = JSON.parse(JSON.stringify(sample.data.samples));
               }
               sample.nav.m = sample.chosen ? 1 : 0;
+              sample.nav.h = sample.chosen ? 1 : 0;
               //sample.nav.t += 10.0*60;
               //if (sample.nav.t < 300) {//sample.nav.t < 3600*6) {
               if (sample.nav.t < 3600*6) {
@@ -720,6 +721,8 @@
                     sample.name = name;
                     sample.sampleName = sampleName;
                     sample.nav.t = 10.0;
+                    sample.nav.m = 1.0;
+                    sample.nav.h = 1.0;
                     sample.id = currentNum;
                     sampleIndexLookup[sample.id] = samples.length;
                     samples.push(sample);
@@ -909,8 +912,8 @@
         var lineChart5 = new DynamicLineChart("my_dataviz5", "Substrate Stiffness", "Mean Area", lineHover, lineClick);
         var pcc = new PCChart("pcc", lineHover, lineClick);
         
-        var spatialCell = new SpatialCell($("#spatial"));
-        var spatialPath = new SpatialCell($("#spatialPath"));
+        var spatialCell = new SpatialCell($("#spatial"), false);
+        var spatialPath = new SpatialCell($("#spatialPath"), true);
 
         </script>
 </html>
