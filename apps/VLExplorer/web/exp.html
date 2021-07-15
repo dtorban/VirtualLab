@@ -537,7 +537,7 @@
               if (sample.nav.m == 1 || sample.nav.h == 1) {
                 sample.lastSpatial = JSON.parse(JSON.stringify(sample.data.samples));
               }
-              sample.nav.m = sample.chosen ? 1 : 0;
+              sample.nav.m = sample.chosen ? 1 : 1;
               sample.nav.h = sample.chosen ? 1 : 0;
               //sample.nav.t += 10.0*60;
               //if (sample.nav.t < 300) {//sample.nav.t < 3600*6) {
@@ -664,7 +664,7 @@
           var params = {};
           for (var i = 0; i < samples.length; i++) {
             if (i == 0) {
-              params = Object.assign(params, samples[i].params, samples[i].nav);
+              params = Object.assign(params, samples[i].params);//, samples[i].nav);
             }
             else {
               Object.keys(samples[i].params).forEach(function(key) {
@@ -675,7 +675,7 @@
               });
             }
             var data = {};
-            var data = Object.assign(data, samples[i].params, samples[i].nav);
+            var data = Object.assign(data, samples[i].params);//, samples[i].nav);
             data = Object.assign(data, samples[i].data);
             delete data["N"];
             delete data["num"];

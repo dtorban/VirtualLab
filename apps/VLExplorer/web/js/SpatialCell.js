@@ -23,12 +23,20 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
   var scale = gridWidth > gridHeight ? 1.0/gridWidth : 1.0/gridHeight;
 
   if (!this.showPath) {
+    var maxLength = 0;
     var arms = [];
     for (var i = 0; i < data.length; i++) {
       for (var j = 0; j < data[i].data.m.length; j++) {
-        arms.push({gridX: i%gridWidth, gridY: Math.floor(i/gridWidth), color: data[i].color, arm: data[i].data.m[j], x: data[i].data.x, y: data[i].data.y})
+        var arm = {gridX: i%gridWidth, gridY: Math.floor(i/gridWidth), color: data[i].color, arm: data[i].data.m[j], x: data[i].data.x, y: data[i].data.y};
+        arms.push(arm)
+        var length = Math.sqrt((arm.arm.x - arm.x)*(arm.arm.x - arm.x) + (arm.arm.y - arm.y)*(arm.arm.y - arm.y));
+        if (length > maxLength) {
+          maxLength = length;
+        }
       }
     }
+
+    scale = 20000*scale/maxLength;
   
     //var arms = data.m;
     this.svg.selectAll("line")
@@ -58,13 +66,21 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
   }
   else {
     var path = [];
+    var maxLength = 0;
     for (var i = 0; i < data.length; i++) {
       var h = [];
       for (var j = 0; j < data[i].data.h.length; j++) {
-        h.push({x: data[i].data.h[j].x - data[i].data.h[0].x, y: data[i].data.h[j].y - data[i].data.h[0].y, gridX: i%gridWidth, gridY: Math.floor(i/gridWidth)})
+        var hCalc = {x: data[i].data.h[j].x - data[i].data.h[0].x, y: data[i].data.h[j].y - data[i].data.h[0].y, gridX: i%gridWidth, gridY: Math.floor(i/gridWidth)};
+        var length = Math.sqrt(hCalc.x*hCalc.x + hCalc.y*hCalc.y);
+        if (length > maxLength) {
+          maxLength = length;
+        }
+        h.push(hCalc);
       }
       path.push({color: data[i].color, h: h})
     }
+
+    scale = 20*scale/maxLength;
 
     this.svg.selectAll(".line")
       .data(path)
