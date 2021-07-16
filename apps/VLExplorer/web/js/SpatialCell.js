@@ -88,15 +88,17 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
     var maxLength = 0;
     for (var i = 0; i < data.length; i++) {
       var h = [];
-      for (var j = 0; j < data[i].data.h.length; j++) {
-        var hCalc = {x: data[i].data.h[j].x - data[i].data.h[0].x, y: data[i].data.h[j].y - data[i].data.h[0].y, gridX: i%gridWidth, gridY: Math.floor(i/gridWidth)};
-        var length = Math.sqrt(hCalc.x*hCalc.x + hCalc.y*hCalc.y);
-        if (length > maxLength) {
-          maxLength = length;
+      if (data[i].data.h) {
+        for (var j = 0; j < data[i].data.h.length; j++) {
+          var hCalc = {x: data[i].data.h[j].x - data[i].data.h[0].x, y: data[i].data.h[j].y - data[i].data.h[0].y, gridX: i%gridWidth, gridY: Math.floor(i/gridWidth)};
+          var length = Math.sqrt(hCalc.x*hCalc.x + hCalc.y*hCalc.y);
+          if (length > maxLength) {
+            maxLength = length;
+          }
+          h.push(hCalc);
         }
-        h.push(hCalc);
       }
-      path.push({color: data[i].color, h: h})
+      path.push({color: data[i].color, h: h});
     }
 
     scale = 20*scale/maxLength;

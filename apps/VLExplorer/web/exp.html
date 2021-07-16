@@ -10,6 +10,8 @@
         height: 100%;
       }
       .dynamicsChart {
+        position: relative;
+        float:left;
         width: 50%;
         height: 150px;
       }
@@ -17,12 +19,16 @@
         position: absolute;
           width: 100%;
           height: 100%;
-          overflow-y: auto;
       }
       #data-tab {
         position: absolute;
           width: 100%;
           height: 100%;
+      }
+      #dynamics-charts {
+        width: 50%;
+        height: 100%;
+        overflow-y: auto;
       }
       .popup {
         position: absolute;
@@ -139,9 +145,10 @@
         <div id="spatialPath" class="spatial"></div>
     </div>
       <div id="dynamics-tab">
-        <div id="param1" class="dynamicsChart"></div>
+        <div id="dynamics-charts"></div>
+        <!--div id="param1" class="dynamicsChart"></div>
         <div id="param2" class="dynamicsChart"></div>
-        <div id="param3" class="dynamicsChart"></div>
+        <div id="param3" class="dynamicsChart"></div-->
       </div>
     </div>
 
@@ -209,7 +216,9 @@
         var samplingMethods = [];
         var model = null;
         var groupSamples = true;
-        var tab = 0;
+        var tab = 1;
+        var checkMultiple = false;
+        var dynamicsCharts = {};
 
         var color = d3.scaleLinear().domain([0,1])
           .range(["#b8c1f5", "blue"])
@@ -219,7 +228,7 @@
         var api = new VLApi();
         $( document ).ready(function() {
           $('.popup').hide();
-          setTab(0);
+          setTab(tab);
 
           api.getModels().then(function(models) {
             console.log(models);
@@ -273,7 +282,7 @@
                     params[key] = lerpParamMetaData(params, key, getParamMetaData(params, key, "min", params[key]), getParamMetaData(params, key, "max", params[key]), r);
                   }
                 });
-                callback();
+                callback("Random-" + currentNum);
               }));
               samplingMethods.push(new SamplingStrategy(params, "Search"));
               samplingMethods.push(new SamplingStrategy(params, "More", function(params, callback, samplingMethod) {
@@ -343,7 +352,7 @@
                   Object.keys(p).forEach(function(key, index) {
                       params[key] = p[key];
                   });
-                  callback("Neighbor(" + samplingMethod.selectedSample.sampleName + ")");
+                  callback("Neighbor(" + samplingMethod.selectedSample.sampleName + ")-"+currentNum);
                 });
 
               }));
@@ -402,6 +411,7 @@
           for (var i = 0; i < samples.length; i++) {
             var checkbox = $("#" + "sample-checkbox-"+samples[i].id);
             checkbox.prop('checked', checked);
+            checkMultiple = (i != samples.length-1);
             checkbox.trigger("change");
           }
         }
@@ -429,6 +439,7 @@
             for (var i = 0; i < samples.length; i++) {
               var checkbox = $("#" + "sample-checkbox-"+samples[i].id);
               checkbox.prop('checked', i >= first && i <= next);
+              checkMultiple = (i != samples.length-1);
               checkbox.trigger("change");
             }
           }
@@ -438,6 +449,7 @@
           for (var i = 0; i < samples.length; i++) {
             var checkbox = $("#" + "sample-checkbox-"+samples[i].id);
             checkbox.prop('checked', !checkbox.is(':checked'));
+            checkMultiple = (i != samples.length-1);
             checkbox.trigger("change");
           }
         }
@@ -446,6 +458,7 @@
           for (var i = 0; i < samples.length; i++) {
             var checkbox = $("#" + "sample-checkbox-"+samples[i].id);
             checkbox.prop('checked', checked);
+            checkMultiple = (i != samples.length-1);
             checkbox.trigger("change");
           }
         }
@@ -535,8 +548,8 @@
               //params.kon = lerpParamMetaData(params, "mpool", 0.3, 3, percent);
               //params.koff = lerpParamMetaData(params, "cpool", 0.1, 1, percent);
 
-              //addParameter("kon", 1, 0.1, 10, "log");
-              //addParameter("koff", 0.1, 0.01, 1, "log");
+              //addParameter("kon", 1, 0.1, 10);
+              //addParameter("koff", 0.1, 0.01, 1);
 
               samplingMethod.sample().then(function(s) {
                 var params = s.params;
@@ -562,11 +575,11 @@
 
               //sample.chosen = 0;
               sample.nav.t += 10.0;//10.0*60;
-              if (sample.nav.m == 1 || sample.nav.h == 1) {
+              if (/*sample.nav.m == 1 || */ sample.nav.h == 1) {
                 sample.lastSpatial = JSON.parse(JSON.stringify(sample.data.samples));
               }
               sample.nav.m = sample.chosen ? 1 : 1;
-              sample.nav.h = sample.chosen ? 1 : 0;
+              sample.nav.h = sample.chosen && tab == 0 ? 1 : 0;
               //sample.nav.t += 10.0*60;
               //if (sample.nav.t < 300) {//sample.nav.t < 3600*6) {
               if (sample.nav.t < 3600*6) {
@@ -728,10 +741,12 @@
             if (samples.length > 0) {
               for (var i = 0; i < samples.length; i++) {
                 if (samples[i].chosen) {
-                  for (var j = 0; j < samples[i].lastSpatial.length; j+=2) {
-                    spatialData.push({data: samples[i].lastSpatial[j], color: samples[i].color});
+                  if (samples[i].lastSpatial) {
+                    for (var j = 0; j < samples[i].lastSpatial.length; j+=2) {
+                      spatialData.push({data: samples[i].lastSpatial[j], color: samples[i].color});
+                    }
+                    chosen++;
                   }
-                  chosen++;
                 }
               }
             }
@@ -740,22 +755,68 @@
             spatialPath.updateData(spatialData,spatialData.length/chosen,chosen);
           }
           else if (tab == 1) {
+            var nameIndex = {};
             var dyanamicsData = [];
-            var index = 0;
+            //var index = 0;
             if (samples.length > 0) {
               for (var i = 0; i < samples.length; i++) {
                 var s = samples[i];
                 if (s.chosen && s.data.samples) {
-                  for (var j = 0; j < s.data.samples.length; j++) {
+                  /*for (var j = 4; j < s.data.samples.length; j++) {
                     dyanamicsData.push({name: '' + j, params: s.params.samples[j], data: s.data.samples[j], chosen: false, color: s.color, hover: s.hover, id: s.id, index: index});
+                    break;
+                  }*/
+                  if (!(s.sampleName in nameIndex)) {
+                    nameIndex[s.sampleName] = 0;
                   }
+                  var index = nameIndex[s.sampleName];
+                  dyanamicsData.push({name: '' + s.sampleName, params: s.params, data: s.data, chosen: false, color: s.color, hover: s.hover, id: s.id, index: index});
+
+                  nameIndex[s.sampleName]++;
                   index++;
                 }
               }
             }
-            param1.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.data.aflow_mean;}, function(d) { return d.color;}, function(d) {return null;});
+
+            if (samples.length > 0) {
+              var s = samples[0];
+              var data = {};
+              //if (s.data.samples) {
+                //data = Object.assign(data, s.data.samples[0]); 
+              //}
+              data = Object.assign(data, s.data); 
+              data = Object.assign(data, s.params);
+
+              delete data["N"];
+              delete data["num"];
+              delete data["substrate_k"];
+
+              var charts = $("#dynamics-charts");
+              Object.keys(data).forEach(function(key, index) {
+                if (!(typeof data[key] === 'object')) {
+                  //console.log(key, dynamicsCharts);
+                  if (!(key in dynamicsCharts)) {
+                    var chartDiv = $("<div id=\"dynamic-chart-"+key+"\" class=\"dynamicsChart\"></div>");
+                    var label = $("<label class='chart-label'>"+key+"</label>");
+                    chartDiv.append(label);
+                    charts.append(chartDiv);
+                    var chart = new DynamicLineChart("dynamic-chart-"+key, "", "");
+                    chart.showTicksX = false;
+                    chart.yScale = getParamMetaData(s.params, key, "scale", "linear");
+                    console.log(key, chart.yScale);
+                    dynamicsCharts[key] = chart;
+                  }
+
+                  dynamicsCharts[key].updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return key in d.params ? d.params[key] : d.data[key];}, function(d) { return d.color;}, function(d) {return null;});
+                }
+              });
+            }
+            
+
+
+            /*param1.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.data.aflow_mean;}, function(d) { return d.color;}, function(d) {return null;});
             param2.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.data.traction_mean;}, function(d) { return d.color;}, function(d) {return null;});
-            param3.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.params.cpool;}, function(d) { return d.color;}, function(d) {return null;});
+            param3.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.params.cpool;}, function(d) { return d.color;}, function(d) {return null;});*/
 
           }
 
@@ -789,6 +850,9 @@
                         sample.chosen = 1;
                       } else {
                         sample.chosen = 0;
+                      }
+                      if (!checkMultiple) {
+                        updateLineCharts();
                       }
                     });
                     checkbox.css('outline-color', sample.color);
@@ -966,18 +1030,23 @@
         }
 
         var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow", lineHover, lineClick);
-        var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction", lineHover, lineClick);
-        var lineChart3 = new DynamicLineChart("my_dataviz3", "Substrate Stiffness", "RMC", lineHover, lineClick);
+        var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction", lineHover, lineClick)
+        var lineChart3 = new DynamicLineChart("my_dataviz3", "Substrate Stiffness", "RMC", lineHover, lineClick)
         var lineChart4 = new DynamicLineChart("my_dataviz4", "Substrate Stiffness", "Mean Aspect", lineHover, lineClick);
         var lineChart5 = new DynamicLineChart("my_dataviz5", "Substrate Stiffness", "Mean Area", lineHover, lineClick);
+        lineChart1.xScale = "log";
+        lineChart2.xScale = "log";
+        lineChart3.xScale = "log";
+        lineChart4.xScale = "log";
+        lineChart5.xScale = "log";
         var pcc = new PCChart("pcc", lineHover, lineClick);
         
         var spatialCell = new SpatialCell($("#spatial"), true);
         var spatialPath = new SpatialCell($("#spatialPath"), false);
 
-        var param1 = new DynamicLineChart("param1", "Substrate Stiffness", "Mean Area");
+        /*var param1 = new DynamicLineChart("param1", "Substrate Stiffness", "Mean Area");
         var param2 = new DynamicLineChart("param2", "Substrate Stiffness", "Mean Area");
-        var param3 = new DynamicLineChart("param3", "Substrate Stiffness", "Mean Area");
+        var param3 = new DynamicLineChart("param3", "Substrate Stiffness", "Mean Area");*/
 
         </script>
 </html>
