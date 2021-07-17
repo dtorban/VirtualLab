@@ -128,6 +128,14 @@ function getParamMetaData(params, param, key, defaultVal) {
     }
 }
 
+function getParamMetaDataMin(params, param) {
+    return getParamMetaData(params, param, "min", params[param]);
+}
+
+function getParamMetaDataMax(params, param) {
+    return getParamMetaData(params, param, "max", params[param]);
+}
+
 function lerpParamMetaData(params, param, a, b, percent) { 
     let scale = function(val) {
         if (getParamMetaData(params, param, "scale", "linear") == "log") {

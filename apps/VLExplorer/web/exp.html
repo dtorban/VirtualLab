@@ -220,6 +220,39 @@
         var checkMultiple = false;
         var dynamicsCharts = {};
 
+        function dynamicQuery(params, samplingMethod, res) {
+          let input = samplingMethod.currentInput;
+          let selectedSamples = samplingMethod.samples;
+          var i = samplingMethod.numSamples-samplingMethod.createNum;
+          var numSamples = Math.floor(samplingMethod.numSamples/selectedSamples.length);
+          var sampleNum = i%numSamples;
+          var currentSelectedSampleIndex = Math.floor(i/numSamples);
+          let s = selectedSamples[currentSelectedSampleIndex];
+          samplingMethod.currentSelected = s;
+          console.log(i,samplingMethod.numSamples, samplingMethod.createNum, sampleNum, numSamples, currentSelectedSampleIndex, s);
+          var percent = 1.0*(sampleNum%numSamples)/(numSamples-1);
+          Object.keys(input).forEach(function(key, index) {
+            
+            var type = +input[key].val();
+            if (type == 0) {
+              params[key] = s.params[key];
+            }
+            else {
+              var p = percent;
+              if (type == 2) {
+                p = 1.0-percent;
+              }
+              params[key] = lerpParamMetaData(params, key, getParamMetaData(params, key, "min", params[key]), getParamMetaData(params, key, "max", params[key]), p);      
+            }
+            
+            if (samplingMethod.createNum <= 1) {
+              samplingMethod.numSamples = samplingMethod.oldNumSamples;
+            }
+            //console.log(key, input[key].val());
+            //params[key] = +input[key].val();
+          });
+        }
+
         var color = d3.scaleLinear().domain([0,1])
           .range(["#b8c1f5", "blue"])
         console.log(color(0));
@@ -363,6 +396,52 @@
                   //params.cpool = 7500;
                   callback();
               }));
+              samplingMethods.push(new SamplingStrategy(params, "What if?", function(params, callback, samplingMethod) {
+                if (samplingMethod.createNum == samplingMethod.numSamples) {
+                  samplingMethod.samples = [];
+                  for (var i = 0; i < samples.length; i++) {
+                    if (samples[i].chosen == 1) {
+                      samplingMethod.samples.push(samples[i]);
+                    }
+                  }
+
+                  samplingMethod.oldNumSamples = samplingMethod.numSamples;
+                  samplingMethod.numSamples = samplingMethod.samples.length*samplingMethod.numSamples;
+                  samplingMethod.createNum = samplingMethod.numSamples;
+
+                  $("#adhoc").show();
+                  $("#adhoc-params").html("");
+                  var input = {};
+                  Object.keys(params).forEach(function(key, index) {
+                    if (!(typeof params[key] === 'object')) {
+                      console.log(key, params[key]);
+                      var tr = $("<tr></tr>");
+                      var name = $("<td>" + key + "</td>");
+                      var val = $("<td></td>");
+                      var select = $("<select value=\"0\"><option value='0'>None</option><option value='1'>Increase</option><option value='2'>Decrease</option></select>")
+                      input[key] = select;
+                      val.append(select);
+                      tr.append(name);
+                      tr.append(val);
+                      $('#adhoc-params').append(tr);
+                    }
+                  });
+                  $( "#adhoc-button" ).click(function() {
+                    samplingMethod.currentInput = input;
+                    dynamicQuery(params, samplingMethod);
+                    var name = $("#adhoc-name").val() ? $("#adhoc-name").val() : "What if";
+                    callback(name + "(" + samplingMethod.currentSelected.sampleName + "," + samplingMethod.currentSelected.id +")");
+                    $("#adhoc").hide();
+                    $("#adhoc-button").unbind();
+                  });
+                }
+                else {
+                  let input = samplingMethod.currentInput;
+                  dynamicQuery(params, samplingMethod);
+                  var name = $("#adhoc-name").val() ? $("#adhoc-name").val() : "What if";
+                  callback(name + "(" + samplingMethod.currentSelected.sampleName + "," + samplingMethod.currentSelected.id +")");
+                }
+              }));
               //'#e41a1c','#377eb8','g#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'
               samplingMethods[0].color = "#ff7f00";
               samplingMethods[1].color = "#984ea3";
@@ -376,6 +455,8 @@
               samplingMethods[5].numSamples = 5;
               samplingMethods[6].color = "#e41a1c";
               samplingMethods[7].color = "#377eb8";
+              samplingMethods[8].color = "#377eb8";
+              samplingMethods[8].numSamples = 5;
               updateSamplingMethods();
             });
           });
@@ -761,7 +842,8 @@
             if (samples.length > 0) {
               for (var i = 0; i < samples.length; i++) {
                 var s = samples[i];
-                if (s.chosen && s.data.samples) {
+                if (s.data.samples) {
+                //if (s.chosen && s.data.samples) {
                   /*for (var j = 4; j < s.data.samples.length; j++) {
                     dyanamicsData.push({name: '' + j, params: s.params.samples[j], data: s.data.samples[j], chosen: false, color: s.color, hover: s.hover, id: s.id, index: index});
                     break;
@@ -776,6 +858,24 @@
                   index++;
                 }
               }
+
+              var additionalData = [];
+
+              for (var i = 0; i < dyanamicsData.length; i++) {
+                var size = nameIndex[dyanamicsData[i].name];
+                if (size > 1) {
+                  dyanamicsData[i].index = dyanamicsData[i].index/(size-1);
+                }
+                else {
+                  var newData = {};
+                  dyanamicsData[i].index = 0;
+                  newData = Object.assign(newData, dyanamicsData[i]);
+                  newData.index = 1;
+                  additionalData.push(newData);
+                }
+              }
+
+              dyanamicsData = dyanamicsData.concat(additionalData);
             }
 
             if (samples.length > 0) {
