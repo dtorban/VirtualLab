@@ -13,6 +13,15 @@ public:
     virtual ~IUpdateCallback() {}
     virtual void onComplete() = 0;
 };
+    
+class UpdateCallbackProxy : public IUpdateCallback {
+public:
+    UpdateCallbackProxy(IUpdateCallback* callback) : callback(callback) {}
+    virtual ~UpdateCallbackProxy() {}
+    virtual void onComplete() { callback->onComplete(); }
+private:
+    IUpdateCallback* callback;
+};
 
 class IModelSample {
 public:
@@ -33,6 +42,26 @@ public:
     //virtual bool loadState(ByteBufferReader& reader) { return false; }
 };
 
+class ModelSampleProxy  : public IModelSample {
+public:
+    ModelSampleProxy() : sample(NULL) {}
+    ModelSampleProxy(IModelSample* sample) : sample(sample) {}
+    ModelSampleProxy(const ModelSampleProxy& proxy) { this->sample = proxy.sample; }
+    virtual ~ModelSampleProxy() {}
+    
+    void operator=(const ModelSampleProxy& proxy) { this->sample = proxy.sample; }
+
+    virtual const DataObject& getParameters() const { return sample->getParameters(); }
+    virtual DataObject& getNavigation() { return sample->getNavigation(); }
+    virtual const DataObject& getData() const { return sample->getData(); }
+    virtual void update() { return sample->update(); }
+    virtual void update(IUpdateCallback* callback) { return sample->update(callback); }
+	virtual IModelSample* getInnerSample() { return sample; }
+
+protected:
+    IModelSample* sample;
+};
+    
 class ModelSampleDecorator : public IModelSample {
 public:
     ModelSampleDecorator(IModelSample* sample) : sample(sample) {}
@@ -148,15 +177,18 @@ public:
     }
 
     void update() {
+        prepareUpdate();
         ModelSampleDecorator::update();
         asyncUpdate();
     }
 
     void update(IUpdateCallback* callback) {
-        return ModelSampleDecorator::update(new UpdateCallback(this, callback, sampleAvailable));
+        prepareUpdate();
+        ModelSampleDecorator::update(new UpdateCallback(this, callback, sampleAvailable));
     }
 
 protected:
+    virtual void prepareUpdate() {}
     virtual void asyncUpdate() {}
 
 private:

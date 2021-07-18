@@ -31,7 +31,7 @@ set(DEP_INCLUDES ${DEP_INCLUDES}
 #  ${external_dir}/CppWebServerLib/src/cmake/framework/external/WebSockets/build/install/lib
 #)
 
-set(DEP_LIBS ${DEP_LIBS} VLml VLCore CppWebServer websockets)
+set(DEP_LIBS ${DEP_LIBS} VLml VLopt VLCore CppWebServer websockets)
 
 set(ALL_LIBS ${ALL_LIBS} crypto ssl z mlpack armadillo)
 

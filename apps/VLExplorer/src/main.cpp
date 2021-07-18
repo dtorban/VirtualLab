@@ -13,6 +13,7 @@ Copyright (c) 2019 Dan Orban
 #include "VirtualLab/impl/TestModel.h"
 #include "VirtualLab/util/JSONSerializer.h"
 #include "VirtualLab/pca/PCAModel.h" 
+#include "VirtualLab/opt/OptimizedModel.h"
 #include <mutex>
 
 class VLWebServerSession;
@@ -40,6 +41,7 @@ public:
 		//producerAPI.registerModel(new ModelProxy(api->getModels()[0]));
 		compositeApi.registerModel(new PCAModel("PCA", &producerAPI));
 		compositeApi.registerModel(new SamplingModel("Sampling", producerAPI.getModels()[3]));
+        compositeApi.registerModel(new OptimizedModel2(new ModelProxy(producerAPI.getModels()[4]), 0.01, 5));
 		compositeApi.addApi(producerAPI);
 		this->state.api = &compositeApi;
 		this->state.models = this->state.api->getModels();
@@ -290,6 +292,7 @@ int main(int argc, char**argv) {
 	//ModelProxy smothedCell = api->getModels()[1];
 	//api->registerModel(new TypedModelDecorator<ModifiedSample>("Modified Cell", &cell));
 	//api->registerModel(new TypedModelDecorator<ModifiedSample>("Modified Smooth Cell", &smothedCell));
+    //api->registerModel(new OptimizedModel2(new ModelProxy(api->getModels()[4]), 0.01, 5));
 	api->registerModel(new TestModel("Test"));
 
 	/*ProducerAPI producerAPI(client);

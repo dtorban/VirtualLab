@@ -4,6 +4,7 @@
 #include "VirtualLab/IModel.h"
 #include "VirtualLab/impl/VirtualLabAPI.h"
 #include <cmath>
+#include <mutex>
 
 namespace vl {
 
@@ -40,6 +41,24 @@ public:
 private:
     std::string key;
     double val;
+};
+    
+    
+class OptimizedModel2 : public ModelDecorator {
+public:
+
+    OptimizedModel2(IModel* model, double closeness, int numSamples);
+    
+    virtual ~OptimizedModel2();
+    
+    const std::string& getName() const { return name; }
+
+    IModelSample* create(const DataObject& params);
+
+private:
+    std::string name;
+    int numTestSamples;
+    double closeness;
 };
 
 }

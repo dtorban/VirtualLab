@@ -3,6 +3,72 @@
 
 namespace vl {
 
+class OptimizedSample2 : public ModelSampleDecorator, public IUpdateCallback {
+public:
+    
+    OptimizedSample2(IModel* model, const DataObject& params, double closeness, int numSamples) : ModelSampleDecorator(&proxy), model(model), updateCompleted(0) {
+        for (int i = 0; i < numSamples; i++) {
+            samples.push_back(model->create(params));
+        }
+        proxy = new ModelSampleProxy(samples[0]);
+    }
+
+    virtual ~OptimizedSample2() {
+        for (int i = 0; i < samples.size(); i++) {
+            delete samples[i];
+        }
+    }
+
+    const DataObject& getData() const { return data; }
+             
+    void update(IUpdateCallback* callback) {
+        updateCompleted = 0;
+        this->callback = callback;
+        for (int i = 0; i < samples.size(); i++) {        
+            samples[i]->update(new UpdateCallbackProxy(this));
+        }
+    }
+             
+    void onComplete() {
+        {
+            std::unique_lock<std::mutex> lock(updateMutex);
+            updateCompleted++;
+            if (updateCompleted < samples.size()) {
+                return;    
+            }
+        }
+        
+        data = proxy.getData();
+        
+        data["other"] = samples[2]->getData();
+        
+        callback->onComplete();
+        delete callback;
+    }
+
+private:
+    ModelSampleProxy proxy;
+    IModel* model;
+    DataObject data;
+    int updateCompleted;
+    std::vector<IModelSample*> samples;
+    IUpdateCallback* callback;
+    std::mutex updateMutex;
+};
+
+    
+OptimizedModel2::OptimizedModel2(IModel* model, double closeness, int numTestSamples) : ModelDecorator(model), closeness(closeness), numTestSamples(numTestSamples) {
+        name = "Optimized " + model->getName();
+}
+
+OptimizedModel2::~OptimizedModel2() {
+}
+
+IModelSample* OptimizedModel2::create(const DataObject& params) {
+    return new OptimizedSample2(model, params, closeness, numTestSamples);
+}
+    
+    
 class OptimizedSample : public ModelSampleDecorator {
 public:
     OptimizedSample(IModelSample* sample, double closeness, int numTestSamples, IModel* model, OptimizedModel::DistanceFunction* distFunction) : ModelSampleDecorator(sample), numTestSamples(numTestSamples), distFunction(distFunction) {
@@ -145,4 +211,8 @@ IModelSample* OptimizedModel::create(const DataObject& params) {
     return new OptimizedSample(ModelDecorator::create(params), closeness, numTestSamples, model, distFunction);
 }
 
+    
+
+
+    
 }

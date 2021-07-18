@@ -1,0 +1,54 @@
+<html>
+	<head>
+		<title>Virtual Lab</title>
+		<style>
+            #spatial {
+                width: 100%;
+                height: 100%;
+            }
+		</style>
+		<script src="js/d3.v4.js"></script>
+		<script src="js/jquery-3.5.1.min.js"></script>
+		<script src="js/VLApi.js"></script>
+	</head>
+	<body>
+        <div id="spatial">
+        </div>
+	</body>
+	<script>
+
+        var modelList = null;
+        var model = null;
+        var api = new VLApi();
+        var samples = [];
+
+        $( document ).ready(function() {
+
+          api.getModels().then(function(models) {
+              console.log(models);
+              modelList = models;
+
+              model = modelList[2];
+              
+              model.getParameters().then(function(params) {
+                  model.create(params).then(function(sample) {
+                      samples.push(sample);
+                      sample.nav.t = 10.0;
+                      updateSample(sample);
+                  });
+              });
+
+          });
+        });
+         
+           
+        function updateSample(sample) {
+            sample.update().then(function() {
+               sample.nav.t += 10.0;
+               console.log(sample);
+            });
+        }
+
+
+        </script>
+</html>
