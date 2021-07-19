@@ -31,21 +31,29 @@
               model = modelList[2];
               
               model.getParameters().then(function(params) {
+                  params.cpool = 80;
                   model.create(params).then(function(sample) {
                       samples.push(sample);
                       sample.nav.t = 10.0;
                       updateSample(sample);
                   });
               });
-
+              
           });
         });
          
            
+        var updates = 0;
+        
         function updateSample(sample) {
             sample.update().then(function() {
                sample.nav.t += 10.0;
-               console.log(sample);
+               console.log(sample.nav, sample.data);
+               console.log(sample.data.index, sample.data.aflow_mean);
+               if (updates < 4) {                 
+                 updates++;
+                 updateSample(sample);
+               }
             });
         }
 

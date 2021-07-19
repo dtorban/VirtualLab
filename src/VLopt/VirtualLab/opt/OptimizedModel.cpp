@@ -6,11 +6,22 @@ namespace vl {
 class OptimizedSample2 : public ModelSampleDecorator, public IUpdateCallback {
 public:
     
-    OptimizedSample2(IModel* model, const DataObject& params, double closeness, int numSamples) : ModelSampleDecorator(&proxy), model(model), updateCompleted(0) {
-        for (int i = 0; i < numSamples; i++) {
-            samples.push_back(model->create(params));
+    OptimizedSample2(IModel* model, const DataObject& params, double closeness, int numSamples) : ModelSampleDecorator(new ModelSampleProxy(&proxy)), model(model), closeness(closeness), updateCompleted(0) {
+        
+        for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
+            if (it->second.isType<double>() && it->first != "N" && it->first != "num") {
+                paramKeys.push_back(it->first);
+            }
         }
-        proxy = new ModelSampleProxy(samples[0]);
+        
+        for (int i = 0; i < numSamples; i++) {
+            samples.push_back(createNewSample(params));
+        }
+        selectedSampleIndex = 0;
+        proxy = ModelSampleProxy(samples[selectedSampleIndex]);
+        
+        nav = proxy.getNavigation();
+
     }
 
     virtual ~OptimizedSample2() {
@@ -18,13 +29,53 @@ public:
             delete samples[i];
         }
     }
+    
+    IModelSample* createNewSample(const DataObject& params) {
+        model->create(params);
+        Eigen::VectorXd dir = Eigen::VectorXd(paramKeys.size());
+        for (int i = 0; i < paramKeys.size(); i++) {
+            double r = (double)std::rand() / (double)RAND_MAX;
+            r = 2.0*(r-0.5);
+            dir[i] = r;
+        }
+        dir = dir.normalized()*closeness;
+        
+        ParameterHelper helper(params);
+        DataObject p = params;
+        
+        for (int i = 0; i < paramKeys.size(); i++) {
+            std::string param = paramKeys[i];
+            double max = helper.scale(param, helper.getMax(param));
+            double min = helper.scale(param, helper.getMin(param));
+            double val = helper.scale(param, params[param].get<double>());
+            val = val + dir[i]*(max-min);
+            if (val < min) {
+                val = min;
+            }
+            if (val > max) {
+                val = max;
+            }
+            val = helper.invScale(param, val);
+            p[param].set<double>(val);
+            std::cout << param << " " << p[param].get<double>() << " " << val << std::endl;
+        }
+        
+        return model->create(p);
+    }
 
     const DataObject& getData() const { return data; }
+    DataObject& getNavigation() { return nav; }
              
     void update(IUpdateCallback* callback) {
+        // Update time by dt
+        double dt = nav["t"].get<double>() - proxy.getNavigation()["t"].get<double>();
+        
         updateCompleted = 0;
         this->callback = callback;
-        for (int i = 0; i < samples.size(); i++) {        
+        for (int i = 0; i < samples.size(); i++) {
+            double sampleTime = samples[i]->getNavigation()["t"].get<double>() + dt;
+            samples[i]->getNavigation() = nav;
+            samples[i]->getNavigation()["t"].set<double>(sampleTime);
             samples[i]->update(new UpdateCallbackProxy(this));
         }
     }
@@ -38,22 +89,39 @@ public:
             }
         }
         
+        int min_index = 0;
+        double min_aflow = 0;
+        
+        for (int i = 0; i < samples.size(); i++) {
+            double aflow_mean = samples[i]->getData()["aflow_mean"].get<double>();
+            if (aflow_mean < min_aflow) {
+                min_aflow = aflow_mean;
+                min_index = i;
+            }
+        }
+        selectedSampleIndex = min_index;
+        
+        proxy = ModelSampleProxy(samples[selectedSampleIndex]);
+        
         data = proxy.getData();
-        
-        data["other"] = samples[2]->getData();
-        
+        data["index"] = DoubleDataValue(selectedSampleIndex);
+                
         callback->onComplete();
         delete callback;
     }
 
 private:
+    int selectedSampleIndex;
+    double closeness;
     ModelSampleProxy proxy;
     IModel* model;
     DataObject data;
+    DataObject nav;
     int updateCompleted;
     std::vector<IModelSample*> samples;
     IUpdateCallback* callback;
     std::mutex updateMutex;
+    std::vector<std::string> paramKeys;
 };
 
     
