@@ -7,7 +7,9 @@ class OptimizedSample2 : public ModelSampleDecorator, public IUpdateCallback {
 public:
     
     OptimizedSample2(IModel* model, const DataObject& params, double closeness, int numSamples) : ModelSampleDecorator(new ModelSampleProxy(&proxy)), model(model), closeness(closeness), updateCompleted(0) {
-        
+        iteration = 0;
+        lastTime = 0.0;
+
         for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
             if (it->second.isType<double>() && it->first != "N" && it->first != "num") {
                 paramKeys.push_back(it->first);
@@ -66,14 +68,116 @@ public:
     const DataObject& getData() const { return data; }
     DataObject& getNavigation() { return nav; }
              
+    Eigen::VectorXd calculateForce(int forceId) {
+        
+            std::vector<double> distance;
+            for (int i = 0; i < samples.size(); i++) {
+                double dist = 0.0;
+                if (forceId == 0) {
+                    dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[0].get<vl::Object>().find("aflow_mean")->second.get<double>() - 90),2);
+                }
+                else if (forceId == 1) {
+                    dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[4].get<vl::Object>().find("aflow_mean")->second.get<double>() - 60),2);
+                }
+                else if (forceId == 2) {
+                    dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[7].get<vl::Object>().find("aflow_mean")->second.get<double>() - 100),2);
+                }
+               
+                //
+                dist = std::sqrt(dist);
+                distance.push_back(dist);
+            }
+
+            // Calculate gradient
+            Eigen::MatrixXd A = Eigen::MatrixXd(samples.size()-1, paramKeys.size());
+            Eigen::VectorXd b = Eigen::VectorXd(samples.size()-1);
+
+            ParameterHelper helper(getParameters());
+
+            int currentSample = 0;
+            for (int i = 0; i < samples.size(); i++) {
+                if (i == selectedSampleIndex) {
+                    continue;
+                }
+
+                Eigen::VectorXd diff = Eigen::VectorXd(paramKeys.size());
+                for (int j = 0; j < paramKeys.size(); j++) {
+                    std::string key = paramKeys[j];
+                    double testVal = helper.normalize(key, samples[i]->getParameters()[key].get<double>());
+                    double sampleVal = helper.normalize(key, sample->getParameters()[key].get<double>());
+                    //std::cout << key << " " << sampleVal << std::endl;
+
+                    //std::cout << testVal << " " << sampleVal << " " << testVal - sampleVal << std::endl;
+                    diff[j] = testVal - sampleVal;
+                }
+
+                b[currentSample] = (distance[i] - distance[selectedSampleIndex])  / diff.norm();
+                //std::cout << "100 " << distFunction->calculate(*testSamples[i]) << " " << distFunction->calculate(*sample) << " " << (distFunction->calculate(*testSamples[i]) - distFunction->calculate(*sample)) << std::endl;
+                //std::cout << "diff norm " << " " << diff.norm() << std::endl;
+                Eigen::VectorXd dir = diff.normalized();
+                A.block(currentSample, 0, 1, paramKeys.size()) = dir.transpose();
+                currentSample++;
+            }
+
+            Eigen::VectorXd sol = calculateLeastSquares(A,b);
+            double res = (A*sol-b).norm();
+            std::cout << "Residual " << res << std::endl;
+
+
+            double lambda = distance[selectedSampleIndex] / sol.norm();
+            std::cout << "lambda " << lambda << std::endl;
+
+            Eigen::VectorXd normGradient = sol.normalized();
+            return normGradient;//*lambda;
+    }
+
     void update(IUpdateCallback* callback) {
         // Update time by dt
-        double dt = nav["t"].get<double>() - proxy.getNavigation()["t"].get<double>();
+        double dt = nav["t"].get<double>() - lastTime;
+        lastTime += dt;
+
+        if (iteration > 0 && iteration % 20 == 0) {
+
+            Eigen::VectorXd force = calculateForce(0);
+            force += calculateForce(1);
+            force += calculateForce(2);
+            force = force.normalized();
+
+            DataObject params = samples[selectedSampleIndex]->getParameters();
+            ParameterHelper helper(params);
+            params["samples"] = DataArray();
+
+            for (int i = 0; i < paramKeys.size(); i++) {
+                std::string key = paramKeys[i];
+                double val = sample->getParameters()[key].get<double>();
+                double normalizedVal = helper.normalize(key, val);
+                //std::cout << "params." << key << "=" << helper.clamp(key, helper.deNormalize(key, normalizedVal - normGradient[i]*closeness)) << ";" << std::endl;
+                //params[key].set<double>(helper.clamp(key, helper.deNormalize(key, normalizedVal - normGradient[i]*closeness)));
+                //params[key].set<double>(helper.clamp(key, helper.deNormalize(key, normalizedVal - normGradient[i]*lambda)));
+                params[key].set<double>(helper.clamp(key, helper.deNormalize(key, normalizedVal - force[i]*0.01)));
+                
+            }
+
+            for (int i = 0; i < samples.size(); i++) {
+                if (i != selectedSampleIndex) {
+                    delete samples[i];
+                    samples[i] = createNewSample(params);
+                }
+                else {
+                    delete samples[i];
+                    samples[i] = model->create(params);
+                }
+            }
+
+        }
+
+        iteration++;
         
         updateCompleted = 0;
         this->callback = callback;
         for (int i = 0; i < samples.size(); i++) {
             double sampleTime = samples[i]->getNavigation()["t"].get<double>() + dt;
+            std::cout << "sample time: " << sampleTime << std::endl;
             samples[i]->getNavigation() = nav;
             samples[i]->getNavigation()["t"].set<double>(sampleTime);
             samples[i]->update(new UpdateCallbackProxy(this));
@@ -90,13 +194,26 @@ public:
         }
         
         int min_index = 0;
-        double min_aflow = 0;
-        
+        double min_dist = 0;
+
+        std::vector<double> distance;
         for (int i = 0; i < samples.size(); i++) {
-            double aflow_mean = samples[i]->getData()["aflow_mean"].get<double>();
-            if (aflow_mean < min_aflow) {
-                min_aflow = aflow_mean;
-                min_index = i;
+            double dist = 0.0;
+            dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[0].get<vl::Object>().find("aflow_mean")->second.get<double>() - 90),2);
+            dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[4].get<vl::Object>().find("aflow_mean")->second.get<double>() - 60),2);
+            dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[7].get<vl::Object>().find("aflow_mean")->second.get<double>() - 100),2);
+            dist = std::sqrt(dist);
+            std::cout << "dist: " << dist << std::endl;
+            distance.push_back(dist);
+
+            if (i == 0) {
+                min_dist = dist;
+            }
+            else {
+                if (dist < min_dist) {
+                    min_dist = dist;
+                    min_index = i;
+                }
             }
         }
         selectedSampleIndex = min_index;
@@ -106,6 +223,42 @@ public:
         data = proxy.getData();
         data["index"] = DoubleDataValue(selectedSampleIndex);
                 
+        
+        //double diffGradient = (sol-prevGradient).norm();
+        //std::cout << "Gradient Diff " << diffGradient << std::endl;
+        //sumGradient += sol;
+        //numSums++;
+        //Eigen::VectorXd averageGradient = sumGradient/numSums;
+        //double diffAverage = (sol-averageGradient).norm();
+        //std::cout << "Average gradient Diff " << diffAverage << std::endl;
+        //prevGradient = sol;
+
+        //std::cout << "Gradient Mag: " << sol.norm() << std::endl;
+        //Eigen::VectorXd normGradient = sol.normalized();
+
+        /*DataObject gradient;
+        for (int i = 0; i < paramKeys.size(); i++) {
+            gradient[paramKeys[i]] = DoubleDataValue(sol[i]);
+        }
+        data["gradient"] = gradient;
+
+        DataArray dist;
+        for (int i = 0; i < testSamples.size(); i++) {
+            dist.push_back(DoubleDataValue(b[i]));
+        }
+        data["dist"] = dist;
+
+        double lambda = distFunction->calculate(*sample) / sol.norm();
+        std::cout << "lambda " << lambda << std::endl;
+
+        for (int i = 0; i < paramKeys.size(); i++) {
+            std::string key = paramKeys[i];
+            double val = sample->getParameters()[key].get<double>();
+            double normalizedVal = helper.normalize(key, val);
+            std::cout << "params." << key << "=" << helper.clamp(key, helper.deNormalize(key, normalizedVal - normGradient[i]*lambda))
+               << "; //" << val << " " << helper.normalize(key, val) << " " << normGradient[i] << " " << sol[i]*lambda << std::endl;
+        }*/
+
         callback->onComplete();
         delete callback;
     }
@@ -117,11 +270,13 @@ private:
     IModel* model;
     DataObject data;
     DataObject nav;
+    double lastTime;
     int updateCompleted;
     std::vector<IModelSample*> samples;
     IUpdateCallback* callback;
     std::mutex updateMutex;
     std::vector<std::string> paramKeys;
+    int iteration;
 };
 
     

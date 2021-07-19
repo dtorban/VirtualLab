@@ -216,7 +216,7 @@
         var samplingMethods = [];
         var model = null;
         var groupSamples = true;
-        var tab = 1;
+        var tab = 0;
         var checkMultiple = false;
         var dynamicsCharts = {};
 
@@ -267,7 +267,8 @@
             console.log(models);
             modelList = models;
 
-            model = modelList[6];
+            //model = modelList[2];
+            model = modelList[7];
 
             model.getParameters().then(function(params) {
               samplingMethods.push(new SamplingStrategy(params, "Ad Hoc", function(params, callback, samplingMethod) {
