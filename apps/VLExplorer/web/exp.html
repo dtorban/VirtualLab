@@ -267,8 +267,8 @@
             console.log(models);
             modelList = models;
 
-            model = modelList[2];
-            //model = modelList[7];
+            //model = modelList[2];
+            model = modelList[7];
 
             model.getParameters().then(function(params) {
               samplingMethods.push(new SamplingStrategy(params, "Ad Hoc", function(params, callback, samplingMethod) {
@@ -318,7 +318,11 @@
                 });
                 callback("Random-" + currentNum);
               }));
-              samplingMethods.push(new SamplingStrategy(params, "Search"));
+              samplingMethods.push(new SamplingStrategy(params, "Search", function(params, callback, samplingMethod) {
+                  params.cpool = 80;
+                  samplingMethod.model = modelList[2];
+                  callback();
+              }));
               samplingMethods.push(new SamplingStrategy(params, "More", function(params, callback, samplingMethod) {
                 if (samplingMethod.createNum == samplingMethod.numSamples) {
                   for (var i = 0; i < samples.length; i++) {
@@ -641,7 +645,7 @@
                 simulations++;
 
                 //createSample(model, currentNum, params, 0.1, simulations, 1);
-                createSample(model, currentNum, s.name, params, samplingMethod);
+                createSample(samplingMethod.model ? samplingMethod.model: model, currentNum, s.name, params, samplingMethod);
               });
 
 

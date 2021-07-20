@@ -6,6 +6,7 @@ function SamplingStrategy(params, name, sampleMethod = null) {
   this.numSamples = 1;
   this.createNum = 0;
   this.hasColor = true;
+  this.model = null;
 
   var p = JSON.parse(JSON.stringify(params));
   self.params = p;

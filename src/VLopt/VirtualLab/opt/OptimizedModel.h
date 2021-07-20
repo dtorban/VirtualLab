@@ -61,6 +61,23 @@ private:
     double closeness;
 };
 
+class ForceModel : public ModelDecorator {
+public:
+
+    ForceModel(IModel* model, double closeness, int numSamples);
+    
+    virtual ~ForceModel();
+    
+    const std::string& getName() const { return name; }
+
+    IModelSample* create(const DataObject& params);
+
+private:
+    std::string name;
+    int numTestSamples;
+    double closeness;
+};
+
 }
 
 #endif
