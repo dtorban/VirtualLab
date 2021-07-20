@@ -267,8 +267,8 @@
             console.log(models);
             modelList = models;
 
-            //model = modelList[2];
-            model = modelList[7];
+            model = modelList[2];
+            //model = modelList[7];
 
             model.getParameters().then(function(params) {
               samplingMethods.push(new SamplingStrategy(params, "Ad Hoc", function(params, callback, samplingMethod) {
@@ -393,8 +393,8 @@
               samplingMethods.push(new SamplingStrategy(params, "Low"));
               samplingMethods.push(new SamplingStrategy(params, "High", function(params, callback) {
                   params.mpool = 10000;
-                  params.cpool = 2000;
-                  //params.cpool = 7500;
+                  //params.cpool = 2000;
+                  params.cpool = 7500;
                   callback();
               }));
               samplingMethods.push(new SamplingStrategy(params, "What if?", function(params, callback, samplingMethod) {

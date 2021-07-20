@@ -18,11 +18,14 @@ public:
         
         for (int i = 0; i < numSamples; i++) {
             samples.push_back(createNewSample(params));
+            sortedIndexes.push_back(i);
         }
         selectedSampleIndex = 0;
         proxy = ModelSampleProxy(samples[selectedSampleIndex]);
         
         nav = proxy.getNavigation();
+
+        v = Eigen::VectorXd::Zero(paramKeys.size());
 
     }
 
@@ -70,21 +73,28 @@ public:
              
     Eigen::VectorXd calculateForce(int forceId) {
         
+            double goal;
+            double goalIndex;
             std::vector<double> distance;
             for (int i = 0; i < samples.size(); i++) {
                 double dist = 0.0;
                 if (forceId == 0) {
-                    dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[0].get<vl::Object>().find("aflow_mean")->second.get<double>() - 90),2);
+                    goalIndex = 0;
+                    goal = 90;
                 }
                 else if (forceId == 1) {
-                    dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[4].get<vl::Object>().find("aflow_mean")->second.get<double>() - 60),2);
+                    goalIndex = 4;
+                    goal = 60;
                 }
                 else if (forceId == 2) {
-                    dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[7].get<vl::Object>().find("aflow_mean")->second.get<double>() - 100),2);
+                    goalIndex = 7;
+                    goal = 100;
                 }
+
+                dist = std::pow((samples[i]->getData()["samples"].get<vl::Array>()[goalIndex].get<vl::Object>().find("aflow_mean")->second.get<double>() - goal),2);
                
                 //
-                dist = std::sqrt(dist);
+                //dist = std::sqrt(dist);
                 distance.push_back(dist);
             }
 
@@ -92,11 +102,17 @@ public:
             Eigen::MatrixXd A = Eigen::MatrixXd(samples.size()-1, paramKeys.size());
             Eigen::VectorXd b = Eigen::VectorXd(samples.size()-1);
 
+            Eigen::VectorXd x = Eigen::VectorXd(paramKeys.size());
+
             ParameterHelper helper(getParameters());
 
             int currentSample = 0;
             for (int i = 0; i < samples.size(); i++) {
                 if (i == selectedSampleIndex) {
+                    for (int j = 0; j < paramKeys.size(); j++) {
+                        std::string key = paramKeys[j];
+                        x[j] = helper.normalize(key, sample->getParameters()[key].get<double>());
+                    }
                     continue;
                 }
 
@@ -127,8 +143,16 @@ public:
             double lambda = distance[selectedSampleIndex] / sol.norm();
             std::cout << "lambda " << lambda << std::endl;
 
+            Eigen::VectorXd gradient = sol;
             Eigen::VectorXd normGradient = sol.normalized();
-            return normGradient;//*lambda;
+
+            Eigen::VectorXd dx = x - (x-gradient.normalized()*goal);
+            Eigen::VectorXd f = -dx - 0.0*v;
+
+//Vector3d dx = x.segment(nodeSize*node + positionOffset, 3) - Vector3d(anchorPoint[0], anchorPoint[1], anchorPoint[2]);
+	//f.segment(nodeSize*node + positionOffset, 3) += -ks*dx - kd*v.segment(nodeSize*node + positionOffset, 3);
+
+            return f;//*lambda;
     }
 
     void update(IUpdateCallback* callback) {
@@ -136,12 +160,17 @@ public:
         double dt = nav["t"].get<double>() - lastTime;
         lastTime += dt;
 
-        if (iteration > 0 && iteration % 20 == 0) {
+        if (iteration > 0 && iteration % 10 == 0) {
 
             Eigen::VectorXd force = calculateForce(0);
             force += calculateForce(1);
             force += calculateForce(2);
-            force = force.normalized();
+            //force = force.normalized();
+            
+            //v = Eigen::VectorXd::Zero(paramKeys.size());
+            for (int i = 0; i < paramKeys.size(); i++) {
+                v[i] += force[i]*0.01;
+            }    
 
             DataObject params = samples[selectedSampleIndex]->getParameters();
             ParameterHelper helper(params);
@@ -154,7 +183,7 @@ public:
                 //std::cout << "params." << key << "=" << helper.clamp(key, helper.deNormalize(key, normalizedVal - normGradient[i]*closeness)) << ";" << std::endl;
                 //params[key].set<double>(helper.clamp(key, helper.deNormalize(key, normalizedVal - normGradient[i]*closeness)));
                 //params[key].set<double>(helper.clamp(key, helper.deNormalize(key, normalizedVal - normGradient[i]*lambda)));
-                params[key].set<double>(helper.clamp(key, helper.deNormalize(key, normalizedVal - force[i]*0.01)));
+                params[key].set<double>(helper.clamp(key, helper.deNormalize(key, normalizedVal + v[i]*0.01)));
                 
             }
 
@@ -168,6 +197,11 @@ public:
                     samples[i] = model->create(params);
                 }
             }
+
+            /*for (int i = sortedIndexes.size()/2; i < sortedIndexes.size(); i++) {
+                delete samples[sortedIndexes[i]];
+                samples[sortedIndexes[i]] = createNewSample(params);
+            }*/
 
         }
 
@@ -203,7 +237,7 @@ public:
             dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[4].get<vl::Object>().find("aflow_mean")->second.get<double>() - 60),2);
             dist += std::pow((samples[i]->getData()["samples"].get<vl::Array>()[7].get<vl::Object>().find("aflow_mean")->second.get<double>() - 100),2);
             dist = std::sqrt(dist);
-            std::cout << "dist: " << dist << std::endl;
+            //std::cout << "dist: " << dist << std::endl;
             distance.push_back(dist);
 
             if (i == 0) {
@@ -216,6 +250,13 @@ public:
                 }
             }
         }
+
+        auto cmp = [distance](char a, char b) { return distance[a] < distance[b]; };
+        std::sort(sortedIndexes.begin(), sortedIndexes.end(), cmp);
+        for (int i = 0; i < sortedIndexes.size(); i++) {
+            std::cout << sortedIndexes[i] << " dist: " << distance[sortedIndexes[i]] << std::endl;
+        }
+
         selectedSampleIndex = min_index;
         
         proxy = ModelSampleProxy(samples[selectedSampleIndex]);
@@ -277,6 +318,8 @@ private:
     std::mutex updateMutex;
     std::vector<std::string> paramKeys;
     int iteration;
+    Eigen::VectorXd v;
+    std::vector<int> sortedIndexes;
 };
 
     
