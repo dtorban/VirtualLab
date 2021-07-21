@@ -20,24 +20,46 @@ public:
             samples.push_back(createNewSample(params));
         }
         
-        this->params = samples[0]->getParameters();
+        this->params = createNewParams(params);
+        this->params["samples"] = samples[0]->getParameters()["samples"];
+        //this->params = samples[0]->getParameters();
         this->nav = samples[0]->getNavigation();
 
-        x = Eigen::VectorXd::Zero(paramKeys.size());
+        //x = Eigen::VectorXd::Zero(paramKeys.size());
         v = Eigen::VectorXd::Zero(paramKeys.size());
 
+        forces.push_back(new Force(0, 90, "aflow_mean"));
+        forces.push_back(new Force(4, 60, "aflow_mean"));
+        forces.push_back(new Force(7, 100, "aflow_mean"));
     }
 
     virtual ~ForceModelSample() {
         for (int i = 0; i < samples.size(); i++) {
             delete samples[i];
         }
+
+        for (int i = 0; i < forces.size(); i++) {
+            delete forces[i];
+        }
+        /*
+                        double dist = 0.0;
+                if (forceId == 0) {
+                    goalIndex = 0;
+                    goal = 90;
+                }
+                else if (forceId == 1) {
+                    goalIndex = 4;
+                    goal = 60;
+                }
+                else if (forceId == 2) {
+                    goalIndex = 7;
+                    goal = 100;
+                }*/
     }
 
     void update() {}
     
-    IModelSample* createNewSample(const DataObject& params) {
-        model->create(params);
+    DataObject createNewParams(const DataObject& params) {
         Eigen::VectorXd dir = Eigen::VectorXd(paramKeys.size());
         for (int i = 0; i < paramKeys.size(); i++) {
             double r = (double)std::rand() / (double)RAND_MAX;
@@ -65,13 +87,112 @@ public:
             p[param].set<double>(val);
             std::cout << param << " " << p[param].get<double>() << " " << val << std::endl;
         }
-        
+
+        return p;
+    }
+
+    IModelSample* createNewSample(const DataObject& params) {
+        DataObject p = createNewParams(params);
         return model->create(p);
     }
 
     const DataObject& getParameters() const { return params; }
     const DataObject& getData() const { return data; }
     DataObject& getNavigation() { return nav; }
+
+    class Force {
+    public:
+        Force(int goalIndex, double goal, const std::string& dataKey) : goalIndex(goalIndex), goal(goal), dataKey(dataKey) {}
+
+        const Eigen::VectorXd& calculateForce(const std::vector<IModelSample*>& samples, const DataObject& params, const DataObject& data, const std::vector<std::string>& paramKeys) {
+            double currentDist = std::fabs(data["samples"].get<vl::Array>()[goalIndex].get<vl::Object>().find(dataKey)->second.get<double>() - goal);
+            
+            std::vector<double> distance;
+            for (int i = 0; i < samples.size(); i++) {
+                double dist = std::fabs(samples[i]->getData()["samples"].get<vl::Array>()[goalIndex].get<vl::Object>().find(dataKey)->second.get<double>() - goal);
+                distance.push_back(dist);
+            }
+
+            // Calculate gradient
+            Eigen::MatrixXd A = Eigen::MatrixXd(samples.size(), paramKeys.size());
+            Eigen::VectorXd b = Eigen::VectorXd(samples.size());
+
+            Eigen::VectorXd x = Eigen::VectorXd(paramKeys.size());
+
+            ParameterHelper helper(params);
+
+            for (int j = 0; j < paramKeys.size(); j++) {
+                std::string key = paramKeys[j];
+                x[j] = helper.normalize(key, params[key].get<double>());
+            }
+
+            int currentSample = 0;
+            for (int i = 0; i < samples.size(); i++) {
+
+                Eigen::VectorXd diff = Eigen::VectorXd(paramKeys.size());
+                for (int j = 0; j < paramKeys.size(); j++) {
+                    std::string key = paramKeys[j];
+                    double testVal = helper.normalize(key, samples[i]->getParameters()[key].get<double>());
+                    double sampleVal = helper.normalize(key, params[key].get<double>());
+                    //std::cout << key << " " << sampleVal << std::endl;
+
+                    //std::cout << testVal << " " << sampleVal << " " << testVal - sampleVal << std::endl;
+                    diff[j] = testVal - sampleVal;
+                }
+
+                b[currentSample] = (distance[i] - currentDist)  / diff.norm();
+                //std::cout << "100 " << distFunction->calculate(*testSamples[i]) << " " << distFunction->calculate(*sample) << " " << (distFunction->calculate(*testSamples[i]) - distFunction->calculate(*sample)) << std::endl;
+                //std::cout << "diff norm " << " " << diff.norm() << std::endl;
+                Eigen::VectorXd dir = diff.normalized();
+                A.block(currentSample, 0, 1, paramKeys.size()) = dir.transpose();
+                currentSample++;
+            }
+
+            Eigen::VectorXd sol = calculateLeastSquares(A,b);
+            double res = (A*sol-b).norm();
+            std::cout << "Residual " << res << std::endl;
+
+
+            //double lambda = distance[selectedSampleIndex] / sol.norm();
+            //std::cout << "lambda " << lambda << std::endl;
+
+            gradient = sol;
+            Eigen::VectorXd normGradient = sol.normalized();
+
+            Eigen::VectorXd dx = x - (x-normGradient*goal);
+            //Eigen::VectorXd f = -dx - 0.0*v;
+            force = -dx;
+
+            return force;
+        }
+
+        void setValue(const std::vector<IModelSample*>& samples, DataObject& data, const Eigen::VectorXd& dir) {
+            double val = 0.0;
+            for (int i = 0; i < samples.size(); i++) {
+                val += samples[i]->getData()["samples"].get<vl::Array>()[goalIndex].get<vl::Object>().find(dataKey)->second.get<double>();
+            }
+            val = val / samples.size();
+            data["samples"].get<vl::Array>()[goalIndex].get<vl::Object>().find(dataKey)->second.set<double>(val);
+            /*if (gradient.size() > 0) {
+                Eigen::VectorXd normDir = dir.normalized();
+                double dirDeriv = gradient.dot(normDir);
+                std::cout << "Directional Deriv: " << dirDeriv << std::endl;
+
+                double val = data["samples"].get<vl::Array>()[goalIndex].get<vl::Object>().find(dataKey)->second.get<double>();
+                std::cout << "Directional Deriv: " << dirDeriv << " " << val;
+                val += dirDeriv*dir.norm();
+                std::cout << " " << val << " " << dir.norm() << " " << dir << std::endl;
+                data["samples"].get<vl::Array>()[goalIndex].get<vl::Object>().find(dataKey)->second.set<double>(val);
+            }*/
+        }
+
+    private:
+        double goal;
+        int goalIndex;
+        std::string dataKey;
+        Eigen::VectorXd gradient;
+        Eigen::VectorXd force;
+    };
              
     /*Eigen::VectorXd calculateForce(int forceId) {
         
@@ -164,6 +285,28 @@ public:
 
         if (iteration > 0 && iteration % 10 == 0) {
 
+            Eigen::VectorXd force(paramKeys.size());
+
+            for (int i = 0; i < forces.size(); i++) {
+                force += forces[i]->calculateForce(samples, params, data, paramKeys);
+            }
+
+            for (int i = 0; i < paramKeys.size(); i++) {
+                v[i] += force[i]*0.01;
+            }
+
+            ParameterHelper helper(params);
+            for (int i = 0; i < paramKeys.size(); i++) {
+                std::string key = paramKeys[i];
+                double val = params[key].get<double>();
+                double normalizedVal = helper.normalize(key, val);
+                params[key].set<double>(helper.clamp(key, helper.deNormalize(key, normalizedVal + v[i]*0.01)));
+                
+            }
+
+            DataObject p = params;
+            p["samples"] = DataArray();
+
             /*Eigen::VectorXd force = calculateForce(0);
             force += calculateForce(1);
             force += calculateForce(2);
@@ -172,9 +315,10 @@ public:
             //v = Eigen::VectorXd::Zero(paramKeys.size());
             for (int i = 0; i < paramKeys.size(); i++) {
                 v[i] += force[i]*0.01;
-            }    
+            }    */
+            
 
-            DataObject params = samples[selectedSampleIndex]->getParameters();
+            /*DataObject params = samples[selectedSampleIndex]->getParameters();
             ParameterHelper helper(params);
             params["samples"] = DataArray();
 
@@ -186,6 +330,7 @@ public:
                 
             }*/
 
+
             for (int i = 0; i < samples.size(); i++) {
                 /*if (i != selectedSampleIndex) {
                     delete samples[i];
@@ -193,7 +338,7 @@ public:
                 }*/
                 //else {
                     delete samples[i];
-                    samples[i] = model->create(params);
+                    samples[i] = model->create(p);
                 //}
             }
 
@@ -224,6 +369,11 @@ public:
             }
             
             data = samples[0]->getData();
+            data["params"] = params;
+
+            for (int i = 0; i < forces.size(); i++) {
+                forces[i]->setValue(samples, data, v*0.01);
+            }
 
             callback->onComplete();
             delete callback;
@@ -241,9 +391,10 @@ private:
     IUpdateCallback* callback;
     std::mutex updateMutex;
     int iteration;
-    Eigen::VectorXd x;
+    //Eigen::VectorXd x;
     Eigen::VectorXd v;
     std::vector<std::string> paramKeys;
+    std::vector<Force*> forces;
 };
 
     
@@ -347,7 +498,8 @@ public:
                     goal = 100;
                 }
 
-                dist = std::pow((samples[i]->getData()["samples"].get<vl::Array>()[goalIndex].get<vl::Object>().find("aflow_mean")->second.get<double>() - goal),2);
+                //dist = std::pow((samples[i]->getData()["samples"].get<vl::Array>()[goalIndex].get<vl::Object>().find("aflow_mean")->second.get<double>() - goal),2);
+                dist = std::fabs(samples[i]->getData()["samples"].get<vl::Array>()[goalIndex].get<vl::Object>().find("aflow_mean")->second.get<double>() - goal);
                
                 //
                 //dist = std::sqrt(dist);

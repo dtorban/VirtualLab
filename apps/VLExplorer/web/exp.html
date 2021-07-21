@@ -661,8 +661,8 @@
               $("#progress-" + sample.id).val(''+prog);
 
               //sample.chosen = 0;
-              //sample.nav.t += 10.0;//10.0*60;
-              sample.nav.t += 1.0*60;
+              sample.nav.t += 10.0;//10.0*60;
+              //sample.nav.t += 1.0*60;
               if (/*sample.nav.m == 1 || */ sample.nav.h == 1) {
                 sample.lastSpatial = JSON.parse(JSON.stringify(sample.data.samples));
               }
