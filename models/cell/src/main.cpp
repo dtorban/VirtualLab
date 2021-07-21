@@ -657,7 +657,7 @@ int main(int argc, char* argv[]) {
         CompositeSampler* sampler = new CompositeSampler();
         sampler->addSampler(new AddParameterValueToSample("N", 5));
         sampler->addSampler(new RandomSampler("num"));
-        sampler->addSampler(new RandomBinSampler("substrate_k", "N"));
+        sampler->addSampler(new RandomBinSampler("substrate_k", "N", "num"));
         api.registerModel(new SampledModel(createExtendedModel(), sampler));
 
         ExtendedModel* extendedNCell = new ExtendedModel("Extended N-Cell", new NModel("N-Cell", createExtendedModel()));
@@ -668,7 +668,7 @@ int main(int argc, char* argv[]) {
 
         sampler = new CompositeSampler();
         sampler->addSampler(new RandomSampler("num"));
-        sampler->addSampler(new RandomBinSampler("substrate_k", "N"));
+        sampler->addSampler(new RandomBinSampler("substrate_k", "N", "num"));
         extendedNCell = new ExtendedModel("Cell Substrate", new NModel("N-Cell", createExtendedModel(), sampler));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc_mean"), "rmc_mean"));
         extendedNCell->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aflow_mean"), "aflow_mean"));
@@ -701,7 +701,7 @@ int main(int argc, char* argv[]) {
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aflow_mean"), "aflow_mean"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("traction_mean"), "traction_mean"));
         extendedModel = ext;*/
-        extendedModel = new NModel("Substate Model", extendedModel, new RandomBinSampler("substrate_k", "N"));
+        extendedModel = new NModel("Substate Model", extendedModel, new RandomBinSampler("substrate_k", "N", "num"));
         ExtendedModel* ext = new ExtendedModel("Experiment", extendedModel);
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("rmc_mean"), "rmc_mean"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("aflow_mean"), "aflow_mean"));

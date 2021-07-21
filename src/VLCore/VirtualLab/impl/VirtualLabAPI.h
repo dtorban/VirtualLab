@@ -779,25 +779,34 @@ public:
 
 class RandomBinSampler : public BinSampler {
 public:
-    RandomBinSampler(const std::string& param, const std::string& resolutionParam) : BinSampler(param, resolutionParam) {
-        r = (double)std::rand() / (double)RAND_MAX;
+    RandomBinSampler(const std::string& param, const std::string& resolutionParam, const std::string& seedParam) : BinSampler(param, resolutionParam), g(0), seedParam(seedParam) {
+        initialized = false;
     }
 
     virtual void reset() { 
         BinSampler::reset();
-        r = (double)std::rand() / (double)RAND_MAX;
+        initialized = false;
     }
     virtual bool hasNext() { return BinSampler::hasNext(); }
     virtual void next() { BinSampler::next(); }
 
 protected:
     double calculateVal(DataObject& params, double min, double max, int bin, double binSize) {
-        double r = (double)std::rand() / (double)RAND_MAX;
+        if (!initialized && seedParam.length() > 0) {
+            g.seed(std::floor(params[seedParam].get<double>()));
+            std::cout << "Seed: " << std::floor(params[seedParam].get<double>()) << std::endl;
+            initialized = true;
+        }
+        double r = 1.0*(g()-g.min())/(g.max()-g.min());
+        std::cout << "Random: " << r << std::endl;
+        //double r = (double)std::rand() / (double)RAND_MAX;
         return min + binSize*(bin) + binSize*r;
     }
 
 private:
-    double r;
+    bool initialized = false;
+    std::default_random_engine g;
+    std::string seedParam;
 };
 
 class RandomSampler : public IModelSampler {
@@ -908,7 +917,7 @@ public:
     
     void addParameter(const std::string& param) {
         randomizedBins[param] = std::vector<int>();
-        samplers[param] = new RandomBinSampler(param, "");
+        samplers[param] = new RandomBinSampler(param, "", "");
     }
 
     void sample(DataObject& params) {

@@ -229,6 +229,7 @@
           var currentSelectedSampleIndex = Math.floor(i/numSamples);
           let s = selectedSamples[currentSelectedSampleIndex];
           samplingMethod.currentSelected = s;
+          samplingMethod.color = s.color;
           console.log(i,samplingMethod.numSamples, samplingMethod.createNum, sampleNum, numSamples, currentSelectedSampleIndex, s);
           var percent = 1.0*(sampleNum%numSamples)/(numSamples-1);
           Object.keys(input).forEach(function(key, index) {
@@ -661,6 +662,7 @@
 
               //sample.chosen = 0;
               sample.nav.t += 10.0;//10.0*60;
+              //sample.nav.t += 1.0*60;
               if (/*sample.nav.m == 1 || */ sample.nav.h == 1) {
                 sample.lastSpatial = JSON.parse(JSON.stringify(sample.data.samples));
               }
