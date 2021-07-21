@@ -629,6 +629,64 @@ private:
     std::string yOutput;
 };
 
+class TimeSample : public AsyncModelSampleDecorator, public IUpdateCallback {
+public:
+    TimeSample(IModelSample* sample, double dt = 10) : AsyncModelSampleDecorator(sample), dt(dt) {
+        nav = ModelSampleDecorator::getNavigation();
+    }
+    virtual ~TimeSample() {}
+
+    virtual DataObject& getNavigation() { return nav; }
+    /*virtual void update() {
+
+        
+
+        while (simTime < goalTime) {
+            nav["t"].set<double>(currentTime);
+            ModelSampleDecorator::getNavigation()["t"].set<double>(currentTime);
+            sample->update();
+            simTime = ModelSampleDecorator::getNavigation()["t"].get<double>();
+            currentTime += dt;
+        }
+
+    }*/
+
+    void iterate() {
+        simTime = ModelSampleDecorator::getNavigation()["t"].get<double>();
+        //std::cout << simTime << " " << goalTime << " " << currentTime << std::endl;
+        //nav["t"].set<double>(currentTime);
+        currentTime += dt;
+        if (simTime < goalTime) {
+            ModelSampleDecorator::getNavigation()["t"].set<double>(currentTime);
+            ModelSampleDecorator::update(new UpdateCallbackProxy(this));
+        }
+    }
+
+    void prepareUpdate() {
+        simTime = ModelSampleDecorator::getNavigation()["t"].get<double>();
+        goalTime = nav["t"].get<double>();
+        currentTime = simTime;
+        iterate();
+    }
+
+    virtual void asyncUpdate() {
+        ModelSampleDecorator::getNavigation() = nav;
+        nav["t"].set<double>(currentTime);
+    }
+
+    void onComplete() {
+        iterate();
+    }
+
+protected:
+    double simTime;
+    double goalTime;
+    double currentTime;
+    DataObject nav;
+    double dt;
+};
+
+
 ExtendedModel* createExtendedModel() {
     ExtendedModel* extendedModel = new ExtendedModel("Extended Cell", new CellModel("Cell"));
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aflow"), "aflow_mean"));
@@ -644,6 +702,8 @@ ExtendedModel* createExtendedModel() {
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("rmc"), "rmc_mean"));
     return extendedModel;
 }
+
+
 
 int main(int argc, char* argv[]) {
     std::cout << "Usage: CellModel <port>" << std::endl;
@@ -712,8 +772,10 @@ int main(int argc, char* argv[]) {
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("en_mean"), "en_mean"));
         ext->addCalculatedValue(new NSampleMeanValue(new KeyCalculation("motors_mean"), "motors_mean"));
         ext->addCalculatedValue(new NSampleMaxValue(new ParamCalculation("substrate_k"), new KeyCalculation("rmc_mean"), "opt_stiffness", "rmc_max"));
-        ext->addCalculatedValue(new MeanValue(new KeyCalculation("opt_stiffness"), "opt_stiffness"));
+        //ext->addCalculatedValue(new MeanValue(new KeyCalculation("opt_stiffness"), "opt_stiffness"));
         extendedModel = ext;
+        extendedModel = new TypedModelDecorator<TimeSample>("Experiment", extendedModel);
+        //TypedModelDecorator<
         //extendedModel = new SampledModel(ext, new RandomSampler("num"));
         api.registerModel(extendedModel);
 
