@@ -83,12 +83,14 @@ PCChart.prototype.updateData = function(data) {
 		.attr("d",  path)
 		.style("fill", "none")
 		.style("stroke", "#69b3a2")
-		.style("opacity", 0.75)
 		.attr("stroke-width", function(d) { return +d.chosen*2.0 + 1.5; })
+        .style("opacity", function(d) { return +d.chosen > 0 ? 1.0 : 0.5; })
+        .attr("stroke-width", function(d) { return +d.chosen*2.0*0.0 + 1.5; })
 
     this.svg
 		.selectAll(".myPath")
-		.attr("stroke-width", function(d) { return +d.chosen*2.0 + 1.5; })
+		.attr("stroke-width", function(d) { return +d.chosen*2.0*0.0 + 1.5; })
+        .style("opacity", function(d) { return +d.chosen > 0 ? 1.0 : 0.5; })
 		.style("stroke", function(d) {return d.color;})
 		.attr("d",  path)
 

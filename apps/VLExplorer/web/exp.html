@@ -40,10 +40,10 @@
         border: 1px solid;
         background-color: #F0F0F0;
       }
-      .nav {position: relative; float: left; padding: 10px; width: 10%;}
+      .nav {position: relative; float: left; padding: 10px; width: 15%; height: 90%; background-color: lightgrey}
       .toolbar {margin: 10px; text-align: center; width: 50px; border: 1px solid; padding: 10px;}
       .tool {background-color: rgb(79, 89, 90); width: 30px; height: 30px;margin: auto;margin-top: 10px;}
-      .workarea {position: relative; float: left; margin: 10px; width: 85%; height: 90%;}
+      .workarea {position: relative; float: left; margin: 10px; width: 80%; height: 90%;}
       .parent {display: block;position: relative;float: left;line-height: 30px;background-color: #4FA0D8;border-right:#CCC 1px solid;}
       .parent a{margin: 10px;color: #FFFFFF;text-decoration: none;}
       .parent:hover > ul {display:block;position:absolute;}
@@ -57,9 +57,14 @@
       .expand{font-size:12px;float:right;margin-right:5px;}
       #header{height: 50px; margin-top: 20px;}
       .sampling{margin-top: 2px;margin-bottom: 2px; font-size: small;}
+      #samplingMethods{height: 30%;}
       .sample{margin-top: 2px;margin-bottom: 2px; font-size: small;white-space: nowrap;}
       .section-title{margin-top: 15px;margin-bottom: 10px;font-weight: bold;}
-      #samples{overflow: auto; height: 300px;}
+      #samples{
+        background-color: white;
+        overflow-y: scroll; 
+        height: 50%;
+      }
       progress {
 				background-color: #c0bdbd;
 				width: 30px;
@@ -87,8 +92,40 @@
         position: relative;
         float: left;
           width: 50%;
-          height: 55%;
+          height: 45%;
           overflow-y: auto;
+      }
+      .visible-button {
+        margin-left: 2px;
+        margin-right: 2px;
+        margin-bottom: 2px;
+        vertical-align: middle;
+			  width: 20px;
+			  height: 15px;
+			}
+      .sample-name {
+        font-size:9px;
+        vertical-align: middle;
+			  width: 75px;
+        display: inline-block;
+      }
+      .toolbar-button {
+			  width: 20px;
+			  height: 20px;
+        background-color: white;
+        border-width: 2px;
+        border-color: white;
+        border-style: solid;
+			}
+      .toolbar-button:hover {
+        border-color: blue;
+        border-width: 2px;
+      }
+      .toolbar {
+        width: 90%;
+        border-width: 0px;
+        margin:auto
+        /*background-color: lightgrey;*/
       }
 		</style>
 		<script src="js/d3.v4.js"></script>
@@ -133,6 +170,7 @@
 
     <div class="workarea">
       <div id="data-tab">
+        <div class="section-title">Trends</div>
         <div id="pcc"></div>
         <div class="data-view">
           <div id="my_dataviz" class="lineChart"></div>
@@ -141,8 +179,11 @@
           <div id="my_dataviz4" class="lineChart"></div>
           <div id="my_dataviz5" class="lineChart"></div>
         </div>
-        <div id="spatial" class="spatial"></div>
-        <div id="spatialPath" class="spatial"></div>
+        <div class="section-title">Spatial</div>
+          <div id="spatialPath" class="spatial">
+          </div>
+          <div id="spatial" class="spatial">
+          </div>
     </div>
       <div id="dynamics-tab">
         <div id="dynamics-charts"></div>
@@ -171,17 +212,33 @@
         <!--input id="toggleSim" type="button" value="Toggle Sim" onclick="running = !running;"-->
       </div>
 
-      <div>
+      <div style="width: 100%;">
         <div class="section-title">Samples</div>
-        <div id="samples">
+            <div id="samples">
+            </div>
+            <div class="toolbar">
+              <input type='image' class='toolbar-button' src='images/select-all.png' title='Select All' onclick='selectAll(true);' />
+              <input type='image' class='toolbar-button' src='images/select-none.png' title='Clear Selection' onclick='selectAll(false);' />
+              <input type='image' class='toolbar-button' src='images/invert-selection.png' title='Invert Selection' onclick='invertSelect();' />
+              <input type='image' class='toolbar-button' src='images/select-range.png' title='Select Range' onclick='selectRange();' />
+              <input type='image' class='toolbar-button' src='images/group.png' title='Group / Ungroup' onclick='groupSamples = !groupSamples; $(this).attr("src", groupSamples ? "images/group.png": "images/ungroup.png");' />
+              <input type='image' class='toolbar-button' src='images/gradient.png' title='Interpolate Color' onclick='interpColor();' />
+              <input type='image' class='toolbar-button' src='images/delete.jpeg' title='Delete Samples' onclick='deleteSamples();' />
+              <input type='image' class='toolbar-button' src='images/show.jpg' title='Show' onclick='selectionAction(function(sample){ sample.visible = false; var visibleButton = $("#" + "sample-visible-"+sample.id); visibleButton.trigger("click");})' />
+              <input type='image' class='toolbar-button' src='images/hide.jpg' title='Show' onclick='selectionAction(function(sample){ sample.visible = true; var visibleButton = $("#" + "sample-visible-"+sample.id); visibleButton.trigger("click");})' />
+              
+              <!--input type="checkbox" onchange="groupSamples = !groupSamples;" checked>Group Samples
+              <input type="button" value="Clear" onclick="selectAll(false)">
+              <input type="button" value="Select All" onclick="selectAll(true)">
+              <input type="button" value="Invert" onclick="invertSelect()">
+              <input type="button" value="Select Range" onclick="selectRange()"><br>
+              <input type="button" value="Interpolate Color" onclick="interpColor()"><br>
+              <input type="button" value="Delete Samples" onclick="deleteSamples()"-->
+            </div>
         </div>
-        <input type="checkbox" onchange="groupSamples = !groupSamples;" checked>Group Samples
-        <input type="button" value="Clear" onclick="selectAll(false)">
-        <input type="button" value="Select All" onclick="selectAll(true)">
-        <input type="button" value="Invert" onclick="invertSelect()">
-        <input type="button" value="Select Range" onclick="selectRange()"><br>
-        <input type="button" value="Interpolate Color" onclick="interpColor()"><br>
-        <input type="button" value="Delete Samples" onclick="deleteSamples()">
+        
+
+        
         <!--input type="button" value="Create Template"><input type="button" value="Interpolate" onclick="interpolate(samples[0].params, samples[1].params, 3);"-->
       </div>
 
@@ -197,6 +254,7 @@
 
 	</body>
 	<script>
+
       d3.rgb.prototype.toHex = function() {
         var r = Math.round(this.r).toString(16);
         var g = Math.round(this.g).toString(16);
@@ -583,10 +641,45 @@
 
         }
 
+        function selectionAction(action) {
+          var chosenSamples = [];
+          for (var i = 0; i < samples.length; i++) {
+            if (samples[i].chosen == 1) {
+              chosenSamples.push(samples[i]);
+            }
+          }
+
+          for (var i = 0; i < chosenSamples.length; i++) {
+            checkMultiple = (i != samples.length-1);
+            action(chosenSamples[i]);
+          }
+        }
+
         function deleteSamples() {
           var newSamples = [];
           for (var i = 0; i < samples.length; i++) {
             if (samples[i].chosen == 1) {
+              samples[i].delete();
+              $( "#sample-info-"+samples[i].id ).remove();
+            }
+            else {
+              newSamples.push(samples[i]);
+            }
+          }
+
+          samples = newSamples;
+
+          for (var i = 0; i < samples.length; i++) {
+            sampleIndexLookup[samples[i].id] = i;
+          }
+
+          updateLineCharts();
+        }
+
+        function deleteSample(sample) {
+          var newSamples = [];
+          for (var i = 0; i < samples.length; i++) {
+            if (samples[i].id == sample.id) {
               samples[i].delete();
               $( "#sample-info-"+samples[i].id ).remove();
             }
@@ -735,7 +828,7 @@
               for (var i = 0; i < samples.length; i++) {
                 var s = samples[i];
                 for (var j = 0; j < s.params.samples.length; j++) {
-                  if (s.data.samples) {
+                  if (s.data.samples && s.visible) {
                     sampleData.push({name: s.name, params: s.params.samples[j], data: s.data.samples[j], chosen: s.chosen, color: s.color, hover: s.hover, id: s.id});
                   }
                 }
@@ -757,7 +850,7 @@
                   }
                 }
                 for (var j = 0; j < s.params.samples.length; j++) {
-                  if (s.data.samples) {
+                  if (s.data.samples && s.visible) {
                     var aflow = calcStatistics("aflow_mean",g.values,j);
                     var traction = calcStatistics("traction_mean",g.values,j);
                     var rmc = calcStatistics("rmc_mean",g.values,j);
@@ -811,10 +904,12 @@
               delete data["N"];
               delete data["num"];
               delete data["substrate_k"];
-              pccData.push({data: data, id:samples[i].id, color: samples[i].color, hover: samples[i].hover, chosen: samples[i].chosen});
+              if (samples[i].visible) {
+                pccData.push({data: data, id:samples[i].id, color: samples[i].color, hover: samples[i].hover, chosen: samples[i].chosen});
+              }
             }
 
-            if (samples.length > 0) {
+            if (pccData.length > 0) {
               Object.keys(params).forEach(function(key) {
                   if (Math.abs((+params[key])/samples.length - samples[0].params[key]) < 0.001 || Math.abs((+params[key])/samples.length - samples[0].nav[key]) < 0.001) {
                     delete pccData[0].data[key];
@@ -828,9 +923,9 @@
             var chosen = 0;
             if (samples.length > 0) {
               for (var i = 0; i < samples.length; i++) {
-                if (samples[i].chosen) {
+                if (samples[i].chosen && samples[i].visible) {
                   if (samples[i].lastSpatial) {
-                    for (var j = 0; j < samples[i].lastSpatial.length; j+=2) {
+                    for (var j = 0; j < samples[i].lastSpatial.length; j+=1) {
                       spatialData.push({data: samples[i].lastSpatial[j], color: samples[i].color});
                     }
                     chosen++;
@@ -940,6 +1035,7 @@
                     sample.nav.t = 10.0;
                     sample.nav.m = 1.0;
                     sample.nav.h = 1.0;
+                    sample.visible = true;
                     sample.id = currentNum;
                     sampleIndexLookup[sample.id] = samples.length;
                     samples.push(sample);
@@ -948,8 +1044,18 @@
                     var div = $("<div class='sample' id='sample-info-"+sample.id+"'></div>");
                     var tempParams = JSON.parse(JSON.stringify(params));
                     delete tempParams[".metadata"];
-                    var colorPicker = $("<input type=\"color\" style='width:20px; height:20px;border: none;' value=\"" + d3.color(sample.color).rgb().toHex() + "\" id='sample-color-"+sample.id+"'>");
-                    div.append(colorPicker);
+
+                    var visibleButton = $("<input type='image' class='visible-button' id='sample-visible-"+sample.id+"' src='images/show.jpg' />");
+                    div.append(visibleButton);
+                    visibleButton.click(function () {
+                      sample.visible = !sample.visible;
+                      visibleButton.attr("src", sample.visible ? "images/show.jpg" : "images/hide.jpg");
+                      visibleButton.css('opacity', sample.visible ? 1.0 : 0.3);
+                      if (!checkMultiple) {
+                        updateLineCharts();
+                      }
+                    });
+
                     var checkbox = $("<input type='checkbox' class='sample-checkbox' id='sample-checkbox-"+sample.id+"'>");
                     var currentSample = samples.length-1;
                     checkbox.change(function () {
@@ -965,15 +1071,57 @@
                     checkbox.css('outline-color', sample.color);
                     checkbox.css('outline-style', 'solid');
                     checkbox.css('outline-width', 'medium');
+                    div.append(checkbox);
+
+                    var colorPicker = $("<input type=\"color\" style='width:20px; height:20px;border: none;' value=\"" + d3.color(sample.color).rgb().toHex() + "\" id='sample-color-"+sample.id+"'>");
+                    div.append(colorPicker);
                     colorPicker.change(function () {
                       sample.color = colorPicker.val();
                       checkbox.css('outline-color', sample.color);
                     });
-                    div.append(checkbox);
+
                     div.append("<progress id='progress-"+sample.id+"' value='0' max='100'> 0% </progress>")
-                    div.append(sampleName + ": " + JSON.stringify(tempParams));
+                    var shortenedName = sampleName.length > 8 ? sampleName.substring(0, 10) + "..." : sampleName;
+                    div.append("<label class='sample-name' title='" + JSON.stringify(tempParams)+ "'>"+shortenedName+"</label>");// + ": " + JSON.stringify(tempParams));
                     $("#samples").append(div);
                     
+
+                    var upButton = $("<input type='image' class='visible-button' style='width: 10px' src='images/up.png' />");
+                    upButton.click(function () {
+                      var index = sampleIndexLookup[sample.id];
+                      if (index > 0) {
+                        var s = samples[index-1];
+                        samples[index] = s;
+                        samples[index-1] = sample;
+                        sampleIndexLookup[sample.id] = index-1;
+                        sampleIndexLookup[s.id] = index;
+                        div.prev().insertAfter(div);
+                      }
+                      updateLineCharts();
+                    });
+                    div.append(upButton);
+
+                    var downButton = $("<input type='image' class='visible-button' style='width: 10px' src='images/down.png' />");
+                    downButton.click(function () {
+                      var index = sampleIndexLookup[sample.id];
+                      if (index < samples.length-1) {
+                        var s = samples[index+1];
+                        samples[index] = s;
+                        samples[index+1] = sample;
+                        sampleIndexLookup[sample.id] = index+1;
+                        sampleIndexLookup[s.id] = index;
+                        div.next().insertBefore(div);
+                      }
+                      updateLineCharts();
+                    });
+                    div.append(downButton);
+
+                    var deleteButton = $("<input type='image' class='visible-button' src='images/delete.jpeg' />");
+                    deleteButton.click(function () {
+                      deleteSample(sample);
+                    });
+                    div.append(deleteButton);
+
                     if (samplingMethod.createNum > 0) {
                       createNewSample(samplingMethod);
                     }
@@ -1148,8 +1296,8 @@
         lineChart5.xScale = "log";
         var pcc = new PCChart("pcc", lineHover, lineClick);
         
-        var spatialCell = new SpatialCell($("#spatial"), true);
-        var spatialPath = new SpatialCell($("#spatialPath"), false);
+        var spatialCell = new SpatialCell($("#spatial"), false);
+        var spatialPath = new SpatialCell($("#spatialPath"), true);
 
         /*var param1 = new DynamicLineChart("param1", "Substrate Stiffness", "Mean Area");
         var param2 = new DynamicLineChart("param2", "Substrate Stiffness", "Mean Area");
