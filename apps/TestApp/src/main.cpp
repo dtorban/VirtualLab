@@ -24,6 +24,7 @@ private:
 	IModelSample* sample;
 };*/
 
+
 int main(int argc, char**argv) { 
 
 	//Client client;
@@ -32,16 +33,16 @@ int main(int argc, char**argv) {
 
 	std::vector<ModelProxy> models = api.getModels();
 	for (int f = 0; f < models.size(); f++) {
-		std::cout << models[f].getName() << std::endl;
+		std::cout << f << ": " << models[f].getName() << std::endl;
 	}
 
-	ModelProxy proxy = 	api.getModels()[2];	
+	ModelProxy proxy = 	api.getModels()[4];	
 	IModel* model = &proxy;
 	//model = new PCAModel("Test", model);
 	std::cout << model->getName() << std::endl;
 		
 	DataObject params = model->getParameters();
-	params["N"].set<double>(1);
+	params["N"].set<double>(10);
 	IModelSample* sample = model->create(params);
 	
 	std::cout << "Parameters: " << JSONSerializer::instance().serialize(sample->getParameters()) << std::endl;
@@ -51,7 +52,10 @@ int main(int argc, char**argv) {
 	sample->getNavigation()["m"].set<double>(1);
 
 	for (int i = 0; i < 10; i++) {
-		sample->getNavigation()["t"].set<double>(1.0*i + 1.0);
+		if (i == 9) {
+			sample->getNavigation()["h"].set<double>(1);
+		}
+		sample->getNavigation()["t"].set<double>(10.0*i + 10.0);
 		sample->update();
 		std::cout << "t=" << sample->getNavigation()["t"].get<double>() << ": ";
 		std::cout << JSONSerializer::instance().serialize(sample->getData()) << std::endl;
@@ -59,6 +63,8 @@ int main(int argc, char**argv) {
 	}
 
 	delete sample;
+
+	exit(0);
 
 	return 0;
 }

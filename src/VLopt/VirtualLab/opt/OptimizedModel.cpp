@@ -423,11 +423,18 @@ public:
             }
         }
         
+        selectedSampleIndex = 0;
         for (int i = 0; i < numSamples; i++) {
-            samples.push_back(createNewSample(params));
+            if (i != selectedSampleIndex) {
+                samples.push_back(createNewSample(params));
+            }
+            else {
+                samples.push_back(model->create(params));
+            }
+            
             sortedIndexes.push_back(i);
         }
-        selectedSampleIndex = 0;
+
         proxy = ModelSampleProxy(samples[selectedSampleIndex]);
         
         nav = proxy.getNavigation();
@@ -581,10 +588,11 @@ public:
             }    
 
             DataObject params = samples[selectedSampleIndex]->getParameters();
+            //DataObject params = samples[sortedIndexes[0]]->getParameters();
             ParameterHelper helper(params);
             params["samples"] = DataArray();
 
-            for (int i = 0; i < paramKeys.size(); i++) {
+            /*for (int i = 0; i < paramKeys.size(); i++) {
                 std::string key = paramKeys[i];
                 double val = sample->getParameters()[key].get<double>();
                 double normalizedVal = helper.normalize(key, val);
@@ -593,7 +601,7 @@ public:
                 //params[key].set<double>(helper.clamp(key, helper.deNormalize(key, normalizedVal - normGradient[i]*lambda)));
                 params[key].set<double>(helper.clamp(key, helper.deNormalize(key, normalizedVal + v[i]*0.01)));
                 
-            }
+            }*/
 
             for (int i = 0; i < samples.size(); i++) {
                 if (i != selectedSampleIndex) {
@@ -666,7 +674,7 @@ public:
                 std::cout << sortedIndexes[i] << " dist: " << distance[sortedIndexes[i]] << std::endl;
             }
 
-            selectedSampleIndex = min_index;
+            //selectedSampleIndex = min_index;
             
             proxy = ModelSampleProxy(samples[selectedSampleIndex]);
             

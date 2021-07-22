@@ -664,6 +664,8 @@ public:
 
     void prepareUpdate() {
         simTime = ModelSampleDecorator::getNavigation()["t"].get<double>();
+        ModelSampleDecorator::getNavigation() = nav;
+        ModelSampleDecorator::getNavigation()["t"].set<double>(simTime);
         goalTime = nav["t"].get<double>();
         currentTime = simTime;
         iterate();

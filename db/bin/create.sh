@@ -14,6 +14,8 @@ docker run -d -p 3306:3306 --name $CONTAINER \
     -v "${ROOTDIR}"/db/storage/$CONTAINER:/var/lib/mysql \
     -v "${ROOTDIR}"/db/sql-scripts:/docker-entrypoint-initdb.d/ \
     -e MYSQL_ROOT_PASSWORD=supersecret \
-    -e MYSQL_DATABASE=company \
+    -e MYSQL_DATABASE=virtual_lab \
     --network=VLNetwork \
     virtual-lab-db
+
+#${ROOTDIR}/db/bin/run.sh
