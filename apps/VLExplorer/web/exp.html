@@ -17,7 +17,7 @@
         position: relative;
         float:left;
         width: 50%;
-        height: 150px;
+        height: 120px;
       }
       #dynamics-tab {
         position: absolute;
@@ -1007,7 +1007,7 @@
                     nameIndex[s.sampleName] = 0;
                   }
                   var index = nameIndex[s.sampleName];
-                  dyanamicsData.push({name: '' + s.sampleName, params: s.params, data: s.data, chosen: false, color: s.color, hover: s.hover, id: s.id, index: index});
+                  dyanamicsData.push({name: '' + s.sampleName, params: s.params, data: s.data, chosen: true, color: s.color, hover: s.hover, id: s.id, index: index});
 
                   nameIndex[s.sampleName]++;
                   index++;
@@ -1040,7 +1040,7 @@
                 //data = Object.assign(data, s.data.samples[0]); 
               //}
               data = Object.assign(data, s.data); 
-              data = Object.assign(data, s.params);
+              //data = Object.assign(data, s.params);
 
               delete data["N"];
               delete data["num"];

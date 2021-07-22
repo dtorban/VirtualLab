@@ -58,19 +58,22 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
       var x = (this.xScale == "log") ? d3.scaleLog() : d3.scaleLinear();
       x.domain(d3.extent(data, function(d) { return +xKey(d); }))
         .range([ 0, this.width ]);
-      if (!this.xAxis) {
-        this.xAxis = this.svg.append("g")
-          .attr("transform", "translate(0," + this.height + ")")
-          .call(d3.axisBottom(x).ticks(this.showTicksX ? 4 : 0).tickFormat((d, i) => `${d.toFixed(2)}`));
+      if (this.showTicksX) {
+        if (!this.xAxis) {
+          this.xAxis = this.svg.append("g")
+            .attr("transform", "translate(0," + this.height + ")")
+            .call(d3.axisBottom(x).ticks(this.showTicksX ? 4 : 0).tickFormat((d, i) => `${d.toFixed(2)}`));
+          }
+        else {
+          this.xAxis.call(d3.axisBottom(x).ticks(this.showTicksX ? 4 : 0).tickFormat((d, i) => `${d.toFixed(2)}`))
         }
-      else {
-        this.xAxis.call(d3.axisBottom(x).ticks(this.showTicksX ? 4 : 0).tickFormat((d, i) => `${d.toFixed(2)}`))
       }
     
       // Add Y axis
       //var y = d3.scaleLinear()
       var y = (this.yScale == "log2") ? d3.scaleLog() : d3.scaleLinear();
-      y.domain([0, d3.max(data, function(d) { return +yKey(d); })])
+      //y.domain([0, d3.max(data, function(d) { return +yKey(d); })])
+      y.domain(d3.extent(data, function(d) { return +yKey(d); }))
         .range([ this.height, 0 ]);
       if (!this.yAxis) {
         this.yAxis = this.svg.append("g")
