@@ -74,10 +74,10 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
         .range([ this.height, 0 ]);
       if (!this.yAxis) {
         this.yAxis = this.svg.append("g")
-          .call(d3.axisLeft(y));
+          .call(d3.axisLeft(y).ticks(4));
       }
       else {
-        this.yAxis.call(d3.axisLeft(y))
+        this.yAxis.call(d3.axisLeft(y).ticks(4))
       }
 
       

@@ -2,6 +2,10 @@
 	<head>
 		<title>Virtual Lab</title>
 		<style>
+      body {
+        width: 100%;
+        height: 100%;
+      }
       .lineChart {
         position: relative;
         float:left;
@@ -22,12 +26,21 @@
       }
       #data-tab {
         position: absolute;
-          width: 100%;
-          height: 100%;
+        width: 100%;
+        height: 100%;
+      }
+      .section {
+        background-color: rgb(241, 240, 240);
+        border-style: solid;
+        border-width: 1px;
+        border-color: grey;
+        border-radius: 25px;
+        padding-left: 10px;
+        padding-right: 10px;
       }
       #dynamics-charts {
-        width: 50%;
-        height: 100%;
+        width: 100%;
+        height: 90%;
         overflow-y: auto;
       }
       .popup {
@@ -40,7 +53,13 @@
         border: 1px solid;
         background-color: #F0F0F0;
       }
-      .nav {position: relative; float: left; padding: 10px; width: 15%; height: 90%; background-color: lightgrey}
+      .nav {
+        position: absolute; top: 0px; margin-top:30px; margin-right:30px; right: 0px; padding: 10px; width: 15%; height: 90%; background-color: lightgrey;
+        box-shadow: 10px 15px 15px rgb(195, 193, 193);
+        border-style: solid;
+        border-width: 1px;
+        border-color: grey;
+        border-radius: 25px;}
       .toolbar {margin: 10px; text-align: center; width: 50px; border: 1px solid; padding: 10px;}
       .tool {background-color: rgb(79, 89, 90); width: 30px; height: 30px;margin: auto;margin-top: 10px;}
       .workarea {position: relative; float: left; margin: 10px; width: 80%; height: 90%;}
@@ -55,11 +74,12 @@
       li:hover {background-color: #95B4CA;}
       .parent li:hover {background-color: #F0F0F0;}
       .expand{font-size:12px;float:right;margin-right:5px;}
-      #header{height: 50px; margin-top: 20px;}
+      #header{margin-left: 30px; height: 50px; margin-top: 30px;}
       .sampling{margin-top: 2px;margin-bottom: 2px; font-size: small;}
       #samplingMethods{height: 30%;}
       .sample{margin-top: 2px;margin-bottom: 2px; font-size: small;white-space: nowrap;}
       .section-title{margin-top: 15px;margin-bottom: 10px;font-weight: bold;}
+      .title{position: absolute; width: 80%;;font-weight: bold; text-align: center; font-size: 24; }
       #samples{
         background-color: white;
         overflow-y: scroll; 
@@ -92,8 +112,13 @@
         position: relative;
         float: left;
           width: 50%;
-          height: 45%;
+          height: 85%;
           overflow-y: auto;
+      }
+      .spatialContainer {
+        margin-top: 15px;
+        height: 45%;
+        overflow-y: auto;
       }
       .visible-button {
         margin-left: 2px;
@@ -137,70 +162,8 @@
 		<script src="js/SpatialCell.js"></script>
 	</head>
 	<body>
-    <div id="header">
-      <ul id="menu">
-        <li class="parent"><a href="#">File</a>
-        <ul class="child">
-          <li class="parent"><a href="#">Export <span class="expand">&gt;</span></a>
-            <ul class="child">
-              <li><a href="#" onclick="exportCSV()">CSV</a></li>
-              <li><a href="#" onclick="exportJSON()">JSON</a></li>
-            </ul>
-          </li>
-          <li>
-            <label class="custom-file-upload">
-              <input type="file" id="files" name="files[]" multiple />
-              <i class="fa fa-cloud-upload parent"></i> Import
-            </label>
-          </li>
-        </ul>
-        </li>
-        <li class="parent"><a href="#">View</a>
-          <ul class="child">
-            <li><a href="#" onclick="setTab(0)">Data / Spatial</a></li>
-            <li><a href="#" onclick="setTab(1)">Dynamics</a></li>
-          </ul>
-        </li>
-        <li class="parent"><a href="#">Window</a>
-        </li>
-      </ul>
-    </div>
-
-
-
-    <div class="workarea">
-      <div id="data-tab">
-        <div class="section-title">Trends</div>
-        <div id="pcc"></div>
-        <div class="data-view">
-          <div id="my_dataviz" class="lineChart"></div>
-          <div id="my_dataviz2" class="lineChart"></div>
-          <div id="my_dataviz3" class="lineChart"></div>
-          <div id="my_dataviz4" class="lineChart"></div>
-          <div id="my_dataviz5" class="lineChart"></div>
-        </div>
-        <div class="section-title">Spatial</div>
-          <div id="spatialPath" class="spatial">
-          </div>
-          <div id="spatial" class="spatial">
-          </div>
-    </div>
-      <div id="dynamics-tab">
-        <div id="dynamics-charts"></div>
-        <!--div id="param1" class="dynamicsChart"></div>
-        <div id="param2" class="dynamicsChart"></div>
-        <div id="param3" class="dynamicsChart"></div-->
-      </div>
-    </div>
 
     <div class="nav">
-      <!--div class="toolbar">
-        <div>Tools</div>
-        <div class="tool"></div>
-        <div class="tool"></div>
-        <div class="tool"></div>
-        <div class="tool"></div>
-      </div-->
       <div>
         <div class="section-title">Sampling Methods</div>
         <div id="samplingMethods">
@@ -236,14 +199,84 @@
               <input type="button" value="Delete Samples" onclick="deleteSamples()"-->
             </div>
         </div>
+
+     </div>
+
+      <div id="header">
+        <div class="title">Virtual LAB</div>
+        <ul id="menu">
+          <li class="parent"><a href="#">File</a>
+          <ul class="child">
+            <li class="parent"><a href="#">Export <span class="expand">&gt;</span></a>
+              <ul class="child">
+                <li><a href="#" onclick="exportCSV()">CSV</a></li>
+                <li><a href="#" onclick="exportJSON()">JSON</a></li>
+              </ul>
+            </li>
+            <li>
+              <label class="custom-file-upload">
+                <input type="file" id="files" name="files[]" multiple />
+                <i class="fa fa-cloud-upload parent"></i> Import
+              </label>
+            </li>
+          </ul>
+          </li>
+          <li class="parent"><a href="#">View</a>
+            <ul class="child">
+              <li><a href="#" onclick="setTab(0)">Trends / Spatial</a></li>
+              <li><a href="#" onclick="setTab(1)">Dynamics</a></li>
+            </ul>
+          </li>
+          <li class="parent"><a href="#">Window</a>
+          </li>
+        </ul>
+      </div>
+
+
+
+      <div class="workarea">
+        <div id="data-tab">
+          <div class="section">
+            <div class="section-title">Trends</div>
+            <div id="pcc"></div>
+            <div class="data-view">
+              <div id="my_dataviz" class="lineChart"></div>
+              <div id="my_dataviz2" class="lineChart"></div>
+              <div id="my_dataviz3" class="lineChart"></div>
+              <div id="my_dataviz4" class="lineChart"></div>
+              <div id="my_dataviz5" class="lineChart"></div>
+            </div>
+        </div>
+
+        <div class="section spatialContainer">
+          <div class="section-title">Spatial</div>
+            <div id="spatialPath" class="spatial">
+            </div>
+            <div id="spatial" class="spatial">
+            </div>
+        </div>
+      </div>
+        <div id="dynamics-tab">
+          <div class="section">
+            <div class="section-title">Trends</div>
+            <div id="dynamics-charts"></div>
+          <!--div id="param1" class="dynamicsChart"></div>
+          <div id="param2" class="dynamicsChart"></div>
+          <div id="param3" class="dynamicsChart"></div-->
+          </div>
+        </div>
+      </div>
+
+
+
+        
+
+
+
         
 
         
         <!--input type="button" value="Create Template"><input type="button" value="Interpolate" onclick="interpolate(samples[0].params, samples[1].params, 3);"-->
-      </div>
-
-    </div>
-
 
     <div id="adhoc" class="popup">
       <table id="adhoc-params"></table>
@@ -367,7 +400,8 @@
                   callback($("#adhoc-name").val());
                 }
               }));
-              samplingMethods.push(new SamplingStrategy(params, "Random", function(params, callback) {
+              var randomColor = d3.scaleOrdinal(d3.schemeCategory10);
+              samplingMethods.push(new SamplingStrategy(params, "Random", function(params, callback, samplingMethod) {
                 //var p = JSON.parse(JSON.stringify(interpolate(samples[0].params,samples[1].params, 10)));
                 Object.keys(params).forEach(function(key, index) {
                   if (!(typeof params[key] === 'object')) {
@@ -375,6 +409,7 @@
                     params[key] = lerpParamMetaData(params, key, getParamMetaData(params, key, "min", params[key]), getParamMetaData(params, key, "max", params[key]), r);
                   }
                 });
+                samplingMethod.color = randomColor(currentNum*2);
                 callback("Random-" + currentNum);
               }));
               samplingMethods.push(new SamplingStrategy(params, "Search", function(params, callback, samplingMethod) {
@@ -433,33 +468,6 @@
                 });
                 callback("Interp("+samplingMethod.sampleA.sampleName + "," + samplingMethod.sampleB.sampleName+","+numSamples+","+samplingMethod.sampleA.id+","+samplingMethod.sampleB.id+")");
               }));
-              samplingMethods.push(new SamplingStrategy(params, "Neighbor", function(params, callback, samplingMethod) {
-                for (var i = 0; i < samples.length; i++) {
-                  if (samples[i].chosen == 1) {
-                    samplingMethod.selectedSample = samples[i];
-                    //samplingMethod.color = samples[i].color;
-                    break;
-                  }
-                }
-
-                var p = JSON.parse(JSON.stringify(samplingMethod.selectedSample.params));
-                delete p["samples"];
-
-                api.sample({sampler:"neighbor", closeness:0.1}, p).then(function(p) {
-                  Object.keys(p).forEach(function(key, index) {
-                      params[key] = p[key];
-                  });
-                  callback("Neighbor(" + samplingMethod.selectedSample.sampleName + ")-"+currentNum);
-                });
-
-              }));
-              samplingMethods.push(new SamplingStrategy(params, "Low"));
-              samplingMethods.push(new SamplingStrategy(params, "High", function(params, callback) {
-                  params.mpool = 10000;
-                  //params.cpool = 2000;
-                  params.cpool = 7500;
-                  callback();
-              }));
               samplingMethods.push(new SamplingStrategy(params, "What if?", function(params, callback, samplingMethod) {
                 if (samplingMethod.createNum == samplingMethod.numSamples) {
                   samplingMethod.samples = [];
@@ -506,21 +514,63 @@
                   callback(name + "(" + samplingMethod.currentSelected.sampleName + "," + samplingMethod.currentSelected.id +")");
                 }
               }));
+              samplingMethods.push(new SamplingStrategy(params, "Neighbor", function(params, callback, samplingMethod) {
+                for (var i = 0; i < samples.length; i++) {
+                  if (samples[i].chosen == 1) {
+                    samplingMethod.selectedSample = samples[i];
+                    //samplingMethod.color = samples[i].color;
+                    break;
+                  }
+                }
+
+                samplingMethod.color = d3.hsl(samplingMethod.selectedSample.color);
+                var h = 2.0*(Math.random()-0.5)*0.1;
+                var s = 2.0*(Math.random()-0.5)*0.1;
+                var l = 2.0*(Math.random()-0.5)*0.1;
+                samplingMethod.color.h += h*360;
+                samplingMethod.color.s += s;
+                samplingMethod.color.l += l;
+                //samplingMethod.color.l += 0.5*(1.0-samplingMethod.color.l);
+
+                var p = JSON.parse(JSON.stringify(samplingMethod.selectedSample.params));
+                delete p["samples"];
+
+                api.sample({sampler:"neighbor", closeness:0.1}, p).then(function(p) {
+                  Object.keys(p).forEach(function(key, index) {
+                      params[key] = p[key];
+                  });
+                  callback("Neighbor(" + samplingMethod.selectedSample.sampleName + ")-"+currentNum);
+                });
+
+              }));
+              samplingMethods.push(new SamplingStrategy(params, "Low"));
+              samplingMethods.push(new SamplingStrategy(params, "High", function(params, callback) {
+                  params.mpool = 10000;
+                  //params.cpool = 2000;
+                  params.cpool = 7500;
+                  callback();
+              }));
+              
               //'#e41a1c','#377eb8','g#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'
               samplingMethods[0].color = "#ff7f00";
               samplingMethods[1].color = "#984ea3";
+              samplingMethods[1].hasColor = false;
               samplingMethods[2].color = "#4daf4a";
+              samplingMethods[2].hasColor = false;
+              samplingMethods[2].visible = false;
               samplingMethods[3].numSamples = 10;
               samplingMethods[3].hasColor = false;
               samplingMethods[4].color = "#9E9E9E";
               samplingMethods[4].hasColor = false;
               samplingMethods[4].numSamples = 10;
-              samplingMethods[5].color = "#f781bf";
-              samplingMethods[5].numSamples = 5;
-              samplingMethods[6].color = "#e41a1c";
-              samplingMethods[7].color = "#377eb8";
+              samplingMethods[5].color = "#377eb8";
+              samplingMethods[5].numSamples = 10;
+              samplingMethods[5].hasColor = false;
+              samplingMethods[6].color = "#f781bf";
+              samplingMethods[6].numSamples = 5;
+              samplingMethods[6].hasColor = false;
+              samplingMethods[7].color = "#e41a1c";
               samplingMethods[8].color = "#377eb8";
-              samplingMethods[8].numSamples = 5;
               updateSamplingMethods();
             });
           });
@@ -529,6 +579,9 @@
         function updateSamplingMethods() {
           $("#samplingMethods").html("");
           samplingMethods.forEach(function(item, index) {
+            if (!item.visible) {
+              return;
+            }
             var div = $(" <div class=\"sampling\"><div style=\"position:relative; float:left; width: 75px;\">" +
               item.name + "</div><input type=\"button\" value=\"+\" onclick=\"createNewSample(samplingMethods["+index+"])\"></div>");
             var sampleNumSelect = $("<select></select>");
@@ -944,7 +997,7 @@
             if (samples.length > 0) {
               for (var i = 0; i < samples.length; i++) {
                 var s = samples[i];
-                if (s.data.samples) {
+                if (s.data.samples && s.visible) {
                 //if (s.chosen && s.data.samples) {
                   /*for (var j = 4; j < s.data.samples.length; j++) {
                     dyanamicsData.push({name: '' + j, params: s.params.samples[j], data: s.data.samples[j], chosen: false, color: s.color, hover: s.hover, id: s.id, index: index});
