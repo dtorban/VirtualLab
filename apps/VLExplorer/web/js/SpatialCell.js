@@ -1,9 +1,11 @@
-function SpatialCell(container, showPath) {
+function SpatialCell(container, showPath, selectCell) {
   this.container = container;
   // set the dimensions and margins of the graph
   this.margin = {top: 10, right: 30, bottom: 30, left: 60},
   this.width = container.width() - this.margin.left - this.margin.right,
   this.height = container.height() - this.margin.top - this.margin.bottom;
+
+  this.selectCell = selectCell;
 
   // append the svg object to the body of the page
   this.svg = d3.select(container[0])
@@ -154,7 +156,7 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
   var grid = [];
   for (var j = 0; j < gridHeight; j++) {
     for (var i = 0; i < gridWidth; i++) {
-      grid.push({x: i, y: j});
+      grid.push({x: i, y: j, data: data[j*gridWidth+i]});
     }
     rows.push({y:j});
   }
@@ -191,6 +193,7 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
       .attr("fill", "blue")
       .attr("fill-opacity", 0.0)
       .style("opacity", 0.0)
+      .style('cursor', 'zoom-in')
       .on("mouseenter", function(d) {
         d3.select(d3.event.target)
           .style("opacity","1.0");
@@ -201,6 +204,9 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
           .style("opacity","0.0");
       })
       .on("mousedown", function(d) {
+        if (self.selectCell) {
+          self.selectCell(d.x, d.y, d.data);
+        }
       })
     .merge(selectRects)
       .attr("x", function(d) {return d.x*self.width/gridWidth+2})

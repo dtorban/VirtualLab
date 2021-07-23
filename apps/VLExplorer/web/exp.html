@@ -22,25 +22,29 @@
         width: 25%;
         height: 120px;
       }
-      #dynamics-tab {
+      .tab {
         position: absolute;
           width: 100%;
           height: 100%;
       }
-      #data-tab {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-      }
       .section {
-        background-color: rgb(166, 189, 240);
+        /*background-color: rgb(166, 189, 240);*/
+        background-color: lightgrey;
         border-style: solid;
         border-width: 2px;
         border-color: rgb(54, 54, 54);
         border-radius: 25px;
         padding-left: 10px;
         padding-right: 10px;
-        color: white;
+        /*color: white;*/
+      }
+      #spatial-tab {
+        border-style: solid;
+        border-width: 2px;
+        border-color: rgb(54, 54, 54);
+        width: 100%;
+        height: 90%;
+        overflow-y: auto;
       }
       #dynamics-charts {
         width: 100%;
@@ -156,6 +160,10 @@
         margin:auto
         /*background-color: lightgrey;*/
       }
+      #detailedCell {
+        width: 100%;
+        height: 100%;
+      }
 		</style>
 		<script src="js/d3.v4.js"></script>
 		<script src="js/jquery-3.5.1.min.js"></script>
@@ -164,6 +172,7 @@
 		<script src="js/SamplingStrategy.js"></script>
 		<script src="js/pcc.js"></script>
 		<script src="js/SpatialCell.js"></script>
+		<script src="js/DetailedCell.js"></script>
 	</head>
 	<body>
 
@@ -239,7 +248,7 @@
 
 
       <div class="workarea">
-        <div id="data-tab">
+        <div id="data-tab" class="tab">
           <div class="section">
             <div class="section-title">Trends</div>
             <div id="pcc"></div>
@@ -270,7 +279,7 @@
             </div>
         </div>
       </div>
-        <div id="dynamics-tab">
+        <div id="dynamics-tab" class="tab">
           <div class="section">
             <div class="section-title">Dynamics</div>
             <div id="dynamics-charts"></div>
@@ -279,8 +288,13 @@
           <div id="param3" class="dynamicsChart"></div-->
           </div>
         </div>
-      </div>
 
+        <div id="spatial-tab" class="tab">
+          <input type='image' style="width: 30px; height: 30px; position: absolute; right:0; margin: 5px;" src='images/minimize.png' title='Minimize' onclick='setTab(0); selectedSpatial = null;' />
+          <div id="detailedCell"></div>
+        </div>
+
+      </div>
 
 
         
@@ -325,6 +339,7 @@
         var checkMultiple = false;
         var dynamicsCharts = {};
         var spatialStep = 1;
+        var selectedSpatial = null;
 
         function dynamicQuery(params, samplingMethod, res) {
           let input = samplingMethod.currentInput;
@@ -890,6 +905,12 @@
           return {mean: mean, std: s, sem: s/Math.sqrt(N)};
         }
 
+        function viewSpatial(x, y, data) {
+          selectedSpatial = {sample: data.sample, index: x};
+          setTab(2);
+          updateLineCharts();
+        }
+
         function updateLineCharts() {
 
           if (tab == 0) {
@@ -996,7 +1017,7 @@
                 if (samples[i].chosen && samples[i].visible) {
                   if (samples[i].lastSpatial) {
                     for (var j = 0; j < samples[i].lastSpatial.length; j+=spatialStep) {
-                      spatialData.push({data: samples[i].lastSpatial[j], color: samples[i].color});
+                      spatialData.push({data: samples[i].lastSpatial[j], color: samples[i].color, sample: samples[i]});
                     }
                     chosen++;
                   }
@@ -1090,6 +1111,9 @@
             param2.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.data.traction_mean;}, function(d) { return d.color;}, function(d) {return null;});
             param3.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.params.cpool;}, function(d) { return d.color;}, function(d) {return null;});*/
 
+          }
+          else if (tab == 2) {
+            detailedCell.updateData({params: selectedSpatial.sample.params.samples[selectedSpatial.index], nav: selectedSpatial.sample.nav, data: selectedSpatial.sample.data.samples[selectedSpatial.index]});
           }
 
         }
@@ -1343,14 +1367,16 @@
         document.getElementById('files').addEventListener('change', handleFileSelect, false);
 
         function setTab(val) {
+          $('.tab').hide();
           tab = val;
           if (tab == 1) {
-            $('#data-tab').hide();
             $('#dynamics-tab').show();
           }
-          else {
+          else if (tab == 0) {
             $('#data-tab').show();
-            $('#dynamics-tab').hide();
+          }
+          else if (tab == 2) {
+            $('#spatial-tab').show();  
           }
         }
 
@@ -1366,8 +1392,9 @@
         lineChart5.xScale = "log";
         var pcc = new PCChart("pcc", lineHover, lineClick);
         
-        var spatialCell = new SpatialCell($("#spatial"), false);
-        var spatialPath = new SpatialCell($("#spatialPath"), true);
+        var spatialCell = new SpatialCell($("#spatial"), false, viewSpatial);
+        var spatialPath = new SpatialCell($("#spatialPath"), true, viewSpatial);
+        var detailedCell = new DetailedCell($('#detailedCell'));
 
         /*var param1 = new DynamicLineChart("param1", "Substrate Stiffness", "Mean Area");
         var param2 = new DynamicLineChart("param2", "Substrate Stiffness", "Mean Area");
