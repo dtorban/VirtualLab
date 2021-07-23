@@ -15,6 +15,13 @@ function SpatialCell(container, showPath) {
       .attr("transform",
             "translate(" + this.margin.left + "," + this.margin.top + ")");
   this.showPath = showPath;
+
+  this.svg.append("rect")
+    .attr("x", 0)
+    .attr("x", 0)
+    .attr("width", this.width)
+    .attr("height", this.height)
+    .attr("fill", "white")
 }
 
 SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
@@ -54,7 +61,7 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
         .attr("fill", function(d) {return d.color;})
         .attr("stroke", function(d) {return d.color;})
         //.attr("stroke-opacity", "0.3")
-        .attr("stroke-width", "5")
+        .attr("stroke-width", "2")
   
       this.svg.selectAll("line")
       .attr("fill", function(d) {return d.color;})
@@ -63,6 +70,7 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
       .attr('y1', function(d) {return self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
       .attr('x2', function(d) {return scale*(d.arm.x-d.x)/50.0 + self.width/2/gridWidth + d.gridX*self.width/gridWidth;})
       .attr('y2', function(d) {return scale*(d.arm.y-d.y)/50.0 + self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
+
   }
   else {
 
@@ -141,7 +149,66 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
           (d.h)
         })
   }
-  
+
+  var rows = [];
+  var grid = [];
+  for (var j = 0; j < gridHeight; j++) {
+    for (var i = 0; i < gridWidth; i++) {
+      grid.push({x: i, y: j});
+    }
+    rows.push({y:j});
+  }
+
+  /*var selectRows = this.svg.selectAll(".selectRows");
+  selectRows.data(rows)
+    .exit()
+    .remove();
+  selectRows.data(rows)
+    .enter()
+      .append('rect')
+      .attr("class","selectRows")
+      .attr("stroke-width", 2)
+      .attr("stroke", "red")
+      .attr("fill", "none")
+      //.attr("stroke-dasharray","2,5")
+      .style("opacity", 0.5)
+    .merge(selectRows)
+      .attr("x", function(d) {return 0})
+      .attr("y", function(d) {return d.y*self.height/gridHeight+5})
+      .attr("width", function(d) {return self.width})
+      .attr("height", function(d) {return self.height/gridHeight-5})*/
+
+  var selectRects = this.svg.selectAll(".selectRects");
+  selectRects.data(grid)
+    .exit()
+    .remove();
+  selectRects.data(grid)
+    .enter()
+      .append('rect')
+      .attr("class","selectRects")
+      .attr("stroke-width", 3)
+      .attr("stroke", "blue")
+      .attr("fill", "blue")
+      .attr("fill-opacity", 0.0)
+      .style("opacity", 0.0)
+      .on("mouseenter", function(d) {
+        d3.select(d3.event.target)
+          .style("opacity","1.0");
+          this.parentNode.appendChild(this);
+      })
+      .on("mouseleave", function(d) {
+        d3.select(d3.event.target)
+          .style("opacity","0.0");
+      })
+      .on("mousedown", function(d) {
+      })
+    .merge(selectRects)
+      .attr("x", function(d) {return d.x*self.width/gridWidth+2})
+      .attr("y", function(d) {return d.y*self.height/gridHeight+2})
+      .attr("width", function(d) {return self.width/gridWidth-2})
+      .attr("height", function(d) {return self.height/gridHeight-2})
+      
+
 }
 
 

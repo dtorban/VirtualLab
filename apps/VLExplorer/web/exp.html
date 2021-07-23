@@ -2,6 +2,9 @@
 	<head>
 		<title>Virtual Lab</title>
 		<style>
+      /*.axis line {
+        stroke: white;
+      }*/
       body {
         width: 100%;
         height: 100%;
@@ -16,7 +19,7 @@
       .dynamicsChart {
         position: relative;
         float:left;
-        width: 50%;
+        width: 25%;
         height: 120px;
       }
       #dynamics-tab {
@@ -30,13 +33,14 @@
         height: 100%;
       }
       .section {
-        background-color: rgb(241, 240, 240);
+        background-color: rgb(166, 189, 240);
         border-style: solid;
-        border-width: 1px;
-        border-color: grey;
+        border-width: 2px;
+        border-color: rgb(54, 54, 54);
         border-radius: 25px;
         padding-left: 10px;
         padding-right: 10px;
+        color: white;
       }
       #dynamics-charts {
         width: 100%;
@@ -57,8 +61,8 @@
         position: absolute; top: 0px; margin-top:30px; margin-right:30px; right: 0px; padding: 10px; width: 15%; height: 90%; background-color: lightgrey;
         box-shadow: 10px 15px 15px rgb(195, 193, 193);
         border-style: solid;
-        border-width: 1px;
-        border-color: grey;
+        border-width: 2px;
+        border-color: rgb(54, 54, 54);
         border-radius: 25px;}
       .toolbar {margin: 10px; text-align: center; width: 50px; border: 1px solid; padding: 10px;}
       .tool {background-color: rgb(79, 89, 90); width: 30px; height: 30px;margin: auto;margin-top: 10px;}
@@ -112,13 +116,13 @@
         position: relative;
         float: left;
           width: 50%;
-          height: 85%;
+          height: 90%;
           overflow-y: auto;
       }
       .spatialContainer {
         margin-top: 15px;
         height: 45%;
-        overflow-y: auto;
+        overflow-y: none;
       }
       .visible-button {
         margin-left: 2px;
@@ -249,7 +253,17 @@
         </div>
 
         <div class="section spatialContainer">
+          
           <div class="section-title">Spatial</div>
+          <div style="position: absolute; margin-top: -20px; right: 15px;">
+            Spatial Resolution (Substrate Stiffness) <select id='spatialResolution' onchange="spatialStep = +$(this).val(); updateLineCharts();">
+              <option value="1" selected>10</option>
+              <option value="2">5</option>
+              <option value="4">3</option>
+              <option value="5">2</option>
+              <option value="10">1</option>
+            </select>
+            </div>
             <div id="spatialPath" class="spatial">
             </div>
             <div id="spatial" class="spatial">
@@ -258,7 +272,7 @@
       </div>
         <div id="dynamics-tab">
           <div class="section">
-            <div class="section-title">Trends</div>
+            <div class="section-title">Dynamics</div>
             <div id="dynamics-charts"></div>
           <!--div id="param1" class="dynamicsChart"></div>
           <div id="param2" class="dynamicsChart"></div>
@@ -310,6 +324,7 @@
         var tab = 0;
         var checkMultiple = false;
         var dynamicsCharts = {};
+        var spatialStep = 1;
 
         function dynamicQuery(params, samplingMethod, res) {
           let input = samplingMethod.currentInput;
@@ -352,6 +367,8 @@
 
         var api = new VLApi();
         $( document ).ready(function() {
+          $('#spatialResolution').val(spatialStep);
+
           $('.popup').hide();
           setTab(tab);
 
@@ -978,7 +995,7 @@
               for (var i = 0; i < samples.length; i++) {
                 if (samples[i].chosen && samples[i].visible) {
                   if (samples[i].lastSpatial) {
-                    for (var j = 0; j < samples[i].lastSpatial.length; j+=1) {
+                    for (var j = 0; j < samples[i].lastSpatial.length; j+=spatialStep) {
                       spatialData.push({data: samples[i].lastSpatial[j], color: samples[i].color});
                     }
                     chosen++;

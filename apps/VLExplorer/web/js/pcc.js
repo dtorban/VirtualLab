@@ -18,7 +18,22 @@ function PCChart(container, lineHover, lineClick) {
 	  .attr("transform",
 			"translate(" + this.margin.left + "," + this.margin.top + ")");
 	
+
+	this.svg.append("rect")
+			.attr("x", 0)
+			.attr("x", 0)
+			.attr("width", this.width)
+			.attr("height", this.height)
+			.attr("fill", "white")
+
     this.y = {};
+
+	this.svg.append("rect")
+		.attr("x", 0)
+		.attr("x", 0)
+		.attr("width", this.width)
+		.attr("height", this.height)
+		.attr("fill", "white")
 
     this.x = d3.scalePoint()
         .range([0, this.width])
@@ -150,7 +165,7 @@ PCChart.prototype.updateData = function(data) {
 		// I translate this element to its right position on the x axis
 		.attr("transform", function(d) { return "translate(" + self.x(d) + ")"; })
 		// And I build the axis with the call function
-		.each(function(d) { d3.select(this).call(d3.axisLeft().scale(self.y[d])); })
+		.each(function(d) { d3.select(this).call(d3.axisLeft().ticks(4).scale(self.y[d])); })
 		// Add axis title
 		.append("text")
 		  .attr("class","axis-label")
@@ -163,7 +178,7 @@ PCChart.prototype.updateData = function(data) {
           // I translate this element to its right position on the x axis
           .attr("transform", function(d) { return "translate(" + self.x(d) + ")"; })
           // And I build the axis with the call function
-          .each(function(d) { d3.select(this).call(d3.axisLeft().scale(self.y[d]).tickFormat(d3.format(",.2f"))); })
+          .each(function(d) { d3.select(this).call(d3.axisLeft().ticks(4).scale(self.y[d]).tickFormat(d3.format(",.2f"))); })
 
 	
 	  this.svg.selectAll(".myAxis")

@@ -19,6 +19,13 @@ function DynamicLineChart(container, xlabel, ylabel, lineHover, lineClick) {
             .attr("transform",
                   "translate(" + this.margin.left + "," + this.margin.top + ")");
         
+        this.svg.append("rect")
+                  .attr("x", 0)
+                  .attr("x", 0)
+                  .attr("width", this.width)
+                  .attr("height", this.height)
+                  .attr("fill", "white")
+
         this.svg.append("text")
                   .attr("class", "x label")
                   .attr("text-anchor", "end")
@@ -33,6 +40,7 @@ function DynamicLineChart(container, xlabel, ylabel, lineHover, lineClick) {
                   .attr("dy", ".75em")
                   .attr("transform", "rotate(-90)")
                   .text(ylabel);
+
 
         /*var lineKey = "name";
         var xKey = "year";
@@ -61,6 +69,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
       if (this.showTicksX) {
         if (!this.xAxis) {
           this.xAxis = this.svg.append("g")
+            .attr("class", "axis")  
             .attr("transform", "translate(0," + this.height + ")")
             .call(d3.axisBottom(x).ticks(this.showTicksX ? 4 : 0).tickFormat((d, i) => `${d.toFixed(2)}`));
           }
@@ -77,6 +86,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
         .range([ this.height, 0 ]);
       if (!this.yAxis) {
         this.yAxis = this.svg.append("g")
+          .attr("class", "axis")  
           .call(d3.axisLeft(y).ticks(4));
       }
       else {
