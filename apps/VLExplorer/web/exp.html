@@ -389,6 +389,8 @@
         var spatialStep = 1;
         var selectedSpatial = null;
         var spatialPool = [];
+        var spatialBounds = null;
+        var currentSelectedSpatial = 0;
 
         function dynamicQuery(params, samplingMethod, res) {
           let input = samplingMethod.currentInput;
@@ -962,12 +964,14 @@
         }
 
         function viewSpatial(x, y, data) {
+          currentSelectedSpatial = 0;
           $('.detailedCellSmall').remove();
+          spatialBounds = null;
           spatialPool = [];
           selectSpatial(x,y,data);
           setTab(2);
           for (var i = 0; i < selectedSpatial.length; i++) {
-            var spatialSmall = $('<div class="detailedCellSmall"></div>');
+            var spatialSmall = $('<div class="detailedCellSmall" onclick="currentSelectedSpatial='+i+'; updateLineCharts()"></div>');
             $('#spatial-pool').append(spatialSmall);
             var detailedSpatial = new DetailedCell(spatialSmall,0.2);
             spatialPool.push(detailedSpatial);
@@ -1177,9 +1181,38 @@
 
           }
           else if (tab == 2) {
-            detailedCell.updateData({params: selectedSpatial[0].sample.params.samples[selectedSpatial[0].index], nav: selectedSpatial[0].sample.nav, data: selectedSpatial[0].sample.data.samples[selectedSpatial[0].index]});
+            if (spatialBounds == null) {
+              var xDomain = null;
+              var yDomain = null;
+              for (var i = 0; i < selectedSpatial.length; i++) {
+                let data = selectedSpatial[i].sample.data.samples[selectedSpatial[i].index];
+                if (i == 0) {
+                  xDomain = d3.extent(data.m, function(d) { return d.x; });
+                  yDomain = d3.extent(data.m, function(d) { return d.y; });
+                  xDomain = d3.extent(xDomain.concat(d3.extent(data.h, function(d) { return d.x; })));
+                  yDomain = d3.extent(yDomain.concat(d3.extent(data.h, function(d) { return d.y; })));
+                }
+                else {
+                  xDomain = d3.extent(xDomain.concat(d3.extent(data.m, function(d) { return d.x; })));
+                  yDomain = d3.extent(yDomain.concat(d3.extent(data.m, function(d) { return d.y; })));
+                  xDomain = d3.extent(xDomain.concat(d3.extent(data.h, function(d) { return d.x; })));
+                  yDomain = d3.extent(yDomain.concat(d3.extent(data.h, function(d) { return d.y; })));
+                }
+              }
+              
+
+              console.log(xDomain, yDomain);
+              spatialBounds = [];
+              spatialBounds.push(d3.min(xDomain.concat(yDomain)));
+              spatialBounds.push(d3.max(xDomain.concat(yDomain)));
+              spatialBounds.push(spatialBounds[0]);
+              spatialBounds.push(spatialBounds[1]);
+            }
+            
+
+            detailedCell.updateData({params: selectedSpatial[currentSelectedSpatial].sample.params.samples[selectedSpatial[currentSelectedSpatial].index], nav: selectedSpatial[currentSelectedSpatial].sample.nav, data: selectedSpatial[currentSelectedSpatial].sample.data.samples[selectedSpatial[currentSelectedSpatial].index]}, spatialBounds);
             for (var i = 0; i < selectedSpatial.length; i++) {
-              spatialPool[i].updateData({params: selectedSpatial[i].sample.params.samples[selectedSpatial[i].index], nav: selectedSpatial[i].sample.nav, data: selectedSpatial[i].sample.data.samples[selectedSpatial[i].index]});
+              spatialPool[i].updateData({params: selectedSpatial[i].sample.params.samples[selectedSpatial[i].index], nav: selectedSpatial[i].sample.nav, data: selectedSpatial[i].sample.data.samples[selectedSpatial[i].index]}, spatialBounds);
             }
             //detailedCell2.updateData({params: selectedSpatial.sample.params.samples[selectedSpatial.index], nav: selectedSpatial.sample.nav, data: selectedSpatial.sample.data.samples[selectedSpatial.index]});
           }

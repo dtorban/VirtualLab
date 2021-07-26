@@ -54,13 +54,13 @@ DetailedCell.prototype.calcArmLength = function(x1, y1, x2, y2) {
   return Math.sqrt(Math.pow(this.x(x1)-this.x(x2),2) + Math.pow(this.y(y1)-this.y(y2),2));
 }
 
-DetailedCell.prototype.updateData = function(data) {
+DetailedCell.prototype.updateData = function(data, bounds) {
   var self = this;
 
   var aspectRatio = 1.0*this.width/this.height;
   
-  this.x.domain([-20000*aspectRatio, 20000*aspectRatio]);
-  this.y.domain([-20000, 20000]);
+  this.x.domain([bounds[0]*aspectRatio, bounds[1]*aspectRatio]);
+  this.y.domain([bounds[2], bounds[3]]);
 
   var color = d3.scaleLinear().domain([0,100])
           .range(["#4F67B4", "#0D025D"]);
