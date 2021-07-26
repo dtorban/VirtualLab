@@ -1,4 +1,4 @@
-function SpatialCell(container, showPath, selectCell) {
+function SpatialCell(container, showPath, selectCell, viewCell) {
   this.container = container;
   // set the dimensions and margins of the graph
   this.margin = {top: 10, right: 30, bottom: 30, left: 60},
@@ -6,6 +6,7 @@ function SpatialCell(container, showPath, selectCell) {
   this.height = container.height() - this.margin.top - this.margin.bottom;
 
   this.selectCell = selectCell;
+  this.viewCell = viewCell;
 
   // append the svg object to the body of the page
   this.svg = d3.select(container[0])
@@ -24,10 +25,15 @@ function SpatialCell(container, showPath, selectCell) {
     .attr("width", this.width)
     .attr("height", this.height)
     .attr("fill", "white")
+
 }
 
 SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
   var self = this;
+
+
+  var color = d3.scaleLinear().domain([0,100])
+          .range(["#4F67B4", "#0D025D"]);
 
   var scale = gridWidth > gridHeight ? 1.0/gridWidth : 1.0/gridHeight;
 
@@ -60,19 +66,31 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
         .attr('y1', function(d) {return self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
         .attr('x2', function(d) {return scale*(d.arm.x-d.x)/50.0 + self.width/2/gridWidth + d.gridX*self.width/gridWidth;})
         .attr('y2', function(d) {return -(d.arm.y-d.y)/50.0 + self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
-        .attr("fill", function(d) {return d.color;})
-        .attr("stroke", function(d) {return d.color;})
+        //.attr("fill", function(d) {return d.color;})
+        //.attr("stroke", function(d) {return d.color;})
         //.attr("stroke-opacity", "0.3")
-        .attr("stroke-width", "2")
+        .attr("stroke-width", "4")
   
       this.svg.selectAll("line")
-      .attr("fill", function(d) {return d.color;})
-      .attr("stroke", function(d) {return d.color;})
+      //.attr("fill", function(d) {return d.color;})
+      //.attr("stroke", function(d) {return d.color;})
+      .attr('fill', function(d) { return color(Math.sqrt(d.arm.fx*d.arm.fx + d.arm.fy*d.arm.fy)); })
+      .attr('stroke', function(d) { return color(Math.sqrt(d.arm.fx*d.arm.fx + d.arm.fy*d.arm.fy)); })
       .attr('x1', function(d) {return self.width/2/gridWidth + d.gridX*self.width/gridWidth;})
       .attr('y1', function(d) {return self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
       .attr('x2', function(d) {return scale*(d.arm.x-d.x)/50.0 + self.width/2/gridWidth + d.gridX*self.width/gridWidth;})
       .attr('y2', function(d) {return -scale*(d.arm.y-d.y)/50.0 + self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
 
+  /*this.svg.selectAll("circle")
+      .data([data])
+      .enter()
+        .append("circle")
+        .attr("r", 2)
+      .merge(this.svg.selectAll("circle"))
+        .style("stroke", function(d) { return color(data.data.fmag);} )
+        .style("fill", color(data.data.fmag))
+        .attr("cx", function(d, i){return self.x(+d.data.x);})
+        .attr("cy", function(d, i){return self.y(+d.data.y);});*/
   }
   else {
 
@@ -152,6 +170,7 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
           .y(function(d) { return -scale*(d.y)*20 + self.height/2/gridHeight + d.gridY*self.height/gridHeight; })
           (d.h)
         })
+
   }
 
   var rows = [];
@@ -206,8 +225,15 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
           .style("opacity","0.0");
       })
       .on("mousedown", function(d) {
-        if (self.selectCell) {
-          self.selectCell(d.x, d.y, d.data);
+        if (d3.event.ctrlKey) {
+          if (self.selectCell) {
+            self.selectCell(d.x, d.y, d.data);
+          }
+        }
+        else {
+          if (self.viewCell) {
+            self.viewCell(d.x, d.y, d.data);
+          }
         }
       })
     .merge(selectRects)

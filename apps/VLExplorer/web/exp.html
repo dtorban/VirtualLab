@@ -160,9 +160,53 @@
         margin:auto
         /*background-color: lightgrey;*/
       }
-      #detailedCell {
+      .detailedCell {
         width: 100%;
         height: 100%;
+      }
+      .detailedCellSmall {
+        width: 100%;
+        height: 30%;
+        border-style: solid;
+        border-width: 1px;
+        border-color: rgb(54, 54, 54);
+      }
+      .vl-path {
+        stroke: black;
+        /*stroke: black;*/
+        stroke-width: 2;
+        opacity: 1.0;
+        /*stroke-dasharray: 5 5;*/
+        /*stroke-dasharray: 2 5;*/
+      }
+      .vl-path-area {
+        stroke: white;
+        opacity: 0.75;
+        stroke-width: 5;
+      }
+      .vl-path-high-velocity {
+        stroke: rgb(255, 17, 0);
+        /*stroke: black;*/
+        stroke-width: 4;
+      }
+      #spatial-pool {
+        position: absolute; top: 0px; margin-top:30px; margin-right:30px; right: 0px; padding: 10px; width: 15%; height: 90%;
+        border-style: solid;
+        border-width: 2px;
+        border-color: rgb(54, 54, 54);
+        overflow-y: auto;
+        background-color: white;
+      }
+      .stop-left {
+          stop-color: #3f51b5;  /* Indigo */
+      }
+
+      .stop-right {
+          stop-color: #009688;  /* Teal */
+      }
+
+      .filled {
+          fill: url(#mainGradient);
       }
 		</style>
 		<script src="js/d3.v4.js"></script>
@@ -291,12 +335,16 @@
 
         <div id="spatial-tab" class="tab">
           <input type='image' style="width: 30px; height: 30px; position: absolute; right:0; margin: 5px;" src='images/minimize.png' title='Minimize' onclick='setTab(0); selectedSpatial = null;' />
-          <div id="detailedCell"></div>
+          <div id="detailedCell" class="detailedCell"></div>
         </div>
+        
 
       </div>
 
 
+      <div id="spatial-pool" class="tab">
+        <!--div id="detailedCell2" class="detailedCellSmall"></div-->
+      </div>
         
 
 
@@ -340,6 +388,7 @@
         var dynamicsCharts = {};
         var spatialStep = 1;
         var selectedSpatial = null;
+        var spatialPool = [];
 
         function dynamicQuery(params, samplingMethod, res) {
           let input = samplingMethod.currentInput;
@@ -905,9 +954,24 @@
           return {mean: mean, std: s, sem: s/Math.sqrt(N)};
         }
 
+        function selectSpatial(x, y, data) {
+          if (!selectedSpatial) {
+            selectedSpatial = [];
+          }
+          selectedSpatial.push({sample: data.sample, index: x});
+        }
+
         function viewSpatial(x, y, data) {
-          selectedSpatial = {sample: data.sample, index: x};
+          $('.detailedCellSmall').remove();
+          spatialPool = [];
+          selectSpatial(x,y,data);
           setTab(2);
+          for (var i = 0; i < selectedSpatial.length; i++) {
+            var spatialSmall = $('<div class="detailedCellSmall"></div>');
+            $('#spatial-pool').append(spatialSmall);
+            var detailedSpatial = new DetailedCell(spatialSmall,0.2);
+            spatialPool.push(detailedSpatial);
+          }
           updateLineCharts();
         }
 
@@ -1113,7 +1177,11 @@
 
           }
           else if (tab == 2) {
-            detailedCell.updateData({params: selectedSpatial.sample.params.samples[selectedSpatial.index], nav: selectedSpatial.sample.nav, data: selectedSpatial.sample.data.samples[selectedSpatial.index]});
+            detailedCell.updateData({params: selectedSpatial[0].sample.params.samples[selectedSpatial[0].index], nav: selectedSpatial[0].sample.nav, data: selectedSpatial[0].sample.data.samples[selectedSpatial[0].index]});
+            for (var i = 0; i < selectedSpatial.length; i++) {
+              spatialPool[i].updateData({params: selectedSpatial[i].sample.params.samples[selectedSpatial[i].index], nav: selectedSpatial[i].sample.nav, data: selectedSpatial[i].sample.data.samples[selectedSpatial[i].index]});
+            }
+            //detailedCell2.updateData({params: selectedSpatial.sample.params.samples[selectedSpatial.index], nav: selectedSpatial.sample.nav, data: selectedSpatial.sample.data.samples[selectedSpatial.index]});
           }
 
         }
@@ -1377,6 +1445,8 @@
           }
           else if (tab == 2) {
             $('#spatial-tab').show();  
+            $('#spatial-pool').show();  
+            
           }
         }
 
@@ -1392,9 +1462,10 @@
         lineChart5.xScale = "log";
         var pcc = new PCChart("pcc", lineHover, lineClick);
         
-        var spatialCell = new SpatialCell($("#spatial"), false, viewSpatial);
-        var spatialPath = new SpatialCell($("#spatialPath"), true, viewSpatial);
+        var spatialCell = new SpatialCell($("#spatial"), false, selectSpatial, viewSpatial);
+        var spatialPath = new SpatialCell($("#spatialPath"), true, selectSpatial, viewSpatial);
         var detailedCell = new DetailedCell($('#detailedCell'));
+        //var detailedCell2 = new DetailedCell($('#detailedCell2'),0.2);
 
         /*var param1 = new DynamicLineChart("param1", "Substrate Stiffness", "Mean Area");
         var param2 = new DynamicLineChart("param2", "Substrate Stiffness", "Mean Area");
