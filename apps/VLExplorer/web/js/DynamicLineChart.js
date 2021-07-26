@@ -130,6 +130,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
             .attr("stroke-width", function(d) { return +d.values[0].chosen*2.0*0.0 + 1.5; })
             .attr("d", function(d){
               return d3.line()
+                .curve(d3.curveBasis)
                 .x(function(d) { return x(xKey(d)); })
                 .y(function(d) { return y(+yKey(d)); })
                 (d.values)
@@ -157,6 +158,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
           .style("stroke-width","15px")
           .attr("d", function(d){
             return d3.line()
+              .curve(d3.curveBasis)
               .x(function(d) { return x(xKey(d)); })
               .y(function(d) { return y(+yKey(d)); })
               (d.values)
@@ -196,6 +198,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
           .attr("stroke", function(d){ return colorKey(d.values[0]) })
           .attr("d", function(d){
               return d3.line()
+                .curve(d3.curveBasis)
                 .x(function(d) { return x(xKey(d)); })
                 .y(function(d) { return y(+yKey(d)); })
                 (d.values)
@@ -208,6 +211,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
             .style("opacity", function(d) { return d.values[0].hover ? 0.5 : 0.0; })
             .attr("d", function(d){
                 return d3.line()
+                  .curve(d3.curveBasis)
                   .x(function(d) { return x(xKey(d)); })
                   .y(function(d) { return y(+yKey(d)); })
                   (d.values)

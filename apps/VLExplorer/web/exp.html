@@ -845,7 +845,7 @@
                 sample.lastSpatial = JSON.parse(JSON.stringify(sample.data.samples));
               }
               sample.nav.m = sample.chosen ? 1 : 1;
-              sample.nav.h = sample.chosen && tab == 0 ? 1 : 0;
+              sample.nav.h = sample.chosen && (tab == 0 || tab == 2) ? 1 : 0;
               //sample.nav.t += 10.0*60;
               //if (sample.nav.t < 300) {//sample.nav.t < 3600*6) {
               if (sample.nav.t < 3600*6) {

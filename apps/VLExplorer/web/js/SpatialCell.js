@@ -59,7 +59,7 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
         .attr('x1', function(d) {return self.width/2/gridWidth + d.gridX*self.width/gridWidth;})
         .attr('y1', function(d) {return self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
         .attr('x2', function(d) {return scale*(d.arm.x-d.x)/50.0 + self.width/2/gridWidth + d.gridX*self.width/gridWidth;})
-        .attr('y2', function(d) {return (d.arm.y-d.y)/50.0 + self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
+        .attr('y2', function(d) {return -(d.arm.y-d.y)/50.0 + self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
         .attr("fill", function(d) {return d.color;})
         .attr("stroke", function(d) {return d.color;})
         //.attr("stroke-opacity", "0.3")
@@ -71,7 +71,7 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
       .attr('x1', function(d) {return self.width/2/gridWidth + d.gridX*self.width/gridWidth;})
       .attr('y1', function(d) {return self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
       .attr('x2', function(d) {return scale*(d.arm.x-d.x)/50.0 + self.width/2/gridWidth + d.gridX*self.width/gridWidth;})
-      .attr('y2', function(d) {return scale*(d.arm.y-d.y)/50.0 + self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
+      .attr('y2', function(d) {return -scale*(d.arm.y-d.y)/50.0 + self.height/2/gridHeight + d.gridY*self.height/gridHeight;})
 
   }
   else {
@@ -132,8 +132,9 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
           .attr("stroke-width", function(d) { return 4; })
           .attr("d", function(d){
             return d3.line()
+              .curve(d3.curveBasis)
               .x(function(d) { return scale*(d.x)*10 + self.width/2/gridWidth + d.gridX*self.width/gridWidth; })
-              .y(function(d) { return scale*(d.y)*10 + self.height/2/gridHeight + d.gridY*self.height/gridHeight; })
+              .y(function(d) { return -scale*(d.y)*10 + self.height/2/gridHeight + d.gridY*self.height/gridHeight; })
               (d.h)
             })
 
@@ -146,8 +147,9 @@ SpatialCell.prototype.updateData = function(data, gridWidth, gridHeight) {
           .attr("stroke", function(d){ return d.color; })
       .attr("d", function(d){
         return d3.line()
+          .curve(d3.curveBasis)
           .x(function(d) { return scale*(d.x)*20 + self.width/2/gridWidth + d.gridX*self.width/gridWidth; })
-          .y(function(d) { return scale*(d.y)*20 + self.height/2/gridHeight + d.gridY*self.height/gridHeight; })
+          .y(function(d) { return -scale*(d.y)*20 + self.height/2/gridHeight + d.gridY*self.height/gridHeight; })
           (d.h)
         })
   }
