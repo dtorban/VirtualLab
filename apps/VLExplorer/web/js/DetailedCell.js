@@ -5,6 +5,7 @@ function DetailedCell(container, scale = 1.0) {
   this.width = container.width() - this.margin.left - this.margin.right,
   this.height = container.height() - this.margin.top - this.margin.bottom;
 
+
   // append the svg object to the body of the page
   this.svg = d3.select(container[0])
     .append("svg")
@@ -14,6 +15,9 @@ function DetailedCell(container, scale = 1.0) {
     .append("g")
       .attr("transform",
             "translate(" + this.margin.left + "," + this.margin.top + ")");
+
+  this.armgroup = this.svg.append("g")
+    .attr("opacity", 0.90);
 
     this.x = d3.scaleLinear()
             .domain([0,1])
@@ -50,10 +54,26 @@ function DetailedCell(container, scale = 1.0) {
   mainGradient.append('stop')
       .attr('class', 'stop-right')
       .attr('offset', '1');
+
+  this.substrate_force_color = d3.scaleLinear().domain([0,1])
+      .range(["#4F67B4", "red"]);
 }
 
 DetailedCell.prototype.calcArmLength = function(x1, y1, x2, y2) {
   return Math.sqrt(Math.pow(this.x(x1)-this.x(x2),2) + Math.pow(this.y(y1)-this.y(y2),2));
+}
+
+DetailedCell.prototype.calcAflowAnimation = function(d, offsetSpeed = 1.0, offset = 0.0, speed = 1.0) {
+  var self = this;
+  var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+  var dx = speed*offsetSpeed*10*self.time*self.data.data.aflow/100.0;
+  dx = dx - armLength*(Math.floor(dx/armLength));
+  var animationPos = armLength*d.pos - dx;
+  if (animationPos < 0) {
+    animationPos = animationPos + armLength;
+  }
+  var xVal = self.x(self.data.data.x) + (offset*armLength)+animationPos/offsetSpeed;
+  return Number.isNaN(xVal) ? self.x(self.data.data.x): xVal;
 }
 
 DetailedCell.prototype.animate = function(dt) {
@@ -64,23 +84,74 @@ DetailedCell.prototype.animate = function(dt) {
     if (self.data) {
       this.svg.selectAll(".actin")
         .attr('cx', function(d) {
-          var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
-          var dx = 10*self.time*self.data.data.aflow/100.0;
-          dx = dx - armLength*(Math.floor(dx/armLength));
-          var animationPos = armLength*d.pos - dx;
-          if (animationPos < 0) {
-            animationPos = animationPos + armLength;
-          }
-          var xVal = self.x(self.data.data.x) + animationPos;
-          return Number.isNaN(xVal) ? self.x(self.data.data.x): xVal;
+          return self.calcAflowAnimation(d);
         });
+
+      this.svg.selectAll(".clutch")
+        .attr('x1', function(d) {
+          return self.calcAflowAnimation(d, 2, 0.5);
+        })
+        .attr('x2', function(d) {
+          return self.calcAflowAnimation(d, 2, 0.5);
+        })
+        .attr('y2', function(d) {return self.y(self.data.data.y)+ (d.on ? self.thickness/4.0 : self.thickness/8.0); })
+        //.attr('y2', function(d) {return self.y(self.data.data.y)+ ((Math.random()*d.c_on_rate) > 0.15 ? self.thickness/4.0 : self.thickness/8.0); })
+
+      this.svg.selectAll(".substrate")
+      //.attr('x1', function(d) {return self.x(data.data.x) + (0.5)*self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+      //.attr('x2', function(d) {return self.x(data.data.x) + (0.5 + 0.3)*self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+          .attr('x1', function(d) {return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate)-25*self.scale;})
+          .attr('x2', function(d) {return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate)+25*self.scale;});
+
+      this.svg.selectAll(".substrate-spring")
+          /*.attr("stroke-dasharray",function(d) {
+            var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
+            return '' + (25*percent) + ' ' + (15*percent);
+          })*/
+          .attr("stroke", function(d) {
+            var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
+            return self.substrate_force_color(percent*d.percentLength*self.data.data.m.length);
+            
+          })
+          /*.attr("opacity",function(d) {
+            var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
+            return percent*0.75+0.25;
+          })*/
+          /*.attr("stroke-width",function(d) {
+            var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
+            return 8*self.scale*percent;
+          })*/
+          .attr('x1', function(d) {return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);});
+
+      this.svg.selectAll(".substrate-spring-connect")
+          .attr('x1', function(d) {
+            return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5}, 2, 0.5, d.c_on_rate);
+          })
+          .attr('x2', function(d) {
+            return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5}, 2, 0.5, d.c_on_rate);
+          })
     }
 
 }
 
-DetailedCell.prototype.updateData = function(data, bounds) {
+DetailedCell.prototype.updateData = function(data, bounds, config = 1, reset = true) {
   var self = this;
 
+  var showClutches = config != 0;
+  var showActin = config != 0;
+  var showSubstrate = config != 0;
+
+  if (this.data && !reset) {
+    data = this.data;
+  }
   this.data = data;
 
   var aspectRatio = 1.0*this.width/this.height;
@@ -115,11 +186,11 @@ DetailedCell.prototype.updateData = function(data, bounds) {
 
     
 
-    this.svg.selectAll(".rect1")
+    this.armgroup.selectAll(".rect1")
       .data(data.data.m)
       .exit()
       .remove()
-    this.svg.selectAll(".rect1")
+    this.armgroup.selectAll(".rect1")
       .data(data.data.m)
       .enter()
       .append("rect")
@@ -183,23 +254,25 @@ DetailedCell.prototype.updateData = function(data, bounds) {
         }
 
         var actin = [];
-        for (var i = 0; i < data.data.m.length; i++) {
-          if (data.data.m[i].length > 0.001) {
-            var percent = data.data.m[i].length / totalModuleLength;
-            //data.data.m[i].length = Math.sqrt(Math.pow(data.data.m[i].x-data.data.x,2) + Math.pow(data.data.m[i].y-data.data.y,2));
-            var numActinVis = Math.floor(percent*data.data.actin/1000/2);
-            for (var j = 0; j < numActinVis; j++) {
-              var act = {};
-              act = Object.assign(act, data.data.m[i]);
-              act.pos = 1.0*(j)/(numActinVis);
-              actin.push(act);
+        if (showActin) {
+          for (var i = 0; i < data.data.m.length; i++) {
+            if (data.data.m[i].length > 0.001) {
+              var percent = data.data.m[i].length / totalModuleLength;
+              data.data.m[i].percentLength = percent;
+              //data.data.m[i].length = Math.sqrt(Math.pow(data.data.m[i].x-data.data.x,2) + Math.pow(data.data.m[i].y-data.data.y,2));
+              var numActinVis = Math.floor(percent*data.data.actin/1000/2);
+              for (var j = 0; j < numActinVis; j++) {
+                var act = {};
+                act = Object.assign(act, data.data.m[i]);
+                act.pos = 1.0*(j)/(numActinVis);
+                actin.push(act);
+              }
             }
+  
+            //          actin.push({})
           }
-
-          //          actin.push({})
         }
 
-        console.log(actin);
 
         this.svg.selectAll(".actin")
           .data(actin)
@@ -214,15 +287,7 @@ DetailedCell.prototype.updateData = function(data, bounds) {
           .merge(this.svg.selectAll(".actin"))
             //.attr('cx', function(d) {return self.x(data.data.x) + self.calcArmLength(d.x, d.y, data.data.x, data.data.y)*d.pos;})
             .attr('cx', function(d) {
-              var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
-              var dx = 10*self.time*self.data.data.aflow/100.0;
-              dx = dx - armLength*(Math.floor(dx/armLength));
-              var animationPos = armLength*d.pos - dx;
-              if (animationPos < 0) {
-                animationPos = animationPos + armLength;
-              }
-              var xVal = self.x(self.data.data.x) + animationPos;
-              return Number.isNaN(xVal) ? self.x(self.data.data.x): xVal;
+              return self.calcAflowAnimation(d);
             })
             .attr('cy', function(d) {return self.y(data.data.y); })
             .attr('fill', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
@@ -237,24 +302,58 @@ DetailedCell.prototype.updateData = function(data, bounds) {
                 angle += 180;
               }
               return "translate("+ self.x(data.data.x) +","+ self.y(data.data.y) +") rotate("+(-angle)+") translate(0,"+(-5/2.0)+") translate("+ (-self.x(data.data.x)) +","+ (-self.y(data.data.y)) +")";
-            })
+            });
             
+        var clutches = [];
+        if (showClutches) {
+          for (var i = 0; i < data.data.m.length; i++) {
+            if (data.data.m[i].length > 0.001) {
+              var percent = data.data.m[i].length / totalModuleLength;
+              //data.data.m[i].length = Math.sqrt(Math.pow(data.data.m[i].x-data.data.x,2) + Math.pow(data.data.m[i].y-data.data.y,2));
+              if (percent > 0.001) {
+                //data.data.m[i].c_on_rate = 1.0;
+                data.data.m[i].c_on_rate = data.data.m[i].en/(percent*data.params.cpool);
+                if (data.data.m[i].c_on_rate > 1.0) {
+                  data.data.m[i].c_on_rate = 1.0;
+                }
+              }
+              else {
+                data.data.m[i].c_on_rate = 0.0;
+              }
+              var numClutchVis = percent*Math.log(Math.floor(data.params.cpool))*20;
+              for (var j = 0; j < numClutchVis; j++) {
+                var clutch = {};
+                clutch = Object.assign(clutch, data.data.m[i]);
+                clutch.pos = 1.0*(j)/(numClutchVis);
+                clutch.on = Math.random()*data.data.m[i].c_on_rate > 0.25;
+                clutches.push(clutch);
+              }
+            }
+          }
+        }
+
 
         this.svg.selectAll(".clutch")
-          .data(data.data.m)
+          .data(clutches)
           .exit()
           .remove()
         this.svg.selectAll(".clutch")
-          .data(data.data.m)
+          .data(clutches)
           .enter()
           .append("line")
             .attr("class", "clutch")
-            .attr('height', 2)
+            .attr('stroke-width', 1)
           .merge(this.svg.selectAll(".clutch"))
-            .attr('x1', function(d) {return self.x(data.data.x) + self.calcArmLength(d.x, d.y, data.data.x, data.data.y)/2.0;})
+            .attr('x1', function(d) {
+              return self.calcAflowAnimation(d, 2, 0.5);
+            })
+            .attr('x2', function(d) {
+              return self.calcAflowAnimation(d, 2, 0.5);
+            })
+            //.attr('x1', function(d) {return self.x(data.data.x) + (0.5 + d.pos*0.3)*self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
             .attr('y1', function(d) {return self.y(data.data.y); })
-            .attr('x2', function(d) {return self.x(data.data.x) + self.calcArmLength(d.x, d.y, data.data.x, data.data.y)/2.0;})
-            .attr('y2', function(d) {return self.y(data.data.y)+self.thickness/3.0; })
+            //.attr('x2', function(d) {return self.x(data.data.x) + (0.5 + d.pos*0.3)*self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+            .attr('y2', function(d) {return self.y(data.data.y)+self.thickness/4.0; })
             .attr('fill', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
             .attr('stroke', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
             .attr('width', function(d) { return self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
@@ -269,15 +368,113 @@ DetailedCell.prototype.updateData = function(data, bounds) {
               return "translate("+ self.x(data.data.x) +","+ self.y(data.data.y) +") rotate("+(-angle)+") translate(0,"+(-5/2.0)+") translate("+ (-self.x(data.data.x)) +","+ (-self.y(data.data.y)) +")";
             })
 
+      var substrateData = showSubstrate ? data.data.m : [];
 
-      this.svg.selectAll("circle")
+      this.svg.selectAll(".substrate")
+        .data(substrateData)
+        .exit()
+        .remove()
+      this.svg.selectAll(".substrate")
+        .data(substrateData)
+        .enter()
+        .append("line")
+          .attr("class", "substrate")
+          .attr('stroke-width', 2)
+        .merge(this.svg.selectAll(".substrate"))
+          .attr('x1', function(d) {return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5)-25*self.scale;})
+          .attr('x2', function(d) {return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5)+25*self.scale;})
+          //.attr('x1', function(d) {return self.x(data.data.x) + (0.5)*self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+          .attr('y1', function(d) {return self.y(data.data.y)+self.thickness/4.0; })
+          //.attr('x2', function(d) {return self.x(data.data.x) + (0.5 + 0.3)*self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+          .attr('y2', function(d) {return self.y(data.data.y)+self.thickness/4.0; })
+          .attr('fill', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+          .attr('stroke', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+          .attr('width', function(d) { return self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+          .attr('transform', function(d) { 
+            var len = self.calcArmLength(d.x, d.y, data.data.x, data.data.y);
+            var opposite = d.y-data.data.y;//-1;
+            var adjacent = d.x-data.data.x;//1;
+            var angle = Math.atan(opposite / adjacent)*360/(2*Math.PI);
+            if (adjacent < 0) {
+              angle += 180;
+            }
+            return "translate("+ self.x(data.data.x) +","+ self.y(data.data.y) +") rotate("+(-angle)+") translate(0,"+(-5/2.0)+") translate("+ (-self.x(data.data.x)) +","+ (-self.y(data.data.y)) +")";
+          })
+
+        this.svg.selectAll(".substrate-spring")
+          .data(substrateData)
+          .exit()
+          .remove()
+        this.svg.selectAll(".substrate-spring")
+          .data(substrateData)
+          .enter()
+          .append("line")
+            .attr("class", "substrate-spring")
+            .attr('stroke-width', 4*self.scale)
+          .merge(this.svg.selectAll(".substrate-spring"))
+            .attr('x1', function(d) {return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5)*self.scale;})
+            .attr('x2', function(d) { return self.x(data.data.x) + self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+            .attr('y1', function(d) {return self.y(data.data.y)+self.thickness*0.375; })
+            .attr('y2', function(d) {return self.y(data.data.y)+self.thickness*0.375; })
+            .attr('fill', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+            .attr('stroke', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+            .attr('width', function(d) { return self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+            .attr('transform', function(d) { 
+              var len = self.calcArmLength(d.x, d.y, data.data.x, data.data.y);
+              var opposite = d.y-data.data.y;//-1;
+              var adjacent = d.x-data.data.x;//1;
+              var angle = Math.atan(opposite / adjacent)*360/(2*Math.PI);
+              if (adjacent < 0) {
+                angle += 180;
+              }
+              return "translate("+ self.x(data.data.x) +","+ self.y(data.data.y) +") rotate("+(-angle)+") translate(0,"+(-5/2.0)+") translate("+ (-self.x(data.data.x)) +","+ (-self.y(data.data.y)) +")";
+            })
+
+        this.svg.selectAll(".substrate-spring-connect")
+          .data(substrateData)
+          .exit()
+          .remove()
+        this.svg.selectAll(".substrate-spring-connect")
+          .data(substrateData)
+          .enter()
+          .append("line")
+            .attr("class", "substrate-spring-connect")
+            .attr('stroke-width', 2)
+          .merge(this.svg.selectAll(".substrate-spring-connect"))
+            .attr('x1', function(d) {
+              return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5}, 2, 0.5);
+            })
+            .attr('x2', function(d) {
+              return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5}, 2, 0.5);
+            })
+            //.attr('x1', function(d) {return self.x(data.data.x) + (0.5 + d.pos*0.3)*self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+            .attr('y1', function(d) {return self.y(data.data.y)+self.thickness*0.25; })
+            //.attr('x2', function(d) {return self.x(data.data.x) + (0.5 + d.pos*0.3)*self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+            .attr('y2', function(d) {return self.y(data.data.y)+self.thickness*0.375; })
+            .attr('fill', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+            .attr('stroke', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+            .attr('width', function(d) { return self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+            .attr('transform', function(d) { 
+              var len = self.calcArmLength(d.x, d.y, data.data.x, data.data.y);
+              var opposite = d.y-data.data.y;//-1;
+              var adjacent = d.x-data.data.x;//1;
+              var angle = Math.atan(opposite / adjacent)*360/(2*Math.PI);
+              if (adjacent < 0) {
+                angle += 180;
+              }
+              return "translate("+ self.x(data.data.x) +","+ self.y(data.data.y) +") rotate("+(-angle)+") translate(0,"+(-5/2.0)+") translate("+ (-self.x(data.data.x)) +","+ (-self.y(data.data.y)) +")";
+            })
+
+      this.armgroup.selectAll("circle")
       .data([data])
       .enter()
         .append("circle")
         .attr("r", self.thickness*0.7)
-      .merge(this.svg.selectAll("circle"))
-        .style("stroke", function(d) { return color(data.data.fmag);} )
-        .style("fill", color(data.data.fmag))
+        .style("stroke", "lightgrey" )
+        .style("fill", "lightgrey" )
+      .merge(this.armgroup.selectAll("circle"))
+        //.style("stroke", function(d) { return color(data.data.fmag);} )
+        //.style("fill", color(data.data.fmag))
         .attr("cx", function(d, i){return self.x(+d.data.x);})
         .attr("cy", function(d, i){return self.y(+d.data.y);});
 
@@ -287,11 +484,6 @@ DetailedCell.prototype.updateData = function(data, bounds) {
             this.parentNode.appendChild(this);
           });
       };  
-
-      this.svg.selectAll(".rect2").moveToFront();
-      this.svg.selectAll(".clutch").moveToFront();
-      this.svg.selectAll(".actin").moveToFront();
-      this.svg.selectAll("circle").moveToFront();
 
         /*this.svg.selectAll(".rect2")
         .data(data.data.m)
@@ -352,15 +544,33 @@ DetailedCell.prototype.updateData = function(data, bounds) {
           }
         }
 
-        this.updatePath("vl-path-area", [h]);
-        this.updatePath("vl-path", [h]);
-        this.updatePath("vl-path-high-velocity", [h], function(d) {return d.v > 15;});
+        //this.svg.selectAll(".rect1").moveToFront();
 
+        if (config != 0) {
+          this.updatePath("vl-path-area", [h]);
+          this.updatePath("vl-path", [h]);
+          this.updatePath("vl-path-high-velocity", [h], function(d) {return d.v > 15;});
+        }
+
+        //this.svg.selectAll("circle").moveToFront();
+        this.armgroup.moveToFront();
+        this.svg.selectAll(".clutch").moveToFront();
+        this.svg.selectAll(".substrate").moveToFront();
+        this.svg.selectAll(".substrate-spring").moveToFront();
+        this.svg.selectAll(".substrate-spring-connect").moveToFront();
+        this.svg.selectAll(".rect2").moveToFront();
+        this.svg.selectAll(".actin").moveToFront();
+
+        if (config == 0) {
+          this.updatePath("vl-path-area", [h]);
+          this.updatePath("vl-path", [h]);
+          this.updatePath("vl-path-high-velocity", [h], function(d) {return d.v > 15;});
+        }
 
     //this.svg.selectAll(".line").moveToFront();
 
 
-  console.log(data);
+  //console.log(data);
 }
 
 

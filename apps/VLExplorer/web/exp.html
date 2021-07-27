@@ -310,7 +310,7 @@
           
           <div class="section-title">Spatial</div>
           <div style="position: absolute; margin-top: -20px; right: 15px;">
-            Spatial Resolution (Substrate Stiffness) <select id='spatialResolution' onchange="spatialStep = +$(this).val(); updateLineCharts();">
+            Spatial Resolution (Substrate Stiffness) <select id='spatialResolution' onchange="spatialStep = +$(this).val();  updateLineCharts(); ">
               <option value="1" selected>10</option>
               <option value="2">5</option>
               <option value="4">3</option>
@@ -343,8 +343,11 @@
       </div>
 
 
-      <div id="spatial-pool" class="tab">
-        <!--div id="detailedCell2" class="detailedCellSmall"></div-->
+      <div id="spatial-pool" class="tab">   
+        <div class="toolbar">
+          <input type='image' class='toolbar-button' src='images/play-pause.png' title='Change View' onclick='movingSpatial = !movingSpatial;updateLineCharts()' />
+          <input type='image' class='toolbar-button' src='images/show.jpg' title='Change View' onclick='spatialMode = (spatialMode+1)%2;updateLineCharts()' />       
+        </div>
       </div>
         
 
@@ -393,6 +396,9 @@
         var spatialBounds = null;
         var currentSelectedSpatial = 0;
         const clock = new THREE.Clock();
+        var updateSpatial = false;
+        var movingSpatial = true;
+        var spatialMode = 0;
 
         function dynamicQuery(params, samplingMethod, res) {
           let input = samplingMethod.currentInput;
@@ -978,12 +984,14 @@
           selectSpatial(x,y,data);
           setTab(2);
           for (var i = 0; i < selectedSpatial.length; i++) {
-            var spatialSmall = $('<div class="detailedCellSmall" onclick="currentSelectedSpatial='+i+'; updateLineCharts()"></div>');
+            var spatialSmall = $('<div class="detailedCellSmall" onclick="currentSelectedSpatial='+i+'; updateSpatial = true; updateLineCharts(); updateSpatial = false;"></div>');
             $('#spatial-pool').append(spatialSmall);
             var detailedSpatial = new DetailedCell(spatialSmall,0.2);
             spatialPool.push(detailedSpatial);
           }
+          updateSpatial = true;
           updateLineCharts();
+          updateSpatial = false;
         }
 
 
@@ -1189,7 +1197,9 @@
             param3.updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return d.params.cpool;}, function(d) { return d.color;}, function(d) {return null;});*/
 
           }
-          else if (tab == 2) {
+          else if (tab == 2) { // && updateSpatial) {
+          //else if (tab == 2 && updateSpatial) {
+            //if (!updateSpatial) {}
             if (spatialBounds == null) {
               var xDomain = null;
               var yDomain = null;
@@ -1219,9 +1229,9 @@
             }
             
 
-            detailedCell.updateData({params: selectedSpatial[currentSelectedSpatial].sample.params.samples[selectedSpatial[currentSelectedSpatial].index], nav: selectedSpatial[currentSelectedSpatial].sample.nav, data: selectedSpatial[currentSelectedSpatial].sample.data.samples[selectedSpatial[currentSelectedSpatial].index]}, spatialBounds);
+            detailedCell.updateData({params: selectedSpatial[currentSelectedSpatial].sample.params.samples[selectedSpatial[currentSelectedSpatial].index], nav: selectedSpatial[currentSelectedSpatial].sample.nav, data: selectedSpatial[currentSelectedSpatial].sample.data.samples[selectedSpatial[currentSelectedSpatial].index]}, spatialBounds, spatialMode, updateSpatial||movingSpatial);
             for (var i = 0; i < selectedSpatial.length; i++) {
-              spatialPool[i].updateData({params: selectedSpatial[i].sample.params.samples[selectedSpatial[i].index], nav: selectedSpatial[i].sample.nav, data: selectedSpatial[i].sample.data.samples[selectedSpatial[i].index]}, spatialBounds);
+              spatialPool[i].updateData({params: selectedSpatial[i].sample.params.samples[selectedSpatial[i].index], nav: selectedSpatial[i].sample.nav, data: selectedSpatial[i].sample.data.samples[selectedSpatial[i].index]}, spatialBounds, spatialMode, updateSpatial||movingSpatial);
             }
             //detailedCell2.updateData({params: selectedSpatial.sample.params.samples[selectedSpatial.index], nav: selectedSpatial.sample.nav, data: selectedSpatial.sample.data.samples[selectedSpatial.index]});
           }
@@ -1506,9 +1516,9 @@
 
           if (tab == 2) {
             for (var i = 0; i < selectedSpatial.length; i++) {
-              detailedCell.animate(dt);
               spatialPool[i].animate(dt);
             }
+            detailedCell.animate(dt);
           }
 
           // Start next frame
