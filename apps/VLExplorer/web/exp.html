@@ -217,6 +217,7 @@
 		<script src="js/pcc.js"></script>
 		<script src="js/SpatialCell.js"></script>
 		<script src="js/DetailedCell.js"></script>
+		<script src="js/three.js"></script>
 	</head>
 	<body>
 
@@ -391,6 +392,7 @@
         var spatialPool = [];
         var spatialBounds = null;
         var currentSelectedSpatial = 0;
+        const clock = new THREE.Clock();
 
         function dynamicQuery(params, samplingMethod, res) {
           let input = samplingMethod.currentInput;
@@ -657,6 +659,10 @@
               updateSamplingMethods();
             });
           });
+
+
+          // Start animation
+          animate();
         });
 
         function updateSamplingMethods() {
@@ -891,6 +897,7 @@
 
               //sample.chosen = 0;
               sample.nav.t += 10.0;//10.0*60;
+
               //sample.nav.t += 1.0*60;
               if (/*sample.nav.m == 1 || */ sample.nav.h == 1) {
                 sample.lastSpatial = JSON.parse(JSON.stringify(sample.data.samples));
@@ -978,6 +985,8 @@
           }
           updateLineCharts();
         }
+
+
 
         function updateLineCharts() {
 
@@ -1482,6 +1491,30 @@
             
           }
         }
+
+        function animate() {
+          // Updating scene logic
+          // moving box for one pixel per frame
+          // "requestAnimationFrame" is optimized for 60fps
+          // so we should get smooth movement of 60px per second
+          //position += 1;
+
+          // Render updated scene
+          //box.style.transform = `translateX(${ position }px)`;
+
+          var dt = clock.getDelta();
+
+          if (tab == 2) {
+            for (var i = 0; i < selectedSpatial.length; i++) {
+              detailedCell.animate(dt);
+              spatialPool[i].animate(dt);
+            }
+          }
+
+          // Start next frame
+          requestAnimationFrame(animate);
+        }
+
 
         var lineChart1 = new DynamicLineChart("my_dataviz", "Substrate Stiffness", "Mean Aflow", lineHover, lineClick);
         var lineChart2 = new DynamicLineChart("my_dataviz2", "Substrate Stiffness", "Mean Traction", lineHover, lineClick)

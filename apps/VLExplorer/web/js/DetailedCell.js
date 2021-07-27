@@ -23,7 +23,9 @@ function DetailedCell(container, scale = 1.0) {
             .domain([0,1])
             .range([ this.height, 0]);
             
-    this.thickness = 30*scale;
+    this.scale = scale;
+    this.thickness = 80*scale;
+    this.time = 0;
     
     /*this.clip = this.svg.append("defs").append("clipPath")
         .attr("id", "round-corner")
@@ -54,8 +56,32 @@ DetailedCell.prototype.calcArmLength = function(x1, y1, x2, y2) {
   return Math.sqrt(Math.pow(this.x(x1)-this.x(x2),2) + Math.pow(this.y(y1)-this.y(y2),2));
 }
 
+DetailedCell.prototype.animate = function(dt) {
+    var self = this;
+
+    this.time += dt;
+    
+    if (self.data) {
+      this.svg.selectAll(".actin")
+        .attr('cx', function(d) {
+          var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+          var dx = 10*self.time*self.data.data.aflow/100.0;
+          dx = dx - armLength*(Math.floor(dx/armLength));
+          var animationPos = armLength*d.pos - dx;
+          if (animationPos < 0) {
+            animationPos = animationPos + armLength;
+          }
+          var xVal = self.x(self.data.data.x) + animationPos;
+          return Number.isNaN(xVal) ? self.x(self.data.data.x): xVal;
+        });
+    }
+
+}
+
 DetailedCell.prototype.updateData = function(data, bounds) {
   var self = this;
+
+  this.data = data;
 
   var aspectRatio = 1.0*this.width/this.height;
   
@@ -93,14 +119,14 @@ DetailedCell.prototype.updateData = function(data, bounds) {
       .data(data.data.m)
       .exit()
       .remove()
-      this.svg.selectAll(".rect1")
+    this.svg.selectAll(".rect1")
       .data(data.data.m)
       .enter()
       .append("rect")
         .attr("class", "rect1")
         //.attr("class", "filled")
-        //.attr("fill", "lightgrey")
-        //.attr("stroke", "lightgrey")
+        .attr("fill", "lightgrey")
+        .attr("stroke", "lightgrey")
         //.attr("stroke-width", "100")
         .attr("rx", "25")
         .attr('height', self.thickness)
@@ -109,8 +135,8 @@ DetailedCell.prototype.updateData = function(data, bounds) {
       .merge(this.svg.selectAll(".rect1"))
         .attr('x', function(d) {return self.x(data.data.x); })
         .attr('y', function(d) {return self.y(data.data.y); })
-        .attr('fill', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
-        .attr('stroke', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+        //.attr('fill', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+        //.attr('stroke', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
         .attr('width', function(d) { return self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
         .attr('transform', function(d) { 
           var len = self.calcArmLength(d.x, d.y, data.data.x, data.data.y);
@@ -123,6 +149,125 @@ DetailedCell.prototype.updateData = function(data, bounds) {
           return "translate("+ self.x(data.data.x) +","+ self.y(data.data.y) +") rotate("+(-angle)+") translate(0,"+(-self.thickness/2.0)+") translate("+ (-self.x(data.data.x)) +","+ (-self.y(data.data.y)) +")";
         })
 
+      this.svg.selectAll(".rect2")
+        .data(data.data.m)
+        .exit()
+        .remove()
+      this.svg.selectAll(".rect2")
+        .data(data.data.m)
+        .enter()
+        .append("rect")
+          .attr("class", "rect2")
+          .attr('height', 5)
+        .merge(this.svg.selectAll(".rect2"))
+          .attr('x', function(d) {return self.x(data.data.x); })
+          .attr('y', function(d) {return self.y(data.data.y); })
+          .attr('fill', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+          .attr('stroke', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+          .attr('width', function(d) { return self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+          .attr('transform', function(d) { 
+            var len = self.calcArmLength(d.x, d.y, data.data.x, data.data.y);
+            var opposite = d.y-data.data.y;//-1;
+            var adjacent = d.x-data.data.x;//1;
+            var angle = Math.atan(opposite / adjacent)*360/(2*Math.PI);
+            if (adjacent < 0) {
+              angle += 180;
+            }
+            return "translate("+ self.x(data.data.x) +","+ self.y(data.data.y) +") rotate("+(-angle)+") translate(0,"+(-5/2.0)+") translate("+ (-self.x(data.data.x)) +","+ (-self.y(data.data.y)) +")";
+          })
+
+        var totalModuleLength = 0.0;
+        for (var i = 0; i < data.data.m.length; i++) {
+          data.data.m[i].length = Math.sqrt(Math.pow(data.data.m[i].x-data.data.x,2) + Math.pow(data.data.m[i].y-data.data.y,2));
+          totalModuleLength += data.data.m[i].length;
+        }
+
+        var actin = [];
+        for (var i = 0; i < data.data.m.length; i++) {
+          if (data.data.m[i].length > 0.001) {
+            var percent = data.data.m[i].length / totalModuleLength;
+            //data.data.m[i].length = Math.sqrt(Math.pow(data.data.m[i].x-data.data.x,2) + Math.pow(data.data.m[i].y-data.data.y,2));
+            var numActinVis = Math.floor(percent*data.data.actin/1000/2);
+            for (var j = 0; j < numActinVis; j++) {
+              var act = {};
+              act = Object.assign(act, data.data.m[i]);
+              act.pos = 1.0*(j)/(numActinVis);
+              actin.push(act);
+            }
+          }
+
+          //          actin.push({})
+        }
+
+        console.log(actin);
+
+        this.svg.selectAll(".actin")
+          .data(actin)
+          .exit()
+          .remove()
+        this.svg.selectAll(".actin")
+          .data(actin)
+          .enter()
+          .append("circle")
+            .attr("class", "actin")
+            .attr('r', 5.0*self.scale)
+          .merge(this.svg.selectAll(".actin"))
+            //.attr('cx', function(d) {return self.x(data.data.x) + self.calcArmLength(d.x, d.y, data.data.x, data.data.y)*d.pos;})
+            .attr('cx', function(d) {
+              var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+              var dx = 10*self.time*self.data.data.aflow/100.0;
+              dx = dx - armLength*(Math.floor(dx/armLength));
+              var animationPos = armLength*d.pos - dx;
+              if (animationPos < 0) {
+                animationPos = animationPos + armLength;
+              }
+              var xVal = self.x(self.data.data.x) + animationPos;
+              return Number.isNaN(xVal) ? self.x(self.data.data.x): xVal;
+            })
+            .attr('cy', function(d) {return self.y(data.data.y); })
+            .attr('fill', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+            .attr('stroke', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+            .attr('width', function(d) { return self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+            .attr('transform', function(d) { 
+              var len = self.calcArmLength(d.x, d.y, data.data.x, data.data.y);
+              var opposite = d.y-data.data.y;
+              var adjacent = d.x-data.data.x;
+              var angle = Math.atan(opposite / adjacent)*360/(2*Math.PI);
+              if (adjacent < 0) {
+                angle += 180;
+              }
+              return "translate("+ self.x(data.data.x) +","+ self.y(data.data.y) +") rotate("+(-angle)+") translate(0,"+(-5/2.0)+") translate("+ (-self.x(data.data.x)) +","+ (-self.y(data.data.y)) +")";
+            })
+            
+
+        this.svg.selectAll(".clutch")
+          .data(data.data.m)
+          .exit()
+          .remove()
+        this.svg.selectAll(".clutch")
+          .data(data.data.m)
+          .enter()
+          .append("line")
+            .attr("class", "clutch")
+            .attr('height', 2)
+          .merge(this.svg.selectAll(".clutch"))
+            .attr('x1', function(d) {return self.x(data.data.x) + self.calcArmLength(d.x, d.y, data.data.x, data.data.y)/2.0;})
+            .attr('y1', function(d) {return self.y(data.data.y); })
+            .attr('x2', function(d) {return self.x(data.data.x) + self.calcArmLength(d.x, d.y, data.data.x, data.data.y)/2.0;})
+            .attr('y2', function(d) {return self.y(data.data.y)+self.thickness/3.0; })
+            .attr('fill', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+            .attr('stroke', function(d) { return color(Math.sqrt(d.fx*d.fx + d.fy*d.fy)); })
+            .attr('width', function(d) { return self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
+            .attr('transform', function(d) { 
+              var len = self.calcArmLength(d.x, d.y, data.data.x, data.data.y);
+              var opposite = d.y-data.data.y;//-1;
+              var adjacent = d.x-data.data.x;//1;
+              var angle = Math.atan(opposite / adjacent)*360/(2*Math.PI);
+              if (adjacent < 0) {
+                angle += 180;
+              }
+              return "translate("+ self.x(data.data.x) +","+ self.y(data.data.y) +") rotate("+(-angle)+") translate(0,"+(-5/2.0)+") translate("+ (-self.x(data.data.x)) +","+ (-self.y(data.data.y)) +")";
+            })
 
 
       this.svg.selectAll("circle")
@@ -143,6 +288,9 @@ DetailedCell.prototype.updateData = function(data, bounds) {
           });
       };  
 
+      this.svg.selectAll(".rect2").moveToFront();
+      this.svg.selectAll(".clutch").moveToFront();
+      this.svg.selectAll(".actin").moveToFront();
       this.svg.selectAll("circle").moveToFront();
 
         /*this.svg.selectAll(".rect2")
@@ -212,7 +360,7 @@ DetailedCell.prototype.updateData = function(data, bounds) {
     //this.svg.selectAll(".line").moveToFront();
 
 
-  //console.log(data);
+  console.log(data);
 }
 
 
