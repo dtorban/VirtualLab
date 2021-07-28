@@ -59,6 +59,8 @@ public:
             samples[i]->getNavigation()["t"].set<double>(sampleTime);
             samples[i]->update(new UpdateCallbackProxy(this));
         }
+
+
     }
              
     void onComplete() {
@@ -69,7 +71,16 @@ public:
             }
             
             data = samples[0]->getData();
-            data["params"] = params;
+            //data["params"] = params;
+
+            
+            DataObject h;
+            h["time"] = DoubleDataValue(nav["t"].get<double>());
+            h["x"] = DoubleDataValue(data["x"].get<double>()/1000);
+            h["y"] = DoubleDataValue(data["y"].get<double>()/1000);
+            history.push_back(h);
+
+            data["h"] = history;
 
             callback->onComplete();
             delete callback;
@@ -86,6 +97,7 @@ private:
     IUpdateCallback* callback;
     std::mutex updateMutex;
     std::vector<std::string> paramKeys;
+    DataArray history;
     int parameterResolution;
 };
 

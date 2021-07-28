@@ -717,9 +717,9 @@ int main(int argc, char* argv[]) {
         VLApiConnector api(&server, port);
         api.registerModel(new CellModel("Cell"));
         CompositeSampler* sampler = new CompositeSampler();
-        sampler->addSampler(new AddParameterValueToSample("N", 5));
-        sampler->addSampler(new RandomSampler("num"));
-        sampler->addSampler(new RandomBinSampler("substrate_k", "N", "num"));
+        //sampler->addSampler(new AddParameterValueToSample("N", 5));
+        //sampler->addSampler(new RandomSampler("num"));
+        //sampler->addSampler(new RandomBinSampler("substrate_k", "N", "num"));
         api.registerModel(new SampledModel(createExtendedModel(), sampler));
 
         ExtendedModel* extendedNCell = new ExtendedModel("Extended N-Cell", new NModel("N-Cell", createExtendedModel()));
