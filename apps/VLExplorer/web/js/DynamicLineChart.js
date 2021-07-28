@@ -198,6 +198,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
           .attr("stroke", function(d){ return colorKey(d.values[0]) })
           .attr("d", function(d){
               return d3.line()
+                //.curve(d3.curveCardinal)
                 .curve(d3.curveBasis)
                 .x(function(d) { return x(xKey(d)); })
                 .y(function(d) { return y(+yKey(d)); })
@@ -211,6 +212,7 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
             .style("opacity", function(d) { return d.values[0].hover ? 0.5 : 0.0; })
             .attr("d", function(d){
                 return d3.line()
+                  //.curve(d3.curveCardinal)
                   .curve(d3.curveBasis)
                   .x(function(d) { return x(xKey(d)); })
                   .y(function(d) { return y(+yKey(d)); })

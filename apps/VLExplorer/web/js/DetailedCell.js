@@ -17,7 +17,7 @@ function DetailedCell(container, scale = 1.0) {
             "translate(" + this.margin.left + "," + this.margin.top + ")");
 
   this.armgroup = this.svg.append("g")
-    .attr("opacity", 0.90);
+    .attr("opacity", 0.70);
 
     this.x = d3.scaleLinear()
             .domain([0,1])
@@ -325,7 +325,7 @@ DetailedCell.prototype.updateData = function(data, bounds, config = 1, reset = t
                 var clutch = {};
                 clutch = Object.assign(clutch, data.data.m[i]);
                 clutch.pos = 1.0*(j)/(numClutchVis);
-                clutch.on = Math.random()*data.data.m[i].c_on_rate > 0.25;
+                clutch.on = data.data.m[i].c_on_rate > Math.random();
                 clutches.push(clutch);
               }
             }
@@ -593,7 +593,8 @@ DetailedCell.prototype.updatePath = function(pathName, data, defined) {
       //.attr("stroke-width", function(d) { return 10; })
       .attr("d", function(d){
         return d3.line()
-          .curve(d3.curveBasis)
+          .curve(d3.curveCardinal)
+          //.curve(d3.curveBasis)
           .x(function(d) { return self.x(d.x*1000); })
           .y(function(d) { return self.y(d.y*1000); })
           (d)
@@ -601,7 +602,8 @@ DetailedCell.prototype.updatePath = function(pathName, data, defined) {
     .merge(this.svg.selectAll("."+pathName))
       .attr("d", function(d){
         return d3.line()
-          .curve(d3.curveBasis)
+          .curve(d3.curveCardinal)
+          //.curve(d3.curveBasis)
           .defined(function(d) { return defined ? defined(d): true;})
           .x(function(d) { return self.x(d.x*1000); })
           .y(function(d) { return self.y(d.y*1000); })
