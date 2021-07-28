@@ -4,10 +4,14 @@ function VLModelSample(api, id, params, nav) {
     this.params = params;
     this.nav = nav;
     this.data = {};
+    this.connected = false;
 }
 
 VLModelSample.prototype.update = function() {
     let self = this;
+    if (!this.connected) {
+        return new Promise(function(resolve, reject) {});
+    }
     return this.api.sendCommand({command: "updateSample", sampleId: this.id, nav: this.nav}, function(data) {
         self.nav = data.nav;
         self.data = data.data;
@@ -17,6 +21,10 @@ VLModelSample.prototype.update = function() {
 
 VLModelSample.prototype.delete = function() {
     let self = this;
+    if (!this.connected) {
+        return new Promise(function(resolve, reject) {});
+    }
+    this.connected = false;
     return this.api.sendCommand({command: "deleteSample", sampleId: this.id}, function(data) {
         return null;
     });
@@ -42,6 +50,7 @@ VLModel.prototype.create = function(params) {
     return this.api.sendCommand({command: "createSample", index: this.index, params: params}, function(data) {
         console.log(data.params);
         let sample = new VLModelSample(self.api, data.sampleId, data.params, data.nav);
+        sample.connected = true;
         return sample;
     });
 };

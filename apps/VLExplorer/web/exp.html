@@ -335,7 +335,7 @@
         </div>
 
         <div id="spatial-tab" class="tab">
-          <input type='image' style="width: 30px; height: 30px; position: absolute; right:0; margin: 5px;" src='images/minimize.png' title='Minimize' onclick='setTab(0); selectedSpatial = null;' />
+          <input type='image' style="width: 30px; height: 30px; position: absolute; right:0; margin: 5px;" src='images/minimize.png' title='Minimize' onclick='if (interactiveMode) {toggleInteractiveMode()}; setTab(0); selectedSpatial = null;' />
           <div id="detailedCell" class="detailedCell"></div>
         </div>
         
@@ -347,6 +347,7 @@
         <div class="toolbar">
           <input type='image' class='toolbar-button' src='images/play-pause.png' title='Change View' onclick='movingSpatial = !movingSpatial;updateLineCharts()' />
           <input type='image' class='toolbar-button' src='images/show.jpg' title='Change View' onclick='spatialMode = (spatialMode+1)%2;updateLineCharts()' />       
+          <input type='image' class='toolbar-button' src='images/interact.png' title='Interactive Mode' onclick='toggleInteractiveMode();' />       
         </div>
       </div>
         
@@ -399,6 +400,64 @@
         var updateSpatial = false;
         var movingSpatial = true;
         var spatialMode = 0;
+        var interactiveMode = false;
+        var interactiveQueue = [];
+        var interactiveSamples = [];
+        var interactiveSpatial = false;
+        var currentSelectedInteractive = 0;
+
+
+
+        function updateInteractiveSample(sample) {
+          sample.update().then(function(data) {
+              sample.nav.t += 1.0;
+              //if (sample.nav.t < 3600*6) {
+                updateInteractiveSample(sample);
+              //}
+              updateLineCharts();
+           });
+        }
+
+        function createInteractiveSample(paramList, index) {
+          if (index < paramList.length) {
+            modelList[3].create(paramList[index]).then(function(sample) { 
+                interactiveSamples.push(sample);
+                createInteractiveSample(paramList, index+1);
+                sample.nav.t += 10.0;
+                updateInteractiveSample(sample);
+            });
+          }
+          else {
+            console.log(interactiveSamples);
+            interactiveSpatial = true;
+          }
+        }
+
+        function toggleInteractiveMode() {
+          interactiveMode = !interactiveMode;
+          if (interactiveMode) {
+            if (selectedSpatial) {
+              console.log(selectedSpatial);
+              var paramList = [];
+              for (var i = 0; i < selectedSpatial.length; i++) {
+                paramList.push(selectedSpatial[i].sample.params.samples[selectedSpatial[i].index]);
+              }
+              console.log(paramList);
+              createInteractiveSample(paramList, 0);
+            }
+          }
+          else {
+            for (var i = 0; i < interactiveQueue.length; i++) {
+              updateSample(interactiveQueue[i]);
+            }
+            for (var i = 0; i < interactiveSamples.length; i++) {
+              interactiveSamples[i].delete();
+            }
+            interactiveQueue = [];
+            interactiveSamples = [];
+            interactiveSpatial = false;
+          }
+        }
 
         function dynamicQuery(params, samplingMethod, res) {
           let input = samplingMethod.currentInput;
@@ -451,7 +510,7 @@
             modelList = models;
 
             //model = modelList[2];
-            model = modelList[7];
+            model = modelList[8];
 
             model.getParameters().then(function(params) {
               samplingMethods.push(new SamplingStrategy(params, "Ad Hoc", function(params, callback, samplingMethod) {
@@ -897,6 +956,11 @@
         }
 
         function updateSample(sample) {
+          if (interactiveMode && !sample.interactive) {
+            interactiveQueue.push(sample);
+            return;
+          }
+
           sample.update().then(function(data) {
               let prog = Math.floor(100.0*sample.nav.t/(3600*6));
               $("#progress-" + sample.id).val(''+prog);
@@ -1228,10 +1292,18 @@
               spatialBounds.push(spatialBounds[1]);
             }
             
+            if (interactiveSpatial) {
+              detailedCell.updateData({params: interactiveSamples[currentSelectedInteractive].params, nav: interactiveSamples[currentSelectedInteractive].nav, data: interactiveSamples[currentSelectedInteractive].data}, spatialBounds, spatialMode, updateSpatial||movingSpatial);
+              for (var i = 0; i < selectedSpatial.length; i++) {
+                spatialPool[i].updateData({params: interactiveSamples[i].params, nav: interactiveSamples[i].nav, data: interactiveSamples[i].data}, spatialBounds, spatialMode, updateSpatial||movingSpatial);
+              }
+            }
+            else {
 
-            detailedCell.updateData({params: selectedSpatial[currentSelectedSpatial].sample.params.samples[selectedSpatial[currentSelectedSpatial].index], nav: selectedSpatial[currentSelectedSpatial].sample.nav, data: selectedSpatial[currentSelectedSpatial].sample.data.samples[selectedSpatial[currentSelectedSpatial].index]}, spatialBounds, spatialMode, updateSpatial||movingSpatial);
-            for (var i = 0; i < selectedSpatial.length; i++) {
-              spatialPool[i].updateData({params: selectedSpatial[i].sample.params.samples[selectedSpatial[i].index], nav: selectedSpatial[i].sample.nav, data: selectedSpatial[i].sample.data.samples[selectedSpatial[i].index]}, spatialBounds, spatialMode, updateSpatial||movingSpatial);
+              detailedCell.updateData({params: selectedSpatial[currentSelectedSpatial].sample.params.samples[selectedSpatial[currentSelectedSpatial].index], nav: selectedSpatial[currentSelectedSpatial].sample.nav, data: selectedSpatial[currentSelectedSpatial].sample.data.samples[selectedSpatial[currentSelectedSpatial].index]}, spatialBounds, spatialMode, updateSpatial||movingSpatial);
+              for (var i = 0; i < selectedSpatial.length; i++) {
+                spatialPool[i].updateData({params: selectedSpatial[i].sample.params.samples[selectedSpatial[i].index], nav: selectedSpatial[i].sample.nav, data: selectedSpatial[i].sample.data.samples[selectedSpatial[i].index]}, spatialBounds, spatialMode, updateSpatial||movingSpatial);
+              }
             }
             //detailedCell2.updateData({params: selectedSpatial.sample.params.samples[selectedSpatial.index], nav: selectedSpatial.sample.nav, data: selectedSpatial.sample.data.samples[selectedSpatial.index]});
           }

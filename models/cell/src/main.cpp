@@ -776,7 +776,7 @@ int main(int argc, char* argv[]) {
         ext->addCalculatedValue(new NSampleMaxValue(new ParamCalculation("substrate_k"), new KeyCalculation("rmc_mean"), "opt_stiffness", "rmc_max"));
         //ext->addCalculatedValue(new MeanValue(new KeyCalculation("opt_stiffness"), "opt_stiffness"));
         extendedModel = ext;
-        extendedModel = new TypedModelDecorator<TimeSample>("Experiment", extendedModel);
+        //extendedModel = new TypedModelDecorator<TimeSample>("Experiment", extendedModel);
         //TypedModelDecorator<
         //extendedModel = new SampledModel(ext, new RandomSampler("num"));
         api.registerModel(extendedModel);

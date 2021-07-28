@@ -14,6 +14,7 @@ Copyright (c) 2019 Dan Orban
 #include "VirtualLab/util/JSONSerializer.h"
 #include "VirtualLab/pca/PCAModel.h" 
 #include "VirtualLab/opt/OptimizedModel.h"
+#include "VirtualLab/opt/InteractiveModel.h"
 #include <mutex>
 
 class VLWebServerSession;
@@ -42,6 +43,7 @@ public:
 		compositeApi.registerModel(new PCAModel("PCA", &producerAPI));
 		compositeApi.registerModel(new SamplingModel("Sampling", producerAPI.getModels()[3]));
         compositeApi.registerModel(new OptimizedModel2(new ModelProxy(producerAPI.getModels()[4]), 0.1, 10));
+        compositeApi.registerModel(new InteractiveModel(new ModelProxy(producerAPI.getModels()[1]), 5));
 		//compositeApi.registerModel(new ForceModel(new ModelProxy(producerAPI.getModels()[4]), 0.1, 10));
 		compositeApi.addApi(producerAPI);
 		this->state.api = &compositeApi;

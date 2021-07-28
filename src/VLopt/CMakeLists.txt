@@ -5,11 +5,13 @@ include(${CMAKE_FRAMEWORK_DIR}/project/project.cmake)
 # --------------------- Source -----------------------
 
 set (SOURCEFILES
+VirtualLab/opt/InteractiveModel.cpp
   VirtualLab/opt/OptimizedModel.cpp
   VirtualLab/opt/LeastSquares.cpp
 )
 
 set (HEADERFILES
+  VirtualLab/opt/InteractiveModel.h
   VirtualLab/opt/OptimizedModel.h
   VirtualLab/opt/LeastSquares.h
 )
