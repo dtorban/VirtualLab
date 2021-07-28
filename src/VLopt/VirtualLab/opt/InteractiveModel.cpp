@@ -1,5 +1,6 @@
 #include "VirtualLab/opt/InteractiveModel.h"
 #include "VirtualLab/opt/LeastSquares.h"
+#include <condition_variable>
 
 namespace vl {
 
@@ -8,6 +9,7 @@ public:
 
     InteractiveModelSample(IModel* model, const DataObject& params, int parameterResolution) : model(model), updateCompleted(0), parameterResolution(parameterResolution) {
         lastTime = 0.0;
+        running = true;
 
         for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
             if (it->second.isType<double>() && it->first != "N" && it->first != "num") {
@@ -26,6 +28,14 @@ public:
     }
 
     virtual ~InteractiveModelSample() {
+
+        std::unique_lock<std::mutex> lock(updateMutex);
+        running = false;
+
+        if (updateCompleted < samples.size()) {
+            cond.wait(lock);
+        }
+        
         for (int i = 0; i < samples.size(); i++) {
             delete samples[i];
         }
@@ -42,12 +52,19 @@ public:
     DataObject& getNavigation() { return nav; }
 
     void update(IUpdateCallback* callback) {
+
+
         // Update time by dt
         double dt = nav["t"].get<double>() - lastTime;
         lastTime += dt;
         
         {
             std::unique_lock<std::mutex> lock(updateMutex);
+            if (!running) {
+                callback->onComplete();
+                delete callback;
+                return;
+            }
             updateCompleted = 0;
             this->callback = callback;
         }
@@ -84,6 +101,8 @@ public:
 
             callback->onComplete();
             delete callback;
+
+            cond.notify_all();
     }
 
 private:
@@ -99,6 +118,8 @@ private:
     std::vector<std::string> paramKeys;
     DataArray history;
     int parameterResolution;
+    std::condition_variable cond;
+    bool running;
 };
 
     
