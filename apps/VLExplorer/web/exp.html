@@ -44,7 +44,6 @@
         border-color: rgb(54, 54, 54);
         width: 100%;
         height: 90%;
-        overflow-y: auto;
       }
       #dynamics-charts {
         width: 100%;
@@ -208,6 +207,33 @@
       .filled {
           fill: url(#mainGradient);
       }
+      #parameter-bar {
+				position: absolute;
+				z-index: 2;
+				opacity: 0.5;
+				left: 0;
+				height: 100%;
+				background-color: black;
+				width: 20%;
+				color: white;
+				font-size: 1em;
+				white-space: pre-line;
+				/*padding-left: 15px;
+				padding-top: 15px;
+				padding-right: 15px;
+				padding-bottom: 15px;*/
+				word-wrap: break-word;
+				font-size: small;
+				vertical-align: middle;
+				visibility: visible;
+				float: left;
+			}
+      #params{
+        margin: 15px;
+      }
+      .slider{
+				width: 100px;
+			}
 		</style>
 		<script src="js/d3.v4.js"></script>
 		<script src="js/jquery-3.5.1.min.js"></script>
@@ -335,6 +361,9 @@
         </div>
 
         <div id="spatial-tab" class="tab">
+          <div id="parameter-bar">
+            <div id="params"></div>
+          </div>
           <input type='image' style="width: 30px; height: 30px; position: absolute; right:0; margin: 5px;" src='images/minimize.png' title='Minimize' onclick='if (interactiveMode) {toggleInteractiveMode()}; setTab(0); selectedSpatial = null;' />
           <div id="detailedCell" class="detailedCell"></div>
         </div>
@@ -430,12 +459,67 @@
           else {
             console.log(interactiveSamples);
             interactiveSpatial = true;
+            $("#params").html("");
+            var params = interactiveSamples[0].params;
+            for (var key in params) {
+              if (!(typeof params[key] === 'object')) {
+                $("#params").append('<div style="float:left;width:100px;">' + key + "</div>")
+                let scale = function(val) {
+                  if (getParamMetaData(params, key, "scale", "linear") == "log") {
+                    return Math.log(val);
+                  }
+                  else {
+                    return val;
+                  }
+                };
+                let val = scale(params[key]);
+                let min = scale(getParamMetaData(params, key, "min", val));
+                let max = scale(getParamMetaData(params, key, "max", val));
+                val = 100.0*(val-min)/(max-min);
+                var div = $("<div></div>")
+                $("#params").append(div);
+                div.append('<input  type="range" min="1" max="100" value="' + val + '" class="slider" name="param_' + key + '"></input>')
+                div.append('<span id="val_' + key + '">' + params[key] +'</span>');
+                $("#val_" + key).html(params[key].toFixed(2));
+              }
+            }
+
+            $('.slider').on('change', function(e) {
+              let key = $(e.target).attr('name');
+              let val = parseFloat($(e.target).val());
+              let scale = function(val) {
+                if (getParamMetaData(params, key, "scale", "linear") == "log") {
+                  return Math.log(val);
+                }
+                else {
+                  return val;
+                }
+              };
+
+              let inv_scale = function(val) {
+                if (getParamMetaData(params, key, "scale", "linear") == "log") {
+                  return Math.exp(val);
+                }
+                else {
+                  return val;
+                }
+              };
+              
+              let min = getParamMetaData(params, key, "min", val);
+              let max = getParamMetaData(params, key, "max", val);
+              val = inv_scale((1.0*val/100.0)*(scale(max) - scale(min)) + scale(min));
+              params[key] = val;
+              $("#val_" + key).html(params[key].toFixed(2));
+              //createModel(params);
+            });
+
           }
         }
 
         function toggleInteractiveMode() {
           interactiveMode = !interactiveMode;
           if (interactiveMode) {
+            $("#parameter-bar").show();
             if (selectedSpatial) {
               console.log(selectedSpatial);
               var paramList = [];
@@ -447,6 +531,8 @@
             }
           }
           else {
+            $("#params").html("");
+            $("#parameter-bar").hide();
             for (var i = 0; i < interactiveQueue.length; i++) {
               updateSample(interactiveQueue[i]);
             }
@@ -501,6 +587,7 @@
         var api = new VLApi();
         $( document ).ready(function() {
           $('#spatialResolution').val(spatialStep);
+          $("#parameter-bar").hide();
 
           $('.popup').hide();
           setTab(tab);
