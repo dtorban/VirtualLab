@@ -536,6 +536,37 @@ private:
     std::string areaOutput;
 };
 
+
+class ModuleAngleValue : public ICalculatedValue {
+public:
+    ModuleAngleValue() {}
+    virtual ~ModuleAngleValue() {
+    }
+
+    ICalculatedState* createState() { return NULL; }
+
+    static bool angleSort(const DataValue& a, const DataValue& b) {
+        double aVal = a.get<vl::Object>().find("ang")->second.get<double>();
+        double bVal = b.get<vl::Object>().find("ang")->second.get<double>();
+        return aVal < bVal;
+    }
+
+    virtual void update(IModelSample& sample, DataObject& data, ICalculatedState* state) const  {
+        vl::Array& modules = data["m"].get<vl::Array>();
+        double cellX = data["x"].get<double>();
+        double cellY = data["y"].get<double>();
+
+        for (int i = 0; i < modules.size(); i++) {
+            vl::Object& module = modules[i].get<vl::Object>();
+            double x = module["x"].get<double>() - cellX;
+            double y = module["y"].get<double>() - cellY;
+            double angle = std::atan2(y,x);
+            module["ang"] = DoubleDataValue(angle);
+        }
+        std::sort(modules.begin(), modules.end(), angleSort);
+    }
+};
+
 class NSampleValue : public ICalculatedValue {
 public:
     struct State : public ICalculatedState {
@@ -702,6 +733,7 @@ ExtendedModel* createExtendedModel() {
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("aspect"), "aspect_mean"));
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("area"), "area_mean"));
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("rmc"), "rmc_mean"));
+    extendedModel->addCalculatedValue(new ModuleAngleValue());
     return extendedModel;
 }
 

@@ -85,12 +85,51 @@ public:
             }
         }
 
+        const vl::Array& modulesA = a["m"].get<vl::Array>();
         const vl::Array& modulesB = b["m"].get<vl::Array>();
-        for (int i = 0; i < modulesB.size(); i++) {
-            result["m"].get<vl::Array>().push_back(modulesB[i]);
+        DataArray modules;
+        //std::cout << modulesA.size() << " " << modulesB.size() << " " << (1.0-percent)*modulesA.size() + percent*modulesB.size() << std::endl;
+        int numModules = (1.0-percent)*modulesA.size() + percent*modulesB.size();
+        for (int i = 0; i < numModules; i++) {
+            //int moduleAIndex = i*(modulesA.size() < numModules ? modulesA.size()/numModules : numModules/modulesA.size());
+            //int moduleBIndex = i*(modulesB.size() < numModules ? modulesB.size()/numModules : numModules/modulesB.size());
+            int moduleAIndex = i*modulesA.size()/numModules;
+            int moduleBIndex = i*modulesB.size()/numModules;
+
+            DataObject module = modulesA[moduleAIndex].get<vl::Object>();
+            for (DataObject::const_iterator it = module.begin(); it != module.end(); it++) {
+                /*if (it->first == "x" || it->first == "y") {
+                    continue;
+                }*/
+                if (module[it->first].isType<double>()) {
+                    double aVal = modulesA[moduleAIndex].get<vl::Object>().find(it->first)->second.get<double>();
+                    double bVal = modulesB[moduleBIndex].get<vl::Object>().find(it->first)->second.get<double>();
+                    if (it->first == "x") {
+                        aVal = aVal-a["x"].get<double>();
+                        bVal = bVal-b["x"].get<double>();
+                    }
+                    else if (it->first == "y") {
+                        aVal = aVal-a["y"].get<double>();
+                        bVal = bVal-b["y"].get<double>();
+                    }
+                    double val = (1.0-percent)*aVal + percent*bVal;
+                    if (it->first == "x") {
+                        val += x;
+                    }
+                    else if (it->first == "y") {
+                        val += y;
+                    }
+                    module[it->first].set<double>(val);
+                    
+                }
+            }
+
+            modules.push_back(module);            
+            //result["m"].get<vl::Array>().push_back(modulesB[i]);
             /*for (DataObject::iterator it = a.begin(); it != a.end(); it++) {
             }*/
         }
+        data["m"] = modules;
     }
 
     void update(IUpdateCallback* callback) {
