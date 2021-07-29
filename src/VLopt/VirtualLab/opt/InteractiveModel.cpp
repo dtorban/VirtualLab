@@ -133,6 +133,8 @@ public:
             }*/
         }
         data["m"] = modules;
+        data["x"].set<double>(x);
+        data["y"].set<double>(y);
     }
 
     void update(IUpdateCallback* callback) {
