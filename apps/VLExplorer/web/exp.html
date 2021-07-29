@@ -436,13 +436,15 @@
         var currentSelectedInteractive = 0;
         var lastInteractiveKey = "";
         var lastInteractiveVal = 0;
-
+        var lastInteractiveCommit = 0;
 
         function updateInteractiveSample(sample) {
           sample.update().then(function(data) {
               sample.nav.t += 1.0;
               sample.nav.key = lastInteractiveKey;
               sample.nav.val = lastInteractiveVal;
+              sample.nav.com = lastInteractiveCommit;
+              lastInteractiveCommit = 0;
               //interactiveSamples[currentSelectedInteractive]
               //if (sample.nav.t < 3600*6) {
                 updateInteractiveSample(sample);
@@ -517,6 +519,10 @@
               lastInteractiveVal = val;
               $("#val_" + key).html(params[key].toFixed(2));
               //createModel(params);
+            });
+
+            $('.slider').on('change', function(e) {
+              lastInteractiveCommit = 1;
             });
 
           }

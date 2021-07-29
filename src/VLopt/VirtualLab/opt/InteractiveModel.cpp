@@ -40,6 +40,7 @@ public:
         this->nav = samples[0]->getNavigation();
         this->nav["key"] = StringDataValue("");
         this->nav["val"] = DoubleDataValue(0);
+        this->nav["com"] = DoubleDataValue(0);
     }
 
     virtual ~InteractiveModelSample() {
@@ -149,6 +150,32 @@ public:
         lastTime += dt;
 
         std::cout << nav["key"].get<std::string>() << " = " << nav["val"].get<double>() << std::endl;
+        std::string key = nav["key"].get<std::string>();
+        if (key.length() > 0) {
+            double val = nav["val"].get<double>();
+            params[key].set<double>(val);
+        }
+
+        if (nav["com"].get<double>() > 0.001) {
+            // Update primary
+            delete samples[0];
+            samples[0] = createNewSample(params);
+
+            // Update samples
+            for (int i = 0; i < paramKeys.size(); i++) {
+                std::string param = paramKeys[i];
+                if (key != param) {
+                    for (int j = 0; j < parameterResolution; j++) {
+                        DataObject p = params;
+                        p[param].set<double>(paramHelper->deNormalize(param, 1.0*j/(parameterResolution - 1)));
+                        int sampleIndex = 1+i*parameterResolution + j;
+                        delete samples[sampleIndex];
+                        samples[sampleIndex] = createNewSample(p);
+                    }
+                }
+            }
+            nav["com"].set(0.0);
+        }
 
         iteration++;
         
