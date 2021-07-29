@@ -369,12 +369,12 @@ public:
 
     void set(const std::string& param, double val, double min, double max, const std::string& scale) {
         if (params && metadata) {
-            (*params)[param] = DoubleDataValue(val);
             DataObject obj;
             obj["min"] = DoubleDataValue(min);
             obj["max"] = DoubleDataValue(max);
             obj["scale"] = StringDataValue(scale);
             (*metadata)[param] = obj;
+            (*params)[param] = DoubleDataValue(clamp(param, val));
         }
     }
 

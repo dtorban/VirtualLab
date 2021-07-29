@@ -434,12 +434,16 @@
         var interactiveSamples = [];
         var interactiveSpatial = false;
         var currentSelectedInteractive = 0;
-
+        var lastInteractiveKey = "";
+        var lastInteractiveVal = 0;
 
 
         function updateInteractiveSample(sample) {
           sample.update().then(function(data) {
               sample.nav.t += 1.0;
+              sample.nav.key = lastInteractiveKey;
+              sample.nav.val = lastInteractiveVal;
+              //interactiveSamples[currentSelectedInteractive]
               //if (sample.nav.t < 3600*6) {
                 updateInteractiveSample(sample);
               //}
@@ -478,13 +482,13 @@
                 val = 100.0*(val-min)/(max-min);
                 var div = $("<div></div>")
                 $("#params").append(div);
-                div.append('<input  type="range" min="1" max="100" value="' + val + '" class="slider" name="param_' + key + '"></input>')
+                div.append('<input  type="range" min="1" max="100" value="' + val + '" class="slider" name="' + key + '"></input>')
                 div.append('<span id="val_' + key + '">' + params[key] +'</span>');
                 $("#val_" + key).html(params[key].toFixed(2));
               }
             }
 
-            $('.slider').on('change', function(e) {
+            $('.slider').on('input', function(e) {
               let key = $(e.target).attr('name');
               let val = parseFloat($(e.target).val());
               let scale = function(val) {
@@ -509,6 +513,8 @@
               let max = getParamMetaData(params, key, "max", val);
               val = inv_scale((1.0*val/100.0)*(scale(max) - scale(min)) + scale(min));
               params[key] = val;
+              lastInteractiveKey = key;
+              lastInteractiveVal = val;
               $("#val_" + key).html(params[key].toFixed(2));
               //createModel(params);
             });

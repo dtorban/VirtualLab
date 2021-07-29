@@ -16,30 +16,30 @@ public:
         for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
             if (it->second.isType<double>() && it->first != "N" && it->first != "num") {
                 paramKeys.push_back(it->first);
+                paramKeyIndexLookup[it->first] = paramKeys.size()-1;
             }
         }
-        
-        ParameterHelper helper(params);
+
+        this->params = params;
+        paramHelper = new ParameterHelper(&(this->params));
+        paramHelper->set("cpool", params["cpool"].get<double>(), paramHelper->getMin("cpool"), 750, "log");
+
+        samples.push_back(createNewSample(this->params));
 
         for (int i = 0; i < paramKeys.size(); i++) {
             for (int j = 0; j < parameterResolution; j++) {
                 DataObject p = params;
                 std::string param = paramKeys[i];
-                if (param == "cpool") {
-                    p[param].set<double>(helper.deNormalize(param, 0.5*j/(parameterResolution - 1)));
-                }
-                else {
-                    p[param].set<double>(helper.deNormalize(param, 1.0*j/(parameterResolution - 1)));
-                }
-                //p[param].set<double>(helper.deNormalize(param, 1.0*j/(parameterResolution - 1)));
+                p[param].set<double>(paramHelper->deNormalize(param, 1.0*j/(parameterResolution - 1)));
                 samples.push_back(createNewSample(p));
             }
         }
         
-        this->params = params;
         //this->params["samples"] = samples[0]->getParameters()["samples"];
         //this->params = samples[0]->getParameters();
         this->nav = samples[0]->getNavigation();
+        this->nav["key"] = StringDataValue("");
+        this->nav["val"] = DoubleDataValue(0);
     }
 
     virtual ~InteractiveModelSample() {
@@ -54,6 +54,8 @@ public:
         for (int i = 0; i < samples.size(); i++) {
             delete samples[i];
         }
+
+        delete paramHelper;
     }
 
     void update() {}
@@ -65,6 +67,31 @@ public:
     const DataObject& getParameters() const { return params; }
     const DataObject& getData() const { return data; }
     DataObject& getNavigation() { return nav; }
+
+    void interpolate(DataObject& result, const DataObject& a, const DataObject& b, double percent) {
+        //result["m"] = a["m"];
+        //result = a;
+        double x = result["x"].get<double>();
+        double y = result["y"].get<double>();
+        for (DataObject::const_iterator it = a.begin(); it != a.end(); it++) {
+            if (it->first == "x" || it->first == "y") {
+                continue;
+            }
+            if (a[it->first].isType<double>()) {
+                double aVal = paramHelper->scale(it->first, it->second.get<double>());
+                double bVal = paramHelper->scale(it->first, b[it->first].get<double>());
+                double val = paramHelper->invScale(it->first, (1.0-percent)*aVal + percent*bVal);
+                result[it->first].set<double>(val);
+            }
+        }
+
+        const vl::Array& modulesB = b["m"].get<vl::Array>();
+        for (int i = 0; i < modulesB.size(); i++) {
+            result["m"].get<vl::Array>().push_back(modulesB[i]);
+            /*for (DataObject::iterator it = a.begin(); it != a.end(); it++) {
+            }*/
+        }
+    }
 
     void update(IUpdateCallback* callback) {
         {
@@ -82,16 +109,19 @@ public:
         double dt = nav["t"].get<double>() - lastTime;
         lastTime += dt;
 
+        std::cout << nav["key"].get<std::string>() << " = " << nav["val"].get<double>() << std::endl;
+
         iteration++;
         
-        if (iteration % 10 == 0) {
+        /*if (iteration % 10 == 0) {
             currentSelected++;
             currentSelected = currentSelected % samples.size();
-        }
+        }*/
+
+        std::cout << "time: " << nav["t"].get<double>() << std::endl;
 
         for (int i = 0; i < samples.size(); i++) {
             double sampleTime = samples[i]->getNavigation()["t"].get<double>() + dt;
-            std::cout << "sample time: " << sampleTime << std::endl;
             samples[i]->getNavigation() = nav;
             samples[i]->getNavigation()["t"].set<double>(sampleTime);
             samples[i]->update(new UpdateCallbackProxy(this));
@@ -107,9 +137,24 @@ public:
                 return;    
             }
             
-            data = samples[currentSelected]->getData();
-            //data["params"] = params;
+            
 
+            data = samples[currentSelected]->getData();
+
+            //data["params"] = params;
+            std::string key = nav["key"].get<std::string>();
+            if (key.length() > 0) {
+                double val = paramHelper->normalize(key, nav["val"].get<double>());
+                double pos = val*(parameterResolution-1);
+                int indexA = std::floor(pos);
+                int indexB = indexA < (parameterResolution-1) ? indexA + 1 : indexA;
+                double percent = pos - indexA;
+                int keyStartIndex = 1 + parameterResolution*paramKeyIndexLookup[key];
+                IModelSample* sampleA = samples[keyStartIndex + indexA];
+                IModelSample* sampleB = samples[keyStartIndex + indexB];
+                data = samples[currentSelected]->getData();
+                interpolate(data, sampleA->getData(), sampleB->getData(), percent);
+            }
             
             DataObject h;
             h["time"] = DoubleDataValue(nav["t"].get<double>());
@@ -137,11 +182,13 @@ private:
     IUpdateCallback* callback;
     std::mutex updateMutex;
     std::vector<std::string> paramKeys;
+    std::map<std::string, int> paramKeyIndexLookup;
     DataArray history;
     int parameterResolution;
     std::condition_variable cond;
     bool running;
     int currentSelected;
+    ParameterHelper* paramHelper;
 };
 
     
