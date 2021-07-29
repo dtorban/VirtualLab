@@ -567,6 +567,42 @@ public:
     }
 };
 
+class ChangedValue : public ICalculatedValue {
+public:
+    ChangedValue(IDoubleCalculation* calc, const std::string& output) : calc(calc), output(output) {}
+    virtual ~ChangedValue() {
+        delete calc;
+    }
+
+    struct State : public ICalculatedState {
+        State() : init(false) {}
+        bool init;
+        double previousVal;
+    };
+
+    ICalculatedState* createState() {
+        return new State();
+    }
+
+    virtual void update(IModelSample& sample, DataObject& data, ICalculatedState* state) const  {
+        State& updateState = *(static_cast<State*>(state));
+
+        double val = calc->calculate(sample, data);
+
+        if (!updateState.init) {
+            updateState.init = true;
+            updateState.previousVal = val;
+        }
+
+        data[output] = DoubleDataValue(val-updateState.previousVal);
+        updateState.previousVal = val;
+    }
+
+private:
+    IDoubleCalculation* calc;
+    std::string output;
+};
+
 class NSampleValue : public ICalculatedValue {
 public:
     struct State : public ICalculatedState {
@@ -734,6 +770,8 @@ ExtendedModel* createExtendedModel() {
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("area"), "area_mean"));
     extendedModel->addCalculatedValue(new MeanValue(new KeyCalculation("rmc"), "rmc_mean"));
     extendedModel->addCalculatedValue(new ModuleAngleValue());
+    extendedModel->addCalculatedValue(new ChangedValue(new KeyCalculation("x"), "dx"));
+    extendedModel->addCalculatedValue(new ChangedValue(new KeyCalculation("y"), "dy"));
     return extendedModel;
 }
 

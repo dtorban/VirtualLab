@@ -9,6 +9,7 @@ public:
 
     InteractiveModelSample(IModel* model, const DataObject& params, int parameterResolution) : model(model), updateCompleted(0), parameterResolution(parameterResolution) {
         lastTime = 0.0;
+        lastCommitTime = 0.0;
         running = true;
         iteration = 0;
         currentSelected = 0;
@@ -41,6 +42,7 @@ public:
         this->nav["key"] = StringDataValue("");
         this->nav["val"] = DoubleDataValue(0);
         this->nav["com"] = DoubleDataValue(0);
+        this->nav["interp"] = DoubleDataValue(0);
     }
 
     virtual ~InteractiveModelSample() {
@@ -72,8 +74,8 @@ public:
     void interpolate(DataObject& result, const DataObject& a, const DataObject& b, double percent) {
         //result["m"] = a["m"];
         //result = a;
-        double x = result["x"].get<double>();
-        double y = result["y"].get<double>();
+        double x = xPos;//result["x"].get<double>();
+        double y = yPos;//result["y"].get<double>();
         for (DataObject::const_iterator it = a.begin(); it != a.end(); it++) {
             if (it->first == "x" || it->first == "y") {
                 continue;
@@ -149,7 +151,7 @@ public:
         double dt = nav["t"].get<double>() - lastTime;
         lastTime += dt;
 
-        std::cout << nav["key"].get<std::string>() << " = " << nav["val"].get<double>() << std::endl;
+        //std::cout << nav["key"].get<std::string>() << " = " << nav["val"].get<double>() << std::endl;
         std::string key = nav["key"].get<std::string>();
         if (key.length() > 0) {
             double val = nav["val"].get<double>();
@@ -157,6 +159,7 @@ public:
         }
 
         if (nav["com"].get<double>() > 0.001) {
+            lastCommitTime = lastTime;
             // Update primary
             delete samples[0];
             samples[0] = createNewSample(params);
@@ -184,7 +187,7 @@ public:
             currentSelected = currentSelected % samples.size();
         }*/
 
-        std::cout << "time: " << nav["t"].get<double>() << std::endl;
+        //std::cout << "time: " << nav["t"].get<double>() << std::endl;
 
         for (int i = 0; i < samples.size(); i++) {
             double sampleTime = samples[i]->getNavigation()["t"].get<double>() + dt;
@@ -202,14 +205,13 @@ public:
             if (updateCompleted < samples.size()) {
                 return;    
             }
-            
-            
 
             data = samples[currentSelected]->getData();
 
             //data["params"] = params;
             std::string key = nav["key"].get<std::string>();
-            if (key.length() > 0) {
+            double interpPercent = nav["interp"].get<double>();
+            if (key.length() > 0 && interpPercent > 0.001) {
                 double val = paramHelper->normalize(key, nav["val"].get<double>());
                 double pos = val*(parameterResolution-1);
                 int indexA = std::floor(pos);
@@ -221,7 +223,16 @@ public:
                 data = samples[currentSelected]->getData();
                 interpolate(data, sampleA->getData(), sampleB->getData(), percent);
             }
-            
+
+            DataObject result = data;
+            //std::cout << interpPercent << std::endl;
+            interpolate(data, result, samples[currentSelected]->getData(), 1.0 - interpPercent);
+
+            xPos += data["dx"].get<double>();
+            yPos += data["dy"].get<double>();
+            data["x"].set<double>(xPos);
+            data["y"].set<double>(yPos);
+
             DataObject h;
             h["time"] = DoubleDataValue(nav["t"].get<double>());
             h["x"] = DoubleDataValue(data["x"].get<double>()/1000);
@@ -243,6 +254,7 @@ private:
     DataObject data;
     DataObject nav;
     double lastTime;
+    double lastCommitTime;
     int updateCompleted;
     std::vector<IModelSample*> samples;
     IUpdateCallback* callback;
@@ -255,6 +267,8 @@ private:
     bool running;
     int currentSelected;
     ParameterHelper* paramHelper;
+    double xPos;
+    double yPos;
 };
 
     
