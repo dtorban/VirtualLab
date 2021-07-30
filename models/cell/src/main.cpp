@@ -131,6 +131,9 @@ public:
             mod["x"] = DoubleDataValue(s->GetCell().GetModule(i).GetRef().x);
             mod["y"] = DoubleDataValue(s->GetCell().GetModule(i).GetRef().y);
             mod["nm"] = DoubleDataValue(s->GetCell().GetModule(i).GetNumMotors());
+            mod["nc"] = DoubleDataValue(s->GetCell().GetModule(i).GetNumClutches());
+            //mod["sx"] = DoubleDataValue(s->GetCell().GetModule(i).GetSubstatePos().x);
+            //mod["sy"] = DoubleDataValue(s->GetCell().GetModule(i).GetSubstatePos().y);
             if (nav["m"].get<double>()) {
                 mods.push_back(mod);
             }

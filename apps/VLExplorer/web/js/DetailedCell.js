@@ -312,7 +312,7 @@ DetailedCell.prototype.updateData = function(data, bounds, config = 1, reset = t
               //data.data.m[i].length = Math.sqrt(Math.pow(data.data.m[i].x-data.data.x,2) + Math.pow(data.data.m[i].y-data.data.y,2));
               if (percent > 0.001) {
                 //data.data.m[i].c_on_rate = 1.0;
-                data.data.m[i].c_on_rate = data.data.m[i].en/(percent*data.params.cpool);
+                data.data.m[i].c_on_rate = data.data.m[i].nc > 0 ? data.data.m[i].en/data.data.m[i].nc : 0;
                 if (data.data.m[i].c_on_rate > 1.0) {
                   data.data.m[i].c_on_rate = 1.0;
                 }
@@ -320,7 +320,7 @@ DetailedCell.prototype.updateData = function(data, bounds, config = 1, reset = t
               else {
                 data.data.m[i].c_on_rate = 0.0;
               }
-              var numClutchVis = percent*Math.log(Math.floor(data.params.cpool))*20;
+              var numClutchVis = data.data.m[i].nc/5.0;//percent*Math.log(Math.floor(data.params.cpool))*20;
               for (var j = 0; j < numClutchVis; j++) {
                 var clutch = {};
                 clutch = Object.assign(clutch, data.data.m[i]);
