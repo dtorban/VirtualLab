@@ -189,13 +189,21 @@ public:
             currentSelected = currentSelected % samples.size();
         }*/
 
-        //std::cout << "time: " << nav["t"].get<double>() << std::endl;
+        std::cout << "time: " << nav["t"].get<double>() << std::endl;
 
         for (int i = 0; i < samples.size(); i++) {
             double sampleTime = samples[i]->getNavigation()["t"].get<double>() + dt;
-            samples[i]->getNavigation() = nav;
-            samples[i]->getNavigation()["t"].set<double>(sampleTime);
-            samples[i]->update(new UpdateCallbackProxy(this));
+            if (i == 0 || sampleTime < 60 
+                || (nav["interp"].get<double>() > 0.001 && 
+                (paramKeyIndexLookup[key]*parameterResolution + 1 <= i && (paramKeyIndexLookup[key]+1)*parameterResolution + 1 > i))) {
+                samples[i]->getNavigation() = nav;
+                samples[i]->getNavigation()["t"].set<double>(sampleTime);
+                samples[i]->update(new UpdateCallbackProxy(this));
+                //std::cout << sampleTime << std::endl;
+            }
+            else {
+                onComplete();
+            }
         }
 
 
