@@ -6,10 +6,12 @@ include(${CMAKE_FRAMEWORK_DIR}/project/project.cmake)
 
 set (SOURCEFILES
   VirtualLab/pca/PCAModel.cpp
+  VirtualLab/pca/PCA.cpp
 )
 
 set (HEADERFILES
   VirtualLab/pca/PCAModel.h
+  VirtualLab/pca/PCA.h
 )
 
 set(DEP_LINK_DIRS ${DEP_LINK_DIRS} 
