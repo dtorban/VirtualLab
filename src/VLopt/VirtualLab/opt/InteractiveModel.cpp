@@ -13,6 +13,8 @@ public:
         running = true;
         iteration = 0;
         currentSelected = 0;
+        closeness = 0.1;
+        numRandomSim = 0;
 
         for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
             if (it->second.isType<double>() && it->first != "N" && it->first != "num") {
@@ -36,6 +38,10 @@ public:
             }
         }
         
+        for (int i = 0; i < numRandomSim; i++) {
+            samples.push_back(createNewSample(createNewParams(this->params)));
+        }
+
         //this->params["samples"] = samples[0]->getParameters()["samples"];
         //this->params = samples[0]->getParameters();
         this->nav = samples[0]->getNavigation();
@@ -63,6 +69,38 @@ public:
 
     void update() {}
     
+    DataObject createNewParams(const DataObject& params) {
+        Eigen::VectorXd dir = Eigen::VectorXd(paramKeys.size());
+        for (int i = 0; i < paramKeys.size(); i++) {
+            double r = (double)std::rand() / (double)RAND_MAX;
+            r = 2.0*(r-0.5);
+            dir[i] = r;
+        }
+        dir = dir.normalized()*closeness;
+        
+        ParameterHelper helper(params);
+        DataObject p = params;
+        
+        for (int i = 0; i < paramKeys.size(); i++) {
+            std::string param = paramKeys[i];
+            double max = helper.scale(param, helper.getMax(param));
+            double min = helper.scale(param, helper.getMin(param));
+            double val = helper.scale(param, params[param].get<double>());
+            val = val + dir[i]*(max-min);
+            if (val < min) {
+                val = min;
+            }
+            if (val > max) {
+                val = max;
+            }
+            val = helper.invScale(param, val);
+            p[param].set<double>(val);
+            std::cout << param << " " << p[param].get<double>() << " " << val << std::endl;
+        }
+
+        return p;
+    }
+
     IModelSample* createNewSample(const DataObject& params) {
         return model->create(params);
     }
@@ -179,6 +217,11 @@ public:
                     }
                 }
             }
+            for (int i = 0; i < numRandomSim; i++) {
+                int sampleIndex = 1+paramKeys.size()*parameterResolution + i;
+                delete samples[sampleIndex];
+                samples[sampleIndex] = createNewSample(createNewParams(this->params));
+            }
             nav["com"].set(0.0);
         }
 
@@ -238,6 +281,12 @@ public:
             //std::cout << interpPercent << std::endl;
             interpolate(data, result, samples[currentSelected]->getData(), 1.0 - interpPercent);
 
+            /*std::cout << samples[currentSelected]->getData()["aflow_mean"].get<double>() << " ";
+            for (int i = 1+paramKeys.size()*parameterResolution; i < samples.size(); i++) {
+                std::cout << samples[i]->getData()["aflow_mean"].get<double>() << " ";
+            }
+            std::cout << std::endl;*/
+
             xPos += data["dx"].get<double>();
             yPos += data["dy"].get<double>();
             data["x"].set<double>(xPos);
@@ -279,6 +328,8 @@ private:
     ParameterHelper* paramHelper;
     double xPos;
     double yPos;
+    double closeness;
+    int numRandomSim;
 };
 
     
