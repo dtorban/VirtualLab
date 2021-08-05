@@ -13,9 +13,11 @@ set (HEADERFILES
 
 set(DEP_LINK_DIRS ${DEP_LINK_DIRS} 
   /dependencies/lib
+/panfs/roc/groups/0/keefedf/dtorban/project/deps/lib
 )
 set(DEP_INCLUDES ${DEP_INCLUDES} 
   /dependencies/include
+/panfs/roc/groups/0/keefedf/dtorban/project/deps/include
   ${CMAKE_PROJECT_DIR}/../VLCore
 )
 
@@ -33,7 +35,7 @@ set(DEP_INCLUDES ${DEP_INCLUDES}
 
 set(DEP_LIBS ${DEP_LIBS} VLml VLopt VLCore CppWebServer websockets)
 
-set(ALL_LIBS ${ALL_LIBS} crypto ssl z mlpack armadillo)
+set(ALL_LIBS ${ALL_LIBS} crypto ssl z)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp") 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp") 

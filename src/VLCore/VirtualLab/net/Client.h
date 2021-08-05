@@ -128,6 +128,7 @@ class ExternalModel : public IModel {
 public:
     ExternalModel(NetInterface* api, SOCKET sd, const std::string& name, int modelId) : api(NULL), name(name), modelId(modelId) {
         ip = api->receiveString(sd);
+	ip = "127.0.0.1";
         api->receiveData(sd, (unsigned char*)&port, sizeof(int));
         std::cout << ip << ":" << port << std::endl;
     }

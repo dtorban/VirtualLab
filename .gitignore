@@ -46,6 +46,7 @@ Session.vim
 log.txt
 output.txt
 Icon?
+server.txt
 
 # Local files
 *-local.*

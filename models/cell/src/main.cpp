@@ -6,7 +6,7 @@
 #include "VirtualLab/util/JSONSerializer.h"
 #include "VirtualLab/impl/ExtendedModel.h"
 #include <gsl/gsl_fit.h>
-#include "VirtualLab/opt/OptimizedModel.h"
+//#include "VirtualLab/opt/OptimizedModel.h"
 
 /*#include <mlpack/prereqs.hpp>
 #include <mlpack/methods/pca/pca.hpp>
@@ -440,6 +440,10 @@ public:
             if (data_rmc >= 0) {
                 data[output] = DoubleDataValue(data_rmc);
             }
+            else {
+                data[output] = DoubleDataValue(0);
+            }
+
         }
         else {
             data[output] = DoubleDataValue(0);

@@ -10,3 +10,4 @@ clean:
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 	cd $(BUILD_DIR); cmake $(ROOT_DIR);
+	#cd $(BUILD_DIR); CC=/panfs/roc/msisoft/gcc/7.2.0/bin/gcc CXX=/panfs/roc/msisoft/gcc/7.2.0/bin/g++ cmake $(ROOT_DIR);

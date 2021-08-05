@@ -43,9 +43,9 @@ set(DEP_INCLUDES ${DEP_INCLUDES}
   ${external_dir}/CellSim/src/libs/gsl/include
 )
 
-set(DEP_LIBS ${DEP_LIBS} VLCore VLopt)
+set(DEP_LIBS ${DEP_LIBS} VLCore)
 
-set(ALL_LIBS ${ALL_LIBS} crypto ssl z) # mlpack armadillo
+set(ALL_LIBS ${ALL_LIBS} crypto ssl z pthread) # mlpack armadillo
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp") 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp") 

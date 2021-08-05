@@ -1205,7 +1205,7 @@
                   if (s.data.samples && s.visible) {
                     var aflow = calcStatistics("aflow_mean",g.values,j);
                     var traction = calcStatistics("traction_mean",g.values,j);
-                    var rmc = calcStatistics("rmc_mean",g.values,j);
+                    var rmc = calcStatistics("rmc",g.values,j);
                     var aspect = calcStatistics("aspect_mean",g.values,j);
                     var area = calcStatistics("area_mean",g.values,j);
                     var data = {
@@ -1213,7 +1213,7 @@
                       aflow_sem: aflow.sem,
                       traction_mean: traction.mean,
                       traction_sem: traction.sem,
-                      rmc_mean: rmc.mean,
+                      rmc: rmc.mean,
                       rmc_sem: rmc.sem,
                       aspect_mean: aspect.mean,
                       aspect_sem: aspect.sem,
@@ -1232,7 +1232,7 @@
 
             lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.aflow_mean;}, function(d) {return d.color;}, function(d) {return d.data.aflow_sem;});
             lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.traction_mean;}, function(d) {return d.color;}, function(d) {return d.data.traction_sem;});
-            lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc_mean;}, function(d) { return d.color;}, function(d) {return d.data.rmc_sem;});
+            lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.color;}, function(d) {return d.data.rmc_sem;});
             lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.aspect_mean;}, function(d) { return d.color;}, function(d) {return d.data.aspect_sem;});
             lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.area_mean;}, function(d) { return d.color;}, function(d) {return d.data.area_sem;});
 
