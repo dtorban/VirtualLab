@@ -1649,7 +1649,16 @@
           //let csvContent = "data:text/json;charset=utf-8," + JSON.stringify(sampleList, null, 4);
           let csvContent = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleList, null, 4));
           var encodedUri = csvContent; //encodeURI(csvContent);
-          window.open(encodedUri);
+          //window.open(encodedUri);
+
+          var a         = document.createElement('a');
+          a.href        = encodedUri;//'data:attachment/csv,' + csvString;
+          a.target      = '_blank';
+          a.download    = 'myFile.json';
+
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
         }
 
         function handleFileSelect(evt) {
