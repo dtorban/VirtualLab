@@ -15,6 +15,8 @@ public:
         currentSelected = 0;
         closeness = 0.1;
         numRandomSim = 0;
+        xPos = 0;
+        yPos = 0;
 
         for (DataObject::const_iterator it = params.begin(); it != params.end(); it++) {
             if (it->second.isType<double>() && it->first != "N" && it->first != "num") {

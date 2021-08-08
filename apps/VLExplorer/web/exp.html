@@ -1433,6 +1433,101 @@
 
         }
 
+        function addSample(sample) {
+          sample.name = currentNum;
+          sample.visible = true;
+          sample.id = currentNum;
+          sampleIndexLookup[sample.id] = samples.length;
+          samples.push(sample);
+          currentNum++;
+
+          console.log("Sample Created");
+          var div = $("<div class='sample' id='sample-info-"+sample.id+"'></div>");
+          var tempParams = JSON.parse(JSON.stringify(params));
+          delete tempParams[".metadata"];
+
+          var visibleButton = $("<input type='image' class='visible-button' id='sample-visible-"+sample.id+"' src='images/show.jpg' />");
+          div.append(visibleButton);
+          visibleButton.click(function () {
+            sample.visible = !sample.visible;
+            visibleButton.attr("src", sample.visible ? "images/show.jpg" : "images/hide.jpg");
+            visibleButton.css('opacity', sample.visible ? 1.0 : 0.3);
+            if (!checkMultiple) {
+              updateLineCharts();
+            }
+          });
+
+          var checkbox = $("<input type='checkbox' class='sample-checkbox' id='sample-checkbox-"+sample.id+"'>");
+          var currentSample = samples.length-1;
+          checkbox.change(function () {
+            if(checkbox.is(':checked')){
+              sample.chosen = 1;
+            } else {
+              sample.chosen = 0;
+            }
+            if (!checkMultiple) {
+              updateLineCharts();
+            }
+          });
+          checkbox.css('outline-color', sample.color);
+          checkbox.css('outline-style', 'solid');
+          checkbox.css('outline-width', 'medium');
+          div.append(checkbox);
+
+          var colorPicker = $("<input type=\"color\" style='width:20px; height:20px;border: none;' value=\"" + d3.color(sample.color).rgb().toHex() + "\" id='sample-color-"+sample.id+"'>");
+          div.append(colorPicker);
+          colorPicker.change(function () {
+            sample.color = colorPicker.val();
+            checkbox.css('outline-color', sample.color);
+          });
+
+          div.append("<progress id='progress-"+sample.id+"' value='0' max='100'> 0% </progress>")
+          var shortenedName = sample.sampleName.length > 8 ? sample.sampleName.substring(0, 10) + "..." : sample.sampleName;
+          div.append("<label class='sample-name' title='" + JSON.stringify(tempParams)+ "'>"+shortenedName+"</label>");// + ": " + JSON.stringify(tempParams));
+          $("#samples").append(div);
+          
+
+          var upButton = $("<input type='image' class='visible-button' style='width: 10px' src='images/up.png' />");
+          upButton.click(function () {
+            var index = sampleIndexLookup[sample.id];
+            if (index > 0) {
+              var s = samples[index-1];
+              samples[index] = s;
+              samples[index-1] = sample;
+              sampleIndexLookup[sample.id] = index-1;
+              sampleIndexLookup[s.id] = index;
+              div.prev().insertAfter(div);
+            }
+            updateLineCharts();
+          });
+          div.append(upButton);
+
+          var downButton = $("<input type='image' class='visible-button' style='width: 10px' src='images/down.png' />");
+          downButton.click(function () {
+            var index = sampleIndexLookup[sample.id];
+            if (index < samples.length-1) {
+              var s = samples[index+1];
+              samples[index] = s;
+              samples[index+1] = sample;
+              sampleIndexLookup[sample.id] = index+1;
+              sampleIndexLookup[s.id] = index;
+              div.next().insertBefore(div);
+            }
+            updateLineCharts();
+          });
+          div.append(downButton);
+
+          var deleteButton = $("<input type='image' class='visible-button' src='images/delete.jpeg' />");
+          deleteButton.click(function () {
+            deleteSample(sample);
+          });
+          div.append(deleteButton);
+
+          let prog = Math.floor(100.0*sample.nav.t/(3600*6));
+          $("#progress-" + sample.id).val(''+prog);
+
+        }
+
         function createSample(model, name, sampleName, params, samplingMethod) {    
                 var p = JSON.parse(JSON.stringify(params));
                 model.create(p).then(function(sample) { 
@@ -1444,92 +1539,8 @@
                     sample.nav.t = 10.0;
                     sample.nav.m = 1.0;
                     sample.nav.h = 1.0;
-                    sample.visible = true;
-                    sample.id = currentNum;
-                    sampleIndexLookup[sample.id] = samples.length;
-                    samples.push(sample);
-                    currentNum++;
-                    console.log("Sample Created");
-                    var div = $("<div class='sample' id='sample-info-"+sample.id+"'></div>");
-                    var tempParams = JSON.parse(JSON.stringify(params));
-                    delete tempParams[".metadata"];
 
-                    var visibleButton = $("<input type='image' class='visible-button' id='sample-visible-"+sample.id+"' src='images/show.jpg' />");
-                    div.append(visibleButton);
-                    visibleButton.click(function () {
-                      sample.visible = !sample.visible;
-                      visibleButton.attr("src", sample.visible ? "images/show.jpg" : "images/hide.jpg");
-                      visibleButton.css('opacity', sample.visible ? 1.0 : 0.3);
-                      if (!checkMultiple) {
-                        updateLineCharts();
-                      }
-                    });
-
-                    var checkbox = $("<input type='checkbox' class='sample-checkbox' id='sample-checkbox-"+sample.id+"'>");
-                    var currentSample = samples.length-1;
-                    checkbox.change(function () {
-                      if(checkbox.is(':checked')){
-                        sample.chosen = 1;
-                      } else {
-                        sample.chosen = 0;
-                      }
-                      if (!checkMultiple) {
-                        updateLineCharts();
-                      }
-                    });
-                    checkbox.css('outline-color', sample.color);
-                    checkbox.css('outline-style', 'solid');
-                    checkbox.css('outline-width', 'medium');
-                    div.append(checkbox);
-
-                    var colorPicker = $("<input type=\"color\" style='width:20px; height:20px;border: none;' value=\"" + d3.color(sample.color).rgb().toHex() + "\" id='sample-color-"+sample.id+"'>");
-                    div.append(colorPicker);
-                    colorPicker.change(function () {
-                      sample.color = colorPicker.val();
-                      checkbox.css('outline-color', sample.color);
-                    });
-
-                    div.append("<progress id='progress-"+sample.id+"' value='0' max='100'> 0% </progress>")
-                    var shortenedName = sampleName.length > 8 ? sampleName.substring(0, 10) + "..." : sampleName;
-                    div.append("<label class='sample-name' title='" + JSON.stringify(tempParams)+ "'>"+shortenedName+"</label>");// + ": " + JSON.stringify(tempParams));
-                    $("#samples").append(div);
-                    
-
-                    var upButton = $("<input type='image' class='visible-button' style='width: 10px' src='images/up.png' />");
-                    upButton.click(function () {
-                      var index = sampleIndexLookup[sample.id];
-                      if (index > 0) {
-                        var s = samples[index-1];
-                        samples[index] = s;
-                        samples[index-1] = sample;
-                        sampleIndexLookup[sample.id] = index-1;
-                        sampleIndexLookup[s.id] = index;
-                        div.prev().insertAfter(div);
-                      }
-                      updateLineCharts();
-                    });
-                    div.append(upButton);
-
-                    var downButton = $("<input type='image' class='visible-button' style='width: 10px' src='images/down.png' />");
-                    downButton.click(function () {
-                      var index = sampleIndexLookup[sample.id];
-                      if (index < samples.length-1) {
-                        var s = samples[index+1];
-                        samples[index] = s;
-                        samples[index+1] = sample;
-                        sampleIndexLookup[sample.id] = index+1;
-                        sampleIndexLookup[s.id] = index;
-                        div.next().insertBefore(div);
-                      }
-                      updateLineCharts();
-                    });
-                    div.append(downButton);
-
-                    var deleteButton = $("<input type='image' class='visible-button' src='images/delete.jpeg' />");
-                    deleteButton.click(function () {
-                      deleteSample(sample);
-                    });
-                    div.append(deleteButton);
+                    addSample(sample);
 
                     if (samplingMethod.createNum > 0) {
                       createNewSample(samplingMethod);
@@ -1681,8 +1692,13 @@
           var reader = new FileReader();
           reader.onload = function () {
               //console.log(reader.result);
-              var letters = d3.csvParse(reader.result);
-              console.log(letters);
+              var loadedSamples = JSON.parse(reader.result);
+              for (var i = 0; i < loadedSamples.length; i++) {
+                loadedSamples[i].delete = function() {};
+                loadedSamples[i].lastSpatial = JSON.parse(JSON.stringify(loadedSamples[i].data.samples));
+                addSample(loadedSamples[i]);
+              }
+              console.log(loadedSamples);
           };
           // start reading the file. When it is done, calls the onload event defined above.
           reader.readAsBinaryString(fileInput.files[0]);
