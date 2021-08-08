@@ -1,6 +1,6 @@
 function VLModelSample(api, id, params, nav) {
     this.api = api;
-    this.id = id;
+    this.sampleId = id;
     this.params = params;
     this.nav = nav;
     this.data = {};
@@ -12,7 +12,7 @@ VLModelSample.prototype.update = function() {
     if (!this.connected) {
         return new Promise(function(resolve, reject) {});
     }
-    return this.api.sendCommand({command: "updateSample", sampleId: this.id, nav: this.nav}, function(data) {
+    return this.api.sendCommand({command: "updateSample", sampleId: this.sampleId, nav: this.nav}, function(data) {
         self.nav = data.nav;
         self.data = data.data;
         return data;
@@ -25,7 +25,7 @@ VLModelSample.prototype.delete = function() {
         return new Promise(function(resolve, reject) {});
     }
     this.connected = false;
-    return this.api.sendCommand({command: "deleteSample", sampleId: this.id}, function(data) {
+    return this.api.sendCommand({command: "deleteSample", sampleId: this.sampleId}, function(data) {
         return null;
     });
 };
