@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<title>Virtual Lab</title>
+		<title>Virtual Experiment</title>
 		<style>
       /*.axis line {
         stroke: white;
@@ -96,6 +96,17 @@
 				background-color: #c0bdbd;
 				width: 30px;
 				margin-right: 10px;
+			}
+			progress::-webkit-progress-value {
+				background: #377eb8;
+			}
+
+			progress::-moz-progress-bar {
+				background: #c0bdbd;
+			}
+
+			progress::-webkit-progress-bar {
+				background: #c0bdbd;
 			}
       #pcc {
 				width: 100%;
@@ -287,7 +298,7 @@
      </div>
 
       <div id="header">
-        <div class="title">Virtual LAB</div>
+        <div class="title">Virtual Experiment</div>
         <ul id="menu">
           <li class="parent"><a href="#">File</a>
           <ul class="child">
@@ -1649,7 +1660,16 @@
           //let csvContent = "data:text/json;charset=utf-8," + JSON.stringify(sampleList, null, 4);
           let csvContent = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleList, null, 4));
           var encodedUri = csvContent; //encodeURI(csvContent);
-          window.open(encodedUri);
+          //window.open(encodedUri);
+
+          var a         = document.createElement('a');
+          a.href        = encodedUri;//'data:attachment/csv,' + csvString;
+          a.target      = '_blank';
+          a.download    = 'myFile.json';
+
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
         }
 
         function handleFileSelect(evt) {
