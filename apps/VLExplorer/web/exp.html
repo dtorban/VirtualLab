@@ -1368,11 +1368,14 @@
                     var chart = new DynamicLineChart("dynamic-chart-"+key, "", "");
                     chart.showTicksX = false;
                     chart.yScale = getParamMetaData(s.params, key, "scale", "linear");
-                    console.log(key, chart.yScale);
+                    if (key == "opt_stiffness") {
+                        chart.yScale = "log";
+                    }
                     dynamicsCharts[key] = chart;
+
                   }
 
-                  dynamicsCharts[key].updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return key in d.params ? d.params[key] : key == "opt_stiffness" ? Math.log(d.data[key]) : d.data[key];}, function(d) { return d.color;}, function(d) {return null;});
+                  dynamicsCharts[key].updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return key in d.params ? d.params[key] : d.data[key];}, function(d) { return d.color;}, function(d) {return null;});
                 }
               });
             }
@@ -1443,8 +1446,9 @@
 
           console.log("Sample Created");
           var div = $("<div class='sample' id='sample-info-"+sample.id+"'></div>");
-          var tempParams = JSON.parse(JSON.stringify(params));
+          var tempParams = JSON.parse(JSON.stringify(sample.params));
           delete tempParams[".metadata"];
+          delete tempParams["samples"];
 
           var visibleButton = $("<input type='image' class='visible-button' id='sample-visible-"+sample.id+"' src='images/show.jpg' />");
           div.append(visibleButton);

@@ -80,17 +80,17 @@ DynamicLineChart.prototype.updateData = function(samples, lineKey, xKey, yKey, c
     
       // Add Y axis
       //var y = d3.scaleLinear()
-      var y = (this.yScale == "log2") ? d3.scaleLog() : d3.scaleLinear();
+      var y = (this.yScale == "log") ? d3.scaleLog() : d3.scaleLinear();
       //y.domain([0, d3.max(data, function(d) { return +yKey(d); })])
       y.domain(d3.extent(data, function(d) { return +yKey(d); }))
         .range([ this.height, 0 ]);
       if (!this.yAxis) {
         this.yAxis = this.svg.append("g")
           .attr("class", "axis")  
-          .call(d3.axisLeft(y).ticks(4));
+          .call(d3.axisLeft(y).ticks(4).tickFormat((d, i) => `${d.toFixed(2)}`))
       }
       else {
-        this.yAxis.call(d3.axisLeft(y).ticks(4))
+        this.yAxis.call(d3.axisLeft(y).ticks(4).tickFormat((d, i) => `${d.toFixed(2)}`))
       }
 
       
