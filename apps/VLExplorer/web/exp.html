@@ -728,12 +728,12 @@
                     }
                   }
                 }
-                var percent = 1.0*((numSamples-samplingMethod.createNum)%numSamples)/(numSamples-1);
+                var percent = 1.0*(((numSamples+2)-(samplingMethod.createNum+1))%(numSamples+2))/(numSamples+2-1);
                 var color = d3.scaleLinear().domain([0,1])
                   .range([samplingMethod.sampleA.color, samplingMethod.sampleB.color]);
                 samplingMethod.color = color(percent);
                 var i = numSamples-samplingMethod.createNum;
-                var p = JSON.parse(JSON.stringify(interpolate(samplingMethod.sampleA.params, samplingMethod.sampleB.params, numSamples, i)));
+                var p = JSON.parse(JSON.stringify(interpolate(samplingMethod.sampleA.params, samplingMethod.sampleB.params, numSamples+2, i+1)));
                 Object.keys(p).forEach(function(key, index) {
                   if (!(typeof p[key] === 'object')) {
                     params[key] = p[key];
@@ -1372,7 +1372,7 @@
                     dynamicsCharts[key] = chart;
                   }
 
-                  dynamicsCharts[key].updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return key in d.params ? d.params[key] : d.data[key];}, function(d) { return d.color;}, function(d) {return null;});
+                  dynamicsCharts[key].updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return key in d.params ? d.params[key] : key == "opt_stiffness" ? Math.log(d.data[key]) : d.data[key];}, function(d) { return d.color;}, function(d) {return null;});
                 }
               });
             }
@@ -1435,10 +1435,10 @@
 
         function addSample(sample) {
           sample.name = currentNum;
-          sample.visible = true;
           sample.id = currentNum;
           sampleIndexLookup[sample.id] = samples.length;
           samples.push(sample);
+ 
           currentNum++;
 
           console.log("Sample Created");
@@ -1456,6 +1456,8 @@
               updateLineCharts();
             }
           });
+          visibleButton.attr("src", sample.visible ? "images/show.jpg" : "images/hide.jpg");
+          visibleButton.css('opacity', sample.visible ? 1.0 : 0.3);
 
           var checkbox = $("<input type='checkbox' class='sample-checkbox' id='sample-checkbox-"+sample.id+"'>");
           var currentSample = samples.length-1;
@@ -1540,6 +1542,7 @@
                     sample.nav.m = 1.0;
                     sample.nav.h = 1.0;
 
+                    sample.visible = true;
                     addSample(sample);
 
                     if (samplingMethod.createNum > 0) {
@@ -1665,7 +1668,7 @@
         function exportJSON() {
           var sampleList = [];
           samples.forEach(function(item){
-            sampleList.push({params: item.params, nav: item.nav, data: item.data, color: item.color, sampleName: item.sampleName});
+            sampleList.push({params: item.params, nav: item.nav, data: item.data, color: item.color, sampleName: item.sampleName, visible: item.visible});
           });
           console.log(JSON.stringify(sampleList, null, 4));
           //let csvContent = "data:text/json;charset=utf-8," + JSON.stringify(sampleList, null, 4);
