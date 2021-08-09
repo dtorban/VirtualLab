@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<title>Virtual Lab</title>
+		<title>Virtual Experiment</title>
 		<style>
       /*.axis line {
         stroke: white;
@@ -13,7 +13,7 @@
         position: relative;
         float:left;
         margin-left: 0;
-        width: 20%;
+        width: 40%;
         height: 100%;
       }
       .dynamicsChart {
@@ -29,7 +29,7 @@
       }
       .section {
         /*background-color: rgb(166, 189, 240);*/
-        background-color: lightgrey;
+        /*background-color: lightgrey;*/
         border-style: solid;
         border-width: 2px;
         border-color: rgb(54, 54, 54);
@@ -97,9 +97,20 @@
 				width: 30px;
 				margin-right: 10px;
 			}
+			progress::-webkit-progress-value {
+				background: #377eb8;
+			}
+
+			progress::-moz-progress-bar {
+				background: #c0bdbd;
+			}
+
+			progress::-webkit-progress-bar {
+				background: #c0bdbd;
+			}
       #pcc {
 				width: 100%;
-				height: 20%;
+				height: 0%;
 			}
       input[type="file"] {
           display: none;
@@ -113,7 +124,7 @@
       }
       .data-view {
           width: 100%;
-          height: 25%;
+          height: 45%;
       }
       .spatial {
         position: relative;
@@ -287,7 +298,7 @@
      </div>
 
       <div id="header">
-        <div class="title">Virtual LAB</div>
+        <div class="title">Virtual Experiment</div>
         <ul id="menu">
           <li class="parent"><a href="#">File</a>
           <ul class="child">
@@ -717,12 +728,12 @@
                     }
                   }
                 }
-                var percent = 1.0*((numSamples-samplingMethod.createNum)%numSamples)/(numSamples-1);
+                var percent = 1.0*(((numSamples+2)-(samplingMethod.createNum+1))%(numSamples+2))/(numSamples+2-1);
                 var color = d3.scaleLinear().domain([0,1])
                   .range([samplingMethod.sampleA.color, samplingMethod.sampleB.color]);
                 samplingMethod.color = color(percent);
                 var i = numSamples-samplingMethod.createNum;
-                var p = JSON.parse(JSON.stringify(interpolate(samplingMethod.sampleA.params, samplingMethod.sampleB.params, numSamples, i)));
+                var p = JSON.parse(JSON.stringify(interpolate(samplingMethod.sampleA.params, samplingMethod.sampleB.params, numSamples+2, i+1)));
                 Object.keys(p).forEach(function(key, index) {
                   if (!(typeof p[key] === 'object')) {
                     params[key] = p[key];
@@ -1205,7 +1216,7 @@
                   if (s.data.samples && s.visible) {
                     var aflow = calcStatistics("aflow_mean",g.values,j);
                     var traction = calcStatistics("traction_mean",g.values,j);
-                    var rmc = calcStatistics("rmc_mean",g.values,j);
+                    var rmc = calcStatistics("rmc",g.values,j);
                     var aspect = calcStatistics("aspect_mean",g.values,j);
                     var area = calcStatistics("area_mean",g.values,j);
                     var data = {
@@ -1213,7 +1224,7 @@
                       aflow_sem: aflow.sem,
                       traction_mean: traction.mean,
                       traction_sem: traction.sem,
-                      rmc_mean: rmc.mean,
+                      rmc: rmc.mean,
                       rmc_sem: rmc.sem,
                       aspect_mean: aspect.mean,
                       aspect_sem: aspect.sem,
@@ -1232,7 +1243,7 @@
 
             lineChart1.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.aflow_mean;}, function(d) {return d.color;}, function(d) {return d.data.aflow_sem;});
             lineChart2.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.traction_mean;}, function(d) {return d.color;}, function(d) {return d.data.traction_sem;});
-            lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc_mean;}, function(d) { return d.color;}, function(d) {return d.data.rmc_sem;});
+            lineChart3.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.rmc;}, function(d) { return d.color;}, function(d) {return d.data.rmc_sem;});
             lineChart4.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.aspect_mean;}, function(d) { return d.color;}, function(d) {return d.data.aspect_sem;});
             lineChart5.updateData(sampleData, function(d) {return d.name;}, function(d) {return d.params.substrate_k;}, function(d) {return d.data.area_mean;}, function(d) { return d.color;}, function(d) {return d.data.area_sem;});
 
@@ -1357,8 +1368,11 @@
                     var chart = new DynamicLineChart("dynamic-chart-"+key, "", "");
                     chart.showTicksX = false;
                     chart.yScale = getParamMetaData(s.params, key, "scale", "linear");
-                    console.log(key, chart.yScale);
+                    if (key == "opt_stiffness") {
+                        chart.yScale = "log";
+                    }
                     dynamicsCharts[key] = chart;
+
                   }
 
                   dynamicsCharts[key].updateData(dyanamicsData, function(d) {return d.name;}, function(d) {return d.index;}, function(d) {return key in d.params ? d.params[key] : d.data[key];}, function(d) { return d.color;}, function(d) {return null;});
@@ -1424,16 +1438,17 @@
 
         function addSample(sample) {
           sample.name = currentNum;
-          sample.visible = true;
           sample.id = currentNum;
           sampleIndexLookup[sample.id] = samples.length;
           samples.push(sample);
+ 
           currentNum++;
 
           console.log("Sample Created");
           var div = $("<div class='sample' id='sample-info-"+sample.id+"'></div>");
-          var tempParams = JSON.parse(JSON.stringify(params));
+          var tempParams = JSON.parse(JSON.stringify(sample.params));
           delete tempParams[".metadata"];
+          delete tempParams["samples"];
 
           var visibleButton = $("<input type='image' class='visible-button' id='sample-visible-"+sample.id+"' src='images/show.jpg' />");
           div.append(visibleButton);
@@ -1445,6 +1460,8 @@
               updateLineCharts();
             }
           });
+          visibleButton.attr("src", sample.visible ? "images/show.jpg" : "images/hide.jpg");
+          visibleButton.css('opacity', sample.visible ? 1.0 : 0.3);
 
           var checkbox = $("<input type='checkbox' class='sample-checkbox' id='sample-checkbox-"+sample.id+"'>");
           var currentSample = samples.length-1;
@@ -1529,6 +1546,7 @@
                     sample.nav.m = 1.0;
                     sample.nav.h = 1.0;
 
+                    sample.visible = true;
                     addSample(sample);
 
                     if (samplingMethod.createNum > 0) {
@@ -1654,7 +1672,7 @@
         function exportJSON() {
           var sampleList = [];
           samples.forEach(function(item){
-            sampleList.push({params: item.params, nav: item.nav, data: item.data, color: item.color, sampleName: item.sampleName});
+            sampleList.push({params: item.params, nav: item.nav, data: item.data, color: item.color, sampleName: item.sampleName, visible: item.visible});
           });
           console.log(JSON.stringify(sampleList, null, 4));
           //let csvContent = "data:text/json;charset=utf-8," + JSON.stringify(sampleList, null, 4);
