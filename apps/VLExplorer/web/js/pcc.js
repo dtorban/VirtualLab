@@ -64,7 +64,7 @@ PCChart.prototype.updateData = function(data) {
 	  for (i in dimensions) {
 		var name = dimensions[i];
         //if (!(name in this.y)) {
-          this.y[name] = d3.scaleLinear()
+          this.y[name] = d3.scaleLog()//name=="opt_stiffness" || name=="mpool" || name=="area_mean" || name=="aspect_mean" || name=="aspect_mean" ? d3.scaleLog() : d3.scaleLinear()) //d3.scaleLinear()//d3.scaleLog()
             .domain( d3.extent(data, function(d) { return +d.data[name]; }) )
             .range([this.height, 0])
         //}
@@ -165,7 +165,7 @@ PCChart.prototype.updateData = function(data) {
 		// I translate this element to its right position on the x axis
 		.attr("transform", function(d) { return "translate(" + self.x(d) + ")"; })
 		// And I build the axis with the call function
-		.each(function(d) { d3.select(this).call(d3.axisLeft().ticks(4).scale(self.y[d])); })
+		.each(function(d) { d3.select(this).call(d3.axisLeft().ticks(4).scale(self.y[d]).tickFormat(d3.format(",.2f"))); })
 		// Add axis title
 		.append("text")
 		  .attr("class","axis-label")
@@ -178,11 +178,13 @@ PCChart.prototype.updateData = function(data) {
           // I translate this element to its right position on the x axis
           .attr("transform", function(d) { return "translate(" + self.x(d) + ")"; })
           // And I build the axis with the call function
-          .each(function(d) { d3.select(this).call(d3.axisLeft().ticks(4).scale(self.y[d]).tickFormat(d3.format(",.2f"))); })
+          .each(function(d) { d3.select(this).select(".axis-label").text(function(d) { return d.replace("_mean","")});
+		  d3.select(this).call(d3.axisLeft().ticks(4).tickFormat(d3.format(",.2f"))); })
 
 	
-	  this.svg.selectAll(".myAxis")
-	  	.each(function(d) { d3.select(this).select(".axis-label").text(function(d) { return d.replace("_mean",""); }); })
+	  /*this.svg.selectAll(".myAxis")
+	  	.each(function(d) { d3.select(this).select(".axis-label").text(function(d) { return d.replace("_mean",""); });
+		  d3.select(this).call(d3.axisLeft().ticks(4).scale(self.y[d]).tickFormat(d3.format(",.2f"))); })*/
 
 
 }
