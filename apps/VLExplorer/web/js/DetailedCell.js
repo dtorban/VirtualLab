@@ -100,8 +100,21 @@ DetailedCell.prototype.animate = function(dt) {
       this.svg.selectAll(".substrate")
       //.attr('x1', function(d) {return self.x(data.data.x) + (0.5)*self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
       //.attr('x2', function(d) {return self.x(data.data.x) + (0.5 + 0.3)*self.calcArmLength(d.x, d.y, data.data.x, data.data.y);})
-          .attr('x1', function(d) {return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate)-25*self.scale;})
-          .attr('x2', function(d) {return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate)+25*self.scale;});
+          .attr('x1', function(d) {
+            var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
+            var calc = self.x(self.data.data.x) + 9*armLength/10 - d.c_on_rate*self.data.data.aflow;
+            return calc-25*self.scale;}
+          )
+          .attr('x2', function(d) {
+    
+            var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
+            var calc = self.x(self.data.data.x) + 9*armLength/10 - d.c_on_rate*self.data.data.aflow;
+            return calc+25*self.scale;
+          });
 
       this.svg.selectAll(".substrate-spring")
           /*.attr("stroke-dasharray",function(d) {
@@ -111,10 +124,28 @@ DetailedCell.prototype.animate = function(dt) {
             return '' + (25*percent) + ' ' + (15*percent);
           })*/
           .attr("stroke", function(d) {
+            /*
+            var self = this;
             var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var dx = speed*offsetSpeed*10*self.time*self.data.data.aflow/100.0;
+            dx = dx - armLength*(Math.floor(dx/armLength));
+            var animationPos = armLength*d.pos - dx;
+            if (animationPos < 0) {
+              animationPos = animationPos + armLength;
+            }
+            var xVal = self.x(self.data.data.x) + (offset*armLength)+animationPos/offsetSpeed;
+            return Number.isNaN(xVal) ? self.x(self.data.data.x): xVal;*/
+
+
+            var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var pos = self.x(self.data.data.x) + 9*armLength/10 - d.c_on_rate*self.data.data.aflow;
+            //var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
+            return self.substrate_force_color(percent*d.percentLength*self.data.data.m.length)
+            /*var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
             var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
             var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
-            return self.substrate_force_color(percent*d.percentLength*self.data.data.m.length);
+            return self.substrate_force_color(percent*d.percentLength*self.data.data.m.length);*/
             
           })
           /*.attr("opacity",function(d) {
@@ -129,14 +160,29 @@ DetailedCell.prototype.animate = function(dt) {
             var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
             return 8*self.scale*percent;
           })*/
-          .attr('x1', function(d) {return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);});
+          .attr('x1', function(d) {
+            //var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            //return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
+            return self.x(self.data.data.x) + 9*armLength/10 - d.c_on_rate*self.data.data.aflow;
+          });
 
       this.svg.selectAll(".substrate-spring-connect")
           .attr('x1', function(d) {
-            return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5}, 2, 0.5, d.c_on_rate);
+            var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
+            return self.x(self.data.data.x) + 9*armLength/10 - d.c_on_rate*self.data.data.aflow;
+            //return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5}, 2, 0.5, d.c_on_rate);
           })
           .attr('x2', function(d) {
-            return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5}, 2, 0.5, d.c_on_rate);
+            var armLength = self.calcArmLength(d.x, d.y, self.data.data.x, self.data.data.y);
+            var pos = self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5},2,0.5, d.c_on_rate);
+            var percent = (armLength-(pos-self.x(self.data.data.x)))/armLength;
+            return self.x(self.data.data.x) + 9*armLength/10 - d.c_on_rate*self.data.data.aflow;
+            //return self.calcAflowAnimation({x: d.x, y: d.y, pos: 0.5}, 2, 0.5, d.c_on_rate);
           })
     }
 
