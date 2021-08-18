@@ -507,8 +507,9 @@
               
             }
 
-            var sampleInput = $("<input type=\"button\" value=\"+\" onclick=\"createNewSample(samplingMethods["+0+"])\">");
+            var sampleInput = $("<input type=\"button\" value=\"Create Sample\" onclick=\"createNewSample(samplingMethods["+0+"])\">");
             $("#params").append(sampleInput);
+            $("#params").append($("<br><input type=\"button\" value=\"Create Question\" onclick=\"createNewSample(samplingMethods["+0+"])\">"));
 
             $('.slider').on('input', function(e) {
               let key = $(e.target).attr('name');
